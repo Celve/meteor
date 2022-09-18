@@ -1,0 +1,5 @@
+# IDE files
+.vscode/
+
+# unused files
+grammar/.antlr/
