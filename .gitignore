@@ -1,5 +1,8 @@
 # IDE files
 .vscode/
+.idea/
+gen/
+meteor.iml
 
 # unused files
 grammar/.antlr/
