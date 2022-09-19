@@ -18,7 +18,12 @@ LessEqual: '<=';
 Equal: '==';
 NotEqual: '!=';
 
-// logic operators
+// logical operators
+LogicalAnd: '&&';
+LogicalOr: '||';
+LogicalNot: '!';
+
+// bit operators
 RightShift: '>>';
 LeftShift: '<<';
 BitwiseAnd: '&';
@@ -33,8 +38,7 @@ Assign: '=';
 Increment: '++';
 Decrement: '--';
 
-// postfix operators
-MemberAccess: '.';
+// postfix operators MemberAccess: '.'; TODO: to determine whether it maintain it
 Brackets: '[]';
 LeftBracket: '[';
 RightBracket: ']';
@@ -43,7 +47,9 @@ RightParen: ')';
 LeftBrace: '{';
 RightBrace: '}';
 
-//TODO: for some special characters
+//TODO: for some special characters 
+
+//Semicolon: ';'; I don't want to include semicolon now, because it's meaningless, but have to be
 
 // comments TODO: make sure that it should be skipped
 LineComment: '//' .*? '\r'? '\n' -> skip;
@@ -72,3 +78,15 @@ Return: 'return';
 IntegerLiteral: '0' | [1-9][0-9]*;
 StringLiteral: '"' (Escape | .)*? '"';
 Escape: '\\"' | '\\\\' | '\\n';
+
+// whitespace
+WhiteSpace: [ \t]+ -> skip;
+
+// extra
+PrefixOps:
+	Increment
+	| Decrement
+	| Add
+	| Sub
+	| LogicalNot
+	| BitwiseNot;
