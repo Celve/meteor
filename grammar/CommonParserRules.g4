@@ -2,12 +2,11 @@ grammar CommonParserRules;
 import CommonLexerRules;
 
 // TODO: fulfill it
-stat: decl | def;
+stmt: decl | def;
 
 // declarations
-decl: varDecl | funcDecl;
-varDecl: varType Id Assign expr ';';
-// funcDecl: returnType Id LeftParen paramDeclList ';';
+decl: varDecl | funcDef;
+// varDecl: varType Id Assign expr ';'; funcDecl: returnType Id LeftParen paramDeclList ';';
 
 // definitions
 def: classDef;
@@ -29,35 +28,36 @@ initExpr: New varType ('[' expr? ']')*;
 
 // 7.3.3. built-in methods, or generally, method calls
 methodCall:
-	(instName = Id) '.' (methodName = Id) '(' paramInputList? ')';
+	(instName = Id) '.' (methodName = Id) paramInputList?;
 
 // 7.3.4 multi-dimensional arrays
 
 // 8. class, namely non-primitive type
 nonPrimitiveType: Id;
-classDef: Class LeftBrace (decl | classCtor)* RightBrace;
+classSuite: '{' (decl | classCtor)* '}';
+classDef: Class classSuite;
 
 // 8.3. access class members and call class methods (in 7.3.3.)
 memberAccess: (className = Id) '.' (classMember = Id);
 
 // 8.4 class constructor
-classCtor: (classId = Id) '(' paramDeclList? ')' '{' stat* '}';
+classCtor: (classId = Id) paramDeclList? '{' stmt* '}';
 
 // 9. function
 returnType: primitiveType | nonPrimitiveType | voidType;
-funcDecl:
-	returnType (funcId = Id) '(' paramDeclList? ')' '{' stat* '}';
-funcCall: (funcId = Id) '(' paramInputList? ')';
+funcSuite: '{' stmt* '}';
+funcDef: returnType (funcId = Id) paramDeclList? funcSuite;
+funcCall: (funcId = Id) paramInputList?;
 
 // 9.1. function definition
-paramDeclList: varType Id (',' varType Id)*;
-paramInputList:
-	expr (',' expr)*; // TODO: does it has only one way to locate params?
+paramDeclList: '(' varType Id (',' varType Id)* ')';
+paramInputList: '(' expr (',' expr)* ')';
+// TODO: does it has only one way to locate params?
 
 // 9.4. lambda
-lambda:
-	'[' (op = '&')? ']' '(' paramInputList? ')' '->' '{' stat* '}';
-lambdaCall: lambda '(' paramInputList ')';
+lambdaDef:
+	'[' (op = '&')? ']' paramInputList? '->' '{' stmt* '}';
+lambdaCall: lambdaDef paramInputList;
 
 // 10.1. basic expressions
 basicExpr:
@@ -73,7 +73,6 @@ basicExpr:
 // 10.2. arithmetic expressions and assign expressions
 leftValue: Id | memberAccess | arrayAccess;
 // TODO: the formal parameters of function, see in the doc
-
 expr:
 	'(' expr ')'
 	| basicExpr
@@ -94,3 +93,20 @@ expr:
 	| expr LogicalAnd expr
 	| expr LogicalOr expr
 	| leftValue Assign expr;
+
+// 11.1. variable declarations
+assignUnit: Id (Assign expr)?;
+varDecl: varType Brackets* assignUnit (',' assignUnit)* ';';
+
+// 11.2. conditional stmtements
+blockSuite: '{' stmt* '}' | stmt; // TODO: detail the stmt
+condStmt: If '(' expr ')' blockSuite (Else blockSuite)?;
+
+// 11.3. loops
+whileLoop: While '(' expr ')' blockSuite;
+forInitUnit: (varDecl | expr ';') | ';';
+forCondUnit: expr? ';';
+forStepUnit: expr?;
+forLoop:
+	For '(' forInitUnit forCondUnit forStepUnit ')' blockSuite;
+
