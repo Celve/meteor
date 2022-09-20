@@ -34,7 +34,8 @@ voidType: Void;
 // TODO: array objects support assign by reference
 
 // 7.3.2 array creation 
-initExpr: New varType ('[' expr? ']')* '[]'*;
+initExpr:
+	New varType ('[' expr? ']')* '[]'*; // it make sure that all brackets with int is in the head
 
 // 7.3.3. built-in methods, or generally, method calls methodCall: (instName = Id) '.' (methodName =
 // Id) paramInputList?;
