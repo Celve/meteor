@@ -1,7 +1,5 @@
 lexer grammar CommonLexerRules;
 
-// identities TODO: length that is greater than 64 is undefined
-Id: [a-zA-Z] [_0-9a-zA-Z]*;
 
 // arithmetic operators
 Add: '+';
@@ -79,14 +77,12 @@ IntegerLiteral: '0' | [1-9][0-9]*;
 StringLiteral: '"' (Escape | .)*? '"';
 Escape: '\\"' | '\\\\' | '\\n';
 
-// whitespace
+// omission
 WhiteSpace: [ \t]+ -> skip;
+NewLine: ('\r\n' | '\r' | '\n') -> skip;
 
 // extra
-PrefixOps:
-	Increment
-	| Decrement
-	| Add
-	| Sub
-	| LogicalNot
-	| BitwiseNot;
+Access: '.';
+
+// identities TODO: length that is greater than 64 is undefined
+Id: [a-zA-Z] [_0-9a-zA-Z]*; // Id should be put as low as it could, because it's the final choice
