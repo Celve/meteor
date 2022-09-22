@@ -1,10 +1,28 @@
 package abst.nodes
 
-class Def {
+import abst.control.Visitor
+import abst.utils.Position
+
+class Def(pos: Position) : Base(pos) {
+  override fun accept(visitor: Visitor) {
+    visitor.visit(this)
+  }
 }
 
-class ClassDef {}
+class ClassDef(pos: Position) : Base(pos) {
+  override fun accept(visitor: Visitor) {
+    visitor.visit(this)
+  }
+}
 
-class FuncDef {}
+class FuncDef(pos: Position) : Base(pos) {
+  override fun accept(visitor: Visitor) {
+    visitor.visit(this)
+  }
+}
 
-class LambdaDef {}
+class LambdaDef(pos: Position) : Base(pos) {
+  override fun accept(visitor: Visitor) {
+    visitor.visit(this)
+  }
+}

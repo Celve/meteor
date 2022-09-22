@@ -3,12 +3,10 @@ package abst.nodes
 import abst.control.Visitor
 import abst.utils.Position
 
-class Suite
+class Prog(pos: Position, children: Array<Base>) : Base(pos) {
+  val stmts: Array<Base> = children
 
-class BlockSuite(pos: Position) : Base(pos) {
   override fun accept(visitor: Visitor) {
     visitor.visit(this)
   }
 }
-
-class FuncSuite

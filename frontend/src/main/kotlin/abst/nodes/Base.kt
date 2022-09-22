@@ -1,9 +1,9 @@
 package abst.nodes
 
 import abst.control.Visitor
+import abst.utils.Position
 
-open abstract class Base {
-  abstract var pos: Int
+open abstract class Base(pos: Position) {
 
-  abstract fun accept(visitor: Visitor);
+  abstract fun accept(visitor: Visitor)
 }

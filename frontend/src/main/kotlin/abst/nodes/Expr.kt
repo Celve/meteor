@@ -1,25 +1,32 @@
 package abst.nodes
 
-class Expr {
+import abst.control.Visitor
+import abst.utils.Position
+
+abstract class Expr(pos: Position) : Base(pos)
+
+class PriorExpr(pos: Position) : Expr(pos) {
+  override fun accept(visitor: Visitor) {
+    visitor.visit(this)
+  }
 }
 
-class PriorExpr {
+class Atom(pos: Position) : Expr(pos) {
+  override fun accept(visitor: Visitor) {
+    visitor.visit(this)
+  }
 }
 
-class Atom {
-}
+class MethodAccess
 
-class MethodAccess {
-}
+class MemberAccess
 
-class MemberAccess {}
+class ArrayAccess
 
-class ArrayAccess {}
+class SuffixExpr
 
-class SuffixExpr {}
+class PrefixExpr
 
-class PrefixExpr {}
+class BinaryExpr
 
-class BinaryExpr {}
-
-class AssignExpr {}
+class AssignExpr
