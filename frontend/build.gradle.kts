@@ -22,15 +22,10 @@ tasks.generateGrammarSource {
 
 //   insert package into the first line, only applicable in macOS
   exec {
+    // its default dir is project dir
     workingDir = File("src/main/java/parser")
 
-//  on macOS
+    //  on macOS
     commandLine("./package.sh")
-//    commandLine("ex -sc '1i|package parser' -cx 'MeteorParserBaseListener.java'")
-//    commandLine("ex -sc '1i|package parser' -cx 'MeteorParserBaseVisitor.java'")
-//    commandLine("ex -sc '1i|package parser' -cx 'MeteorParserLexer.java'")
-//    commandLine("ex -sc '1i|package parser' -cx 'MeteorParserListener.java'")
-//    commandLine("ex -sc '1i|package parser' -cx 'MeteorParserParser.java'")
-//    commandLine("ex -sc '1i|package parser' -cx 'main/java/parser/MeteorParserVisitor.java'")
   }
 }
