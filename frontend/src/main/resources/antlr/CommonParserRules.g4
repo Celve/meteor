@@ -92,26 +92,27 @@ prefixOps:
 	| Sub
 	| LogicalNot
 	| BitwiseNot;
+// TODO: resolve some associativity
 expr:
-	'(' expr ')'
-	| basicExpr
-	| expr '.' (methodName = Id) paramInputList
-	| expr '.' (classMember = Id)
-	| expr ('[' expr ']')+
-	| funcCall
-	| expr (Increment | Decrement)
-	| prefixOps expr
-	| expr op = (Mul | Div | Mod) expr
-	| expr op = (Add | Sub) expr
-	| expr op = (LeftShift | RightShift) expr
-	| expr op = (Less | LessEqual | Greater | GreaterEqual) expr
-	| expr op = (Equal | NotEqual) expr
-	| expr BitwiseAnd expr
-	| expr BitwiseXor expr
-	| expr BitwiseOr expr
-	| expr LogicalAnd expr
-	| expr LogicalOr expr
-	| expr Assign expr;
+	'(' expr ')' #priorExpr
+	| basicExpr #atom
+	| expr '.' (methodName = Id) paramInputList #methodAccess
+	| expr '.' (classMember = Id) #memberAccess
+	| expr ('[' expr ']')+ #arrayAccess
+	| expr (Increment | Decrement) #suffixExpr
+	| prefixOps expr #prefixExpr
+	| expr op = (Mul | Div | Mod) expr #binaryExpr
+	| expr op = (Add | Sub) expr #binaryExpr
+	| expr op = (LeftShift | RightShift) expr #binaryExpr
+	| expr op = (Less | LessEqual | Greater | GreaterEqual) expr #binaryExpr
+	| expr op = (Equal | NotEqual) #binaryExpr
+	| expr BitwiseAnd expr #binaryExpr
+	| expr BitwiseXor expr #binaryExpr
+	| expr BitwiseOr expr #binaryExpr
+	| expr LogicalAnd expr #binaryExpr
+	| expr LogicalOr expr #binaryExpr
+	| expr Assign expr #assignExpr
+	;
 
 // 11.1. variable declarations
 assignUnit: Id (Assign expr)?;
