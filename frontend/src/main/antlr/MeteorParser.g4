@@ -107,11 +107,11 @@ expr:
 	| expr op = (LeftShift | RightShift) expr #binaryExpr
 	| expr op = (Less | LessEqual | Greater | GreaterEqual) expr #binaryExpr
 	| expr op = (Equal | NotEqual) #binaryExpr
-	| expr BitwiseAnd expr #binaryExpr
-	| expr BitwiseXor expr #binaryExpr
-	| expr BitwiseOr expr #binaryExpr
-	| expr LogicalAnd expr #binaryExpr
-	| expr LogicalOr expr #binaryExpr
+	| expr op = BitwiseAnd expr #binaryExpr
+	| expr op = BitwiseXor expr #binaryExpr
+	| expr op = BitwiseOr expr #binaryExpr
+	| expr op = LogicalAnd expr #binaryExpr
+	| expr op = LogicalOr expr #binaryExpr
 	| expr Assign expr #assignExpr
 	;
 
