@@ -1,18 +1,18 @@
-package parser;// Generated from java-escape by ANTLR 4.11.1
+// Generated from java-escape by ANTLR 4.11.1
+package parser;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link CommonParserRulesVisitor},
+ * This class provides an empty implementation of {@link MeteorParserVisitor},
  * which can be extended to create a visitor which only needs to handle a subset
  * of the available methods.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
  *            operations with no return type.
  */
-
 @SuppressWarnings("CheckReturnValue")
-public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements CommonParserRulesVisitor<T> {
+public class MeteorParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements MeteorParserVisitor<T> {
   /**
    * {@inheritDoc}
    *
@@ -20,7 +20,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitProg(CommonParserRulesParser.ProgContext ctx) {
+  public T visitProg(MeteorParserParser.ProgContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -31,7 +31,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitStmt(CommonParserRulesParser.StmtContext ctx) {
+  public T visitStmt(MeteorParserParser.StmtContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -42,7 +42,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitDecl(CommonParserRulesParser.DeclContext ctx) {
+  public T visitDecl(MeteorParserParser.DeclContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -53,7 +53,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitDef(CommonParserRulesParser.DefContext ctx) {
+  public T visitDef(MeteorParserParser.DefContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -64,7 +64,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitVarType(CommonParserRulesParser.VarTypeContext ctx) {
+  public T visitVarType(MeteorParserParser.VarTypeContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -75,7 +75,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitPrimitiveType(CommonParserRulesParser.PrimitiveTypeContext ctx) {
+  public T visitPrimitiveType(MeteorParserParser.PrimitiveTypeContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -86,7 +86,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitVoidType(CommonParserRulesParser.VoidTypeContext ctx) {
+  public T visitVoidType(MeteorParserParser.VoidTypeContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -97,7 +97,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitInitExpr(CommonParserRulesParser.InitExprContext ctx) {
+  public T visitInitExpr(MeteorParserParser.InitExprContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -108,7 +108,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitNonPrimitiveType(CommonParserRulesParser.NonPrimitiveTypeContext ctx) {
+  public T visitNonPrimitiveType(MeteorParserParser.NonPrimitiveTypeContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -119,7 +119,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitClassSuite(CommonParserRulesParser.ClassSuiteContext ctx) {
+  public T visitClassSuite(MeteorParserParser.ClassSuiteContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -130,7 +130,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitClassDef(CommonParserRulesParser.ClassDefContext ctx) {
+  public T visitClassDef(MeteorParserParser.ClassDefContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -141,7 +141,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitClassCtor(CommonParserRulesParser.ClassCtorContext ctx) {
+  public T visitClassCtor(MeteorParserParser.ClassCtorContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -152,7 +152,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitReturnType(CommonParserRulesParser.ReturnTypeContext ctx) {
+  public T visitReturnType(MeteorParserParser.ReturnTypeContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -163,7 +163,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitFuncSuite(CommonParserRulesParser.FuncSuiteContext ctx) {
+  public T visitFuncSuite(MeteorParserParser.FuncSuiteContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -174,7 +174,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitFuncDef(CommonParserRulesParser.FuncDefContext ctx) {
+  public T visitFuncDef(MeteorParserParser.FuncDefContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -185,7 +185,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitFuncDecl(CommonParserRulesParser.FuncDeclContext ctx) {
+  public T visitFuncDecl(MeteorParserParser.FuncDeclContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -196,7 +196,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitFuncCall(CommonParserRulesParser.FuncCallContext ctx) {
+  public T visitFuncCall(MeteorParserParser.FuncCallContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -207,7 +207,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitParamDefList(CommonParserRulesParser.ParamDefListContext ctx) {
+  public T visitParamDefList(MeteorParserParser.ParamDefListContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -218,7 +218,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitParamInputList(CommonParserRulesParser.ParamInputListContext ctx) {
+  public T visitParamInputList(MeteorParserParser.ParamInputListContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -229,7 +229,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitLambdaDef(CommonParserRulesParser.LambdaDefContext ctx) {
+  public T visitLambdaDef(MeteorParserParser.LambdaDefContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -240,7 +240,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitLambdaCall(CommonParserRulesParser.LambdaCallContext ctx) {
+  public T visitLambdaCall(MeteorParserParser.LambdaCallContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -251,7 +251,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitBasicExpr(CommonParserRulesParser.BasicExprContext ctx) {
+  public T visitBasicExpr(MeteorParserParser.BasicExprContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -262,7 +262,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitExprStmt(CommonParserRulesParser.ExprStmtContext ctx) {
+  public T visitExprStmt(MeteorParserParser.ExprStmtContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -273,7 +273,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitPrefixOps(CommonParserRulesParser.PrefixOpsContext ctx) {
+  public T visitPrefixOps(MeteorParserParser.PrefixOpsContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -284,7 +284,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitPrefixExpr(CommonParserRulesParser.PrefixExprContext ctx) {
+  public T visitPrefixExpr(MeteorParserParser.PrefixExprContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -295,7 +295,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitMemberAccess(CommonParserRulesParser.MemberAccessContext ctx) {
+  public T visitMemberAccess(MeteorParserParser.MemberAccessContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -306,7 +306,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitMethodAccess(CommonParserRulesParser.MethodAccessContext ctx) {
+  public T visitMethodAccess(MeteorParserParser.MethodAccessContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -317,7 +317,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitSuffixExpr(CommonParserRulesParser.SuffixExprContext ctx) {
+  public T visitSuffixExpr(MeteorParserParser.SuffixExprContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -328,7 +328,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitPriorExpr(CommonParserRulesParser.PriorExprContext ctx) {
+  public T visitPriorExpr(MeteorParserParser.PriorExprContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -339,7 +339,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitBinaryExpr(CommonParserRulesParser.BinaryExprContext ctx) {
+  public T visitBinaryExpr(MeteorParserParser.BinaryExprContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -350,7 +350,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitArrayAccess(CommonParserRulesParser.ArrayAccessContext ctx) {
+  public T visitArrayAccess(MeteorParserParser.ArrayAccessContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -361,7 +361,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitAtom(CommonParserRulesParser.AtomContext ctx) {
+  public T visitAtom(MeteorParserParser.AtomContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -372,7 +372,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitAssignExpr(CommonParserRulesParser.AssignExprContext ctx) {
+  public T visitAssignExpr(MeteorParserParser.AssignExprContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -383,7 +383,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitAssignUnit(CommonParserRulesParser.AssignUnitContext ctx) {
+  public T visitAssignUnit(MeteorParserParser.AssignUnitContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -394,7 +394,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitVarDecl(CommonParserRulesParser.VarDeclContext ctx) {
+  public T visitVarDecl(MeteorParserParser.VarDeclContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -405,7 +405,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitBlockSuite(CommonParserRulesParser.BlockSuiteContext ctx) {
+  public T visitBlockSuite(MeteorParserParser.BlockSuiteContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -416,7 +416,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitJumpStmt(CommonParserRulesParser.JumpStmtContext ctx) {
+  public T visitJumpStmt(MeteorParserParser.JumpStmtContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -427,7 +427,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitCondStmt(CommonParserRulesParser.CondStmtContext ctx) {
+  public T visitCondStmt(MeteorParserParser.CondStmtContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -438,7 +438,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitWhileStmt(CommonParserRulesParser.WhileStmtContext ctx) {
+  public T visitWhileStmt(MeteorParserParser.WhileStmtContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -449,7 +449,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitForInitUnit(CommonParserRulesParser.ForInitUnitContext ctx) {
+  public T visitForInitUnit(MeteorParserParser.ForInitUnitContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -460,7 +460,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitForCondUnit(CommonParserRulesParser.ForCondUnitContext ctx) {
+  public T visitForCondUnit(MeteorParserParser.ForCondUnitContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -471,7 +471,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitForStepUnit(CommonParserRulesParser.ForStepUnitContext ctx) {
+  public T visitForStepUnit(MeteorParserParser.ForStepUnitContext ctx) {
     return visitChildren(ctx);
   }
 
@@ -482,7 +482,7 @@ public class CommonParserRulesBaseVisitor<T> extends AbstractParseTreeVisitor<T>
    * {@link #visitChildren} on {@code ctx}.</p>
    */
   @Override
-  public T visitForStmt(CommonParserRulesParser.ForStmtContext ctx) {
+  public T visitForStmt(MeteorParserParser.ForStmtContext ctx) {
     return visitChildren(ctx);
   }
 }
