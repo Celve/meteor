@@ -11,22 +11,62 @@ class PriorExpr(pos: Position) : Expr(pos) {
   }
 }
 
-class Atom(pos: Position) : Expr(pos) {
+class Atom(pos: Position, literal: String) : Expr(pos) {
   override fun accept(visitor: Visitor) {
     visitor.visit(this)
   }
 }
 
-class MethodAccess
+class InitExpr(pos: Position) : Expr(pos) {
+  override fun accept(visitor: Visitor) {
+    visitor.visit(this)
+  }
+}
 
-class MemberAccess
+class FuncCall(pos: Position, func: String, params: Array<Expr>) : Expr(pos) {
+  override fun accept(visitor: Visitor) {
+    visitor.visit(this)
+  }
+}
 
-class ArrayAccess
+class MethodAccess(pos: Position) : Expr(pos) {
+  override fun accept(visitor: Visitor) {
+    visitor.visit(this)
+  }
+}
 
-class SuffixExpr
+class MemberAccess(pos: Position, expr: Expr, member: String) : Expr(pos) {
+  override fun accept(visitor: Visitor) {
+    visitor.visit(this)
+  }
+}
 
-class PrefixExpr
+class ArrayAccess(pos: Position, array: Expr, index: Expr) : Expr(pos) {
+  override fun accept(visitor: Visitor) {
+    visitor.visit(this)
+  }
+}
 
-class BinaryExpr
+class SuffixExpr(pos: Position, expr: Expr, op: String) : Expr(pos) {
+  override fun accept(visitor: Visitor) {
+    visitor.visit(this)
+  }
+}
 
-class AssignExpr
+class PrefixExpr(pos: Position, op: String, expr: Expr) : Expr(pos) {
+  override fun accept(visitor: Visitor) {
+    visitor.visit(this)
+  }
+}
+
+class BinaryExpr(pos: Position, op: String, lhs: Expr, rhs: Expr) : Expr(pos) {
+  override fun accept(visitor: Visitor) {
+    visitor.visit(this)
+  }
+}
+
+class AssignExpr(pos: Position, lhs: Expr, rhs: Expr) : Expr(pos) {
+  override fun accept(visitor: Visitor) {
+    visitor.visit(this)
+  }
+}

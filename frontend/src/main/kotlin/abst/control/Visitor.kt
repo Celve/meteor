@@ -4,40 +4,40 @@ import abst.nodes.*
 
 open abstract class Visitor {
   // more
-  abstract fun visit(node: Prog)
+  abstract fun visit(curr: Prog)
+
+  // suites
+  abstract fun visit(curr: FuncSuite)
+  abstract fun visit(curr: ClassSuite)
+
+  // blocks
+  abstract fun visit(curr: For)
+  abstract fun visit(curr: While)
+  abstract fun visit(curr: Cond)
+  abstract fun visit(curr: Field)
 
   // expressions
-  abstract fun visit(node: PriorExpr)
-  abstract fun visit(node: Atom)
-  abstract fun visit(node: MethodAccess)
-  abstract fun visit(node: MemberAccess)
-  abstract fun visit(node: ArrayAccess)
-  abstract fun visit(node: SuffixExpr)
-  abstract fun visit(node: PrefixExpr)
-  abstract fun visit(node: BinaryExpr)
-  abstract fun visit(node: AssignExpr)
+  abstract fun visit(curr: PriorExpr)
+  abstract fun visit(curr: Atom)
+  abstract fun visit(curr: InitExpr)
+  abstract fun visit(curr: FuncCall)
+  abstract fun visit(curr: MethodAccess)
+  abstract fun visit(curr: MemberAccess)
+  abstract fun visit(curr: ArrayAccess)
+  abstract fun visit(curr: SuffixExpr)
+  abstract fun visit(curr: PrefixExpr)
+  abstract fun visit(curr: BinaryExpr)
+  abstract fun visit(curr: AssignExpr)
 
+  // definitions
+  abstract fun visit(curr: ClassDef)
+  abstract fun visit(curr: FuncDef)
+  abstract fun visit(curr: LambdaDef)
 
-  // statements
-  abstract fun visit(node: JumpStmt)
+  // declarations
+  abstract fun visit(curr: VarDecl)
+  abstract fun visit(curr: FuncDecl)
 
-  //  abstract fun visit(node: ExprStmt)
-  abstract fun visit(node: CondStmt)
-  abstract fun visit(node: ForStmt)
-  abstract fun visit(node: WhileStmt)
-  abstract fun visit(node: Def)
-  abstract fun visit(node: Decl)
-  abstract fun visit(node: FuncSuite)
-
-  // decl
-  abstract fun visit(node: VarDecl)
-  abstract fun visit(node: FuncDecl)
-
-  // def
-  abstract fun visit(node: ClassDef)
-  abstract fun visit(node: FuncDef)
-  abstract fun visit(node: LambdaDef)
-
-  // suite
-  abstract fun visit(node: BlockSuite)
+  // jumps
+  abstract fun visit(curr: Jump)
 }
