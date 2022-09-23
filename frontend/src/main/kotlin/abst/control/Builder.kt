@@ -9,7 +9,40 @@ import parser.MeteorParser
 
 class Builder : MeteorBaseVisitor<Base>() {
   override fun visitProg(ctx: MeteorParser.ProgContext?): Base {
-    return Prog(Position(ctx!!), Scope(null), ctx.children.map { visit(it) }.toTypedArray())
+    return Prog(Position(ctx!!), Scope(null), visit(ctx.suite()))
+  }
+
+  override fun visitSuite(ctx: MeteorParser.SuiteContext?): Base {
+    return Suite(Position(ctx!!), ctx.children?.map { visit(it) } ?: listOf())
+  }
+
+  override fun visitFuncSuite(ctx: MeteorParser.FuncSuiteContext?): Base {
+    return FuncSuite(Position(ctx!!), ctx.children?.map { visit(it) } ?: listOf())
+  }
+
+  override fun visitClassSuite(ctx: MeteorParser.ClassSuiteContext?): Base {
+    return ClassSuite(Position(ctx!!), ctx.children?.map { visit(it) } ?: listOf())
+  }
+
+  override fun visitClassDef(ctx: MeteorParser.ClassDefContext?): Base {
+    return ClassDef(Position(ctx!!), ctx.className.text, visit(ctx.classSuite()))
+  }
+
+  override fun visitFuncDef(ctx: MeteorParser.FuncDefContext?): Base {
+    return FuncDef(
+      Position(ctx!!),
+      Scope(null),
+      ctx.returnType().text,
+      ctx.funcName.text,
+      ctx.paramDefList().varType().map { it.text },
+      ctx.paramDefList().Id().map { it.text },
+      visit(ctx.funcSuite())
+    )
+  }
+
+  override fun visitSimpleSuite(ctx: MeteorParser.SimpleSuiteContext?): Base {
+    // TODO: double check this, I don't sure the getChild() work
+    return SimpleSuite(Position(ctx!!), visit(ctx.getChild(0)))
   }
 
   override fun visitFor(ctx: MeteorParser.ForContext?): Base {
@@ -49,11 +82,6 @@ class Builder : MeteorBaseVisitor<Base>() {
       thenDo,
       elseDo,
     )
-  }
-
-  // TODO: solve that the extended block should have a local scope
-  override fun visitFuncSuite(ctx: MeteorParser.FuncSuiteContext?): Base {
-    return FuncSuite(Position(ctx!!), ctx.stmt().map { visit(it) }.toTypedArray())
   }
 
   override fun visitAtom(ctx: MeteorParser.AtomContext?): Base {

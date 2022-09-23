@@ -11,7 +11,7 @@ block: for | while | cond | field;
 field: '{' funcSuite '}';
 
 // declarations
-decl: varDecl | funcDecl;
+decl: varDecl;
 
 // definitions
 def: classDef | funcDef | lambdaDef;
@@ -46,8 +46,8 @@ classCtor: classId = Id paramDefList? '{' funcSuite '}';
 // 9. function
 returnType: primitiveType | nonPrimitiveType | voidType;
 funcSuite: (stmt | block | decl | jump)*;
-funcDef: returnType funcId = Id paramDefList '{' funcSuite '}';
-funcDecl: returnType funcId = Id paramDefList '{' funcSuite '}';
+funcDef: returnType funcName = Id paramDefList '{' funcSuite '}';
+//funcDecl: returnType funcId = Id paramDefList '{' funcSuite '}';
 
 // 9.1. function definition
 paramDefList: '(' (varType Id (',' varType Id)*)? ')';
@@ -109,10 +109,10 @@ varDecl: varType assignUnit (',' assignUnit)* ';';
 
 // 11.2. conditional stmtements
 jump: (op = Return expr? | op = Break | op = Continue) ';';
-extendedBlock:  stmt | jump | block;
+simpleSuite:  stmt | jump;
+extendedBlock: simpleSuite | block;
 // TODO: detail the stmt
 cond: If '(' expr ')' extendedBlock (Else extendedBlock)?;
-
 // 11.3. loops
 while: While '(' expr ')' extendedBlock;
 forInitUnit: (varDecl | expr ';') | ';';

@@ -209,18 +209,6 @@ public class MeteorBaseListener implements MeteorListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterFuncDecl(MeteorParser.FuncDeclContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitFuncDecl(MeteorParser.FuncDeclContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterParamDefList(MeteorParser.ParamDefListContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -468,6 +456,18 @@ public class MeteorBaseListener implements MeteorListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitJump(MeteorParser.JumpContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterSimpleSuite(MeteorParser.SimpleSuiteContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitSimpleSuite(MeteorParser.SimpleSuiteContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

@@ -3,15 +3,25 @@ package abst.nodes
 import abst.control.Visitor
 import abst.utils.Position
 
-abstract class Suite(pos: Position) : Base(pos)
-
-class ClassSuite(pos: Position, val children: Array<Base>) : Suite(pos) {
+class Suite(pos: Position, val children: List<Base>) : Base(pos) {
   override fun accept(visitor: Visitor) {
     visitor.visit(this)
   }
 }
 
-class FuncSuite(pos: Position, val children: Array<Base>) : Suite(pos) {
+class ClassSuite(pos: Position, val children: List<Base>) : Base(pos) {
+  override fun accept(visitor: Visitor) {
+    visitor.visit(this)
+  }
+}
+
+class FuncSuite(pos: Position, val children: List<Base>) : Base(pos) {
+  override fun accept(visitor: Visitor) {
+    visitor.visit(this)
+  }
+}
+
+class SimpleSuite(pos: Position, val child: Base) : Base(pos) {
   override fun accept(visitor: Visitor) {
     visitor.visit(this)
   }

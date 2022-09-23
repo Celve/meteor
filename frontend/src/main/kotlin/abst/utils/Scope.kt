@@ -1,12 +1,13 @@
 package abst.utils
 
 // scopes are a tree-structure
-class Scope(val parent: Scope?) {
-  // map from name to type
+class Scope(var parent: Scope?) {
+  // mapping rules:
   // class -> class
-  // func() -> func type
+  // class() -> (type, type): explicit/implicit
+  // func() -> (type, type): type
   // variable -> var type
-  // class.method -> func type
+  // class.method() -> (type, type): type
   // class.member -> var type
   private val variables: HashMap<String, String> = HashMap()
 

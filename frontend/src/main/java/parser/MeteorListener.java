@@ -168,16 +168,6 @@ public interface MeteorListener extends ParseTreeListener {
 	 */
 	void exitFuncDef(MeteorParser.FuncDefContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link MeteorParser#funcDecl}.
-	 * @param ctx the parse tree
-	 */
-	void enterFuncDecl(MeteorParser.FuncDeclContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link MeteorParser#funcDecl}.
-	 * @param ctx the parse tree
-	 */
-	void exitFuncDecl(MeteorParser.FuncDeclContext ctx);
-	/**
 	 * Enter a parse tree produced by {@link MeteorParser#paramDefList}.
 	 * @param ctx the parse tree
 	 */
@@ -411,6 +401,16 @@ public interface MeteorListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitJump(MeteorParser.JumpContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MeteorParser#simpleSuite}.
+	 * @param ctx the parse tree
+	 */
+	void enterSimpleSuite(MeteorParser.SimpleSuiteContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#simpleSuite}.
+	 * @param ctx the parse tree
+	 */
+	void exitSimpleSuite(MeteorParser.SimpleSuiteContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link MeteorParser#extendedBlock}.
 	 * @param ctx the parse tree

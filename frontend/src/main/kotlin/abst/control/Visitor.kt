@@ -7,14 +7,28 @@ open abstract class Visitor {
   abstract fun visit(curr: Prog)
 
   // suites
+  abstract fun visit(curr: Suite)
   abstract fun visit(curr: FuncSuite)
   abstract fun visit(curr: ClassSuite)
+  abstract fun visit(curr: SimpleSuite)
+
+  // definitions
+  abstract fun visit(curr: ClassDef)
+  abstract fun visit(curr: FuncDef)
+  abstract fun visit(curr: LambdaDef)
+
+  // declarations
+  abstract fun visit(curr: VarDecl)
+  abstract fun visit(curr: FuncDecl)
 
   // blocks
   abstract fun visit(curr: For)
   abstract fun visit(curr: While)
   abstract fun visit(curr: Cond)
   abstract fun visit(curr: Field)
+
+  // jumps
+  abstract fun visit(curr: Jump)
 
   // expressions
   abstract fun visit(curr: PriorExpr)
@@ -29,15 +43,5 @@ open abstract class Visitor {
   abstract fun visit(curr: BinaryExpr)
   abstract fun visit(curr: AssignExpr)
 
-  // definitions
-  abstract fun visit(curr: ClassDef)
-  abstract fun visit(curr: FuncDef)
-  abstract fun visit(curr: LambdaDef)
 
-  // declarations
-  abstract fun visit(curr: VarDecl)
-  abstract fun visit(curr: FuncDecl)
-
-  // jumps
-  abstract fun visit(curr: Jump)
 }

@@ -130,13 +130,6 @@ public class MeteorBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitFuncDecl(MeteorParser.FuncDeclContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
 	@Override public T visitParamDefList(MeteorParser.ParamDefListContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
@@ -278,6 +271,13 @@ public class MeteorBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
 	@Override public T visitJump(MeteorParser.JumpContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitSimpleSuite(MeteorParser.SimpleSuiteContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
