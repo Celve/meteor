@@ -35,11 +35,8 @@ voidType: Void;
 // TODO: array objects support assign by reference
 
 // 7.3.2 array creation 
-initExpr:
-	New varType ('[' expr? ']')* '[]'*; // it make sure that all brackets with int is in the head
 
-// 7.3.3. built-in methods, or generally, method calls methodCall: (instName = Id) '.' (methodName =
-// Id) paramInputList?;
+// 7.3.3. built-in methods, or generally, method calls
 
 // 7.3.4 multi-dimensional arrays
 
@@ -48,8 +45,7 @@ nonPrimitiveType: Id;
 classSuite: '{' (decl | classCtor)* '}';
 classDef: Class className = Id classSuite;
 
-// 8.3. access class members and call class methods (in 7.3.3.) memberAccess: className=Id '.'
-// classMember=Id;
+// 8.3. access class members and call class methods (in 7.3.3.)
 
 // 8.4 class constructor
 classCtor: classId = Id paramDefList? '{' stmt* '}';
@@ -59,7 +55,6 @@ returnType: primitiveType | nonPrimitiveType | voidType;
 funcSuite: '{' stmt* '}';
 funcDef: returnType funcId = Id paramDefList funcSuite;
 funcDecl: returnType funcId = Id paramDefList funcSuite;
-funcCall: (funcId = Id) paramInputList;
 
 // 9.1. function definition
 paramDefList: '(' (varType Id (',' varType Id)*)? ')';
@@ -77,8 +72,6 @@ basicExpr:
 	| StringLiteral
 	| Id
 	| This
-	| funcCall
-	| initExpr
 	| True
 	| False
 	| Null;
@@ -97,11 +90,13 @@ prefixOps:
 expr:
 	'(' expr ')' #priorExpr
 	| basicExpr #atom
+	| New varType ('[' expr? ']')* '[]'* #initExpr // it make sure that all brackets with int is in the head
+  | (funcName = Id) paramInputList #funcCall
 	| expr '.' (methodName = Id) paramInputList #methodAccess
 	| expr '.' (classMember = Id) #memberAccess
 	| expr ('[' expr ']')+ #arrayAccess
-	| expr (Increment | Decrement) #suffixExpr
-	| prefixOps expr #prefixExpr
+	| expr op = (Increment | Decrement) #suffixExpr
+	| <assoc=right> prefixOps expr #prefixExpr
 	| expr op = (Mul | Div | Mod) expr #binaryExpr
 	| expr op = (Add | Sub) expr #binaryExpr
 	| expr op = (LeftShift | RightShift) expr #binaryExpr
@@ -112,7 +107,7 @@ expr:
 	| expr op = BitwiseOr expr #binaryExpr
 	| expr op = LogicalAnd expr #binaryExpr
 	| expr op = LogicalOr expr #binaryExpr
-	| expr Assign expr #assignExpr
+	| <assoc=right> expr Assign expr #assignExpr
 	;
 
 // 11.1. variable declarations

@@ -20,12 +20,19 @@ tasks.generateGrammarSource {
     into("src/main/java/parser")
   }
 
-//   insert package into the first line, only applicable in macOS
+  // insert package into the first line, only applicable in macOS
   exec {
     // its default dir is project dir
-    workingDir = File("src/main/java/parser")
-
-    //  on macOS
     commandLine("./package.sh")
   }
+}
+
+tasks.named("run", JavaExec::class) {
+  // redirect the input from console
+  standardInput = System.`in`
+}
+
+application {
+  // Define the main class for the application.
+  mainClass.set("MainKt")
 }

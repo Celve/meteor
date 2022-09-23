@@ -1,4 +1,4 @@
-lexer grammar MeteorLexer;
+lexer grammar Stardust;
 
 
 // arithmetic operators
