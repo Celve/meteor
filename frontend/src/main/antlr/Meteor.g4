@@ -1,24 +1,17 @@
-grammar MeteorParser;
+grammar Meteor;
 
-import MeteorLexer;
+import Stardust;
 
 // program
-prog: stmt*;
+prog: suite;
+suite: (stmt | def | block | decl | jump)*;
 
-// statements
-stmt:
-	jumpStmt
-	| exprStmt
-	| condStmt
-	| forStmt
-	| whileStmt
-	| def
-	| decl
-	| funcSuite;
+// block
+block: for | while | cond | field;
+field: '{' funcSuite '}';
 
 // declarations
 decl: varDecl | funcDecl;
-// varDecl: varType Id Assign expr ';'; funcDecl: returnType Id LeftParen paramDeclList ';';
 
 // definitions
 def: classDef | funcDef | lambdaDef;
@@ -42,19 +35,19 @@ voidType: Void;
 
 // 8. class, namely non-primitive type
 nonPrimitiveType: Id;
-classSuite: '{' (decl | classCtor)* '}';
-classDef: Class className = Id classSuite;
+classSuite: (decl | def | classCtor)*;
+classDef: Class className = Id '{' classSuite '}';
 
 // 8.3. access class members and call class methods (in 7.3.3.)
 
 // 8.4 class constructor
-classCtor: classId = Id paramDefList? '{' stmt* '}';
+classCtor: classId = Id paramDefList? '{' funcSuite '}';
 
 // 9. function
 returnType: primitiveType | nonPrimitiveType | voidType;
-funcSuite: '{' stmt* '}';
-funcDef: returnType funcId = Id paramDefList funcSuite;
-funcDecl: returnType funcId = Id paramDefList funcSuite;
+funcSuite: (stmt | block | decl | jump)*;
+funcDef: returnType funcId = Id paramDefList '{' funcSuite '}';
+funcDecl: returnType funcId = Id paramDefList '{' funcSuite '}';
 
 // 9.1. function definition
 paramDefList: '(' (varType Id (',' varType Id)*)? ')';
@@ -64,7 +57,6 @@ paramInputList: '(' (expr (',' expr)*)? ')';
 // 9.4. lambda
 lambdaDef:
 	'[' (op = '&')? ']' paramInputList '->' '{' stmt* '}';
-lambdaCall: lambdaDef paramInputList;
 
 // 10.1. basic expressions
 basicExpr:
@@ -78,7 +70,7 @@ basicExpr:
 
 // 10.2. arithmetic expressions and assign expressions leftValue: Id | memberAccess | arrayAccess;
 // TODO: the formal parameters of function, see in the doc
-exprStmt: expr ';';
+stmt: expr? ';';
 prefixOps:
 	Increment
 	| Decrement
@@ -91,6 +83,7 @@ expr:
 	'(' expr ')' #priorExpr
 	| basicExpr #atom
 	| New varType ('[' expr? ']')* '[]'* #initExpr // it make sure that all brackets with int is in the head
+	| lambdaDef paramInputList #lambdaCall
   | (funcName = Id) paramInputList #funcCall
 	| expr '.' (methodName = Id) paramInputList #methodAccess
 	| expr '.' (classMember = Id) #memberAccess
@@ -101,7 +94,7 @@ expr:
 	| expr op = (Add | Sub) expr #binaryExpr
 	| expr op = (LeftShift | RightShift) expr #binaryExpr
 	| expr op = (Less | LessEqual | Greater | GreaterEqual) expr #binaryExpr
-	| expr op = (Equal | NotEqual) #binaryExpr
+	| expr op = (Equal | NotEqual) expr #binaryExpr
 	| expr op = BitwiseAnd expr #binaryExpr
 	| expr op = BitwiseXor expr #binaryExpr
 	| expr op = BitwiseOr expr #binaryExpr
@@ -115,15 +108,15 @@ assignUnit: Id (Assign expr)?;
 varDecl: varType assignUnit (',' assignUnit)* ';';
 
 // 11.2. conditional stmtements
-blockSuite: '{' stmt* '}' | stmt;
+jump: (op = Return expr? | op = Break | op = Continue) ';';
+extendedBlock:  stmt | jump | block;
 // TODO: detail the stmt
-jumpStmt: (Return expr? | Break | Continue) ';';
-condStmt: If '(' expr ')' blockSuite (Else blockSuite)?;
+cond: If '(' expr ')' extendedBlock (Else extendedBlock)?;
 
 // 11.3. loops
-whileStmt: While '(' expr ')' blockSuite;
+while: While '(' expr ')' extendedBlock;
 forInitUnit: (varDecl | expr ';') | ';';
 forCondUnit: expr? ';';
 forStepUnit: expr?;
-forStmt:
-	For '(' forInitUnit forCondUnit forStepUnit ')' blockSuite;
+for:
+	For '(' forInitUnit forCondUnit forStepUnit ')' extendedBlock;
