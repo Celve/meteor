@@ -1,10 +1,11 @@
 package abst.nodes
 
 import abst.control.Visitor
+import abst.utils.GlobalScope
 import abst.utils.Position
-import abst.utils.Scope
 
-class Prog(pos: Position, val scope: Scope, val suite: Base) : Base(pos) {
+class ProgNode(pos: Position, val suite: BaseNode) : BaseNode(pos) {
+  val scope = GlobalScope(null)
   override fun accept(visitor: Visitor) {
     visitor.visit(this)
   }

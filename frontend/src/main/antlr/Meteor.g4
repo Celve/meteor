@@ -78,7 +78,6 @@ prefixOps:
 	| Sub
 	| LogicalNot
 	| BitwiseNot;
-// TODO: resolve some associativity
 expr:
 	'(' expr ')' #priorExpr
 	| basicExpr #atom
@@ -100,7 +99,7 @@ expr:
 	| expr op = BitwiseOr expr #binaryExpr
 	| expr op = LogicalAnd expr #binaryExpr
 	| expr op = LogicalOr expr #binaryExpr
-	| <assoc=right> expr Assign expr #assignExpr
+	| <assoc=right> expr Assign expr #assignExpr // left value cannot be judged here, due to indirect left recursion
 	;
 
 // 11.1. variable declarations

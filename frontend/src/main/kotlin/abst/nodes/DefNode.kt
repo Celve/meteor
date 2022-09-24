@@ -2,31 +2,33 @@ package abst.nodes
 
 import abst.control.Visitor
 import abst.utils.Position
-import abst.utils.Scope
+import meta.ClassMeta
+import meta.FuncMeta
 
-abstract class Def(pos: Position) : Base(pos)
+abstract class DefNode(pos: Position) : BaseNode(pos)
 
-class ClassDef(pos: Position, val scope: Scope, val className: String, val classSuite: Base) : Def(pos) {
+class ClassDefNode(pos: Position, val className: String, val classSuite: BaseNode) : DefNode(pos) {
+  val classMeta = ClassMeta(className, listOf(), listOf())
   override fun accept(visitor: Visitor) {
     visitor.visit(this)
   }
 }
 
-class FuncDef(
+class FuncDefNode(
   pos: Position,
-  val scope: Scope,
-  val returnType: String,
   val funcName: String,
-  val paramType: List<String>,
-  val paramName: List<String>,
-  val funcSuite: Base
-) : Def(pos) {
+  val paramTypes: List<String>,
+  val paramNames: List<String>,
+  val returnType: String,
+  val funcSuite: BaseNode
+) : DefNode(pos) {
+  val funcMeta = FuncMeta(funcName, listOf(), listOf(), null)
   override fun accept(visitor: Visitor) {
     visitor.visit(this)
   }
 }
 
-class LambdaDef(pos: Position) : Def(pos) {
+class LambdaDefNode(pos: Position) : DefNode(pos) {
   override fun accept(visitor: Visitor) {
     visitor.visit(this)
   }

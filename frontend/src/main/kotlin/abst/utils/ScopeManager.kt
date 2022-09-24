@@ -15,4 +15,8 @@ class ScopeManager {
   fun first(): Scope {
     return scopes.first()
   }
+
+  fun last(): Scope {
+    return scopes.last()
+  }
 }

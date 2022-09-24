@@ -4,44 +4,45 @@ import abst.nodes.*
 
 open abstract class Visitor {
   // more
-  abstract fun visit(curr: Prog)
+  abstract fun visit(curr: ProgNode)
 
   // suites
-  abstract fun visit(curr: Suite)
-  abstract fun visit(curr: FuncSuite)
-  abstract fun visit(curr: ClassSuite)
-  abstract fun visit(curr: SimpleSuite)
+  abstract fun visit(curr: SuiteNode)
+  abstract fun visit(curr: FuncSuiteNode)
+  abstract fun visit(curr: ClassSuiteNode)
+  abstract fun visit(curr: SimpleSuiteNode)
 
   // definitions
-  abstract fun visit(curr: ClassDef)
-  abstract fun visit(curr: FuncDef)
-  abstract fun visit(curr: LambdaDef)
+  abstract fun visit(curr: ClassDefNode)
+  abstract fun visit(curr: FuncDefNode)
+  abstract fun visit(curr: LambdaDefNode)
 
   // declarations
-  abstract fun visit(curr: VarDecl)
-  abstract fun visit(curr: FuncDecl)
+  abstract fun visit(curr: VarDeclNode)
+  abstract fun visit(curr: FuncDeclNode)
 
   // blocks
-  abstract fun visit(curr: For)
-  abstract fun visit(curr: While)
-  abstract fun visit(curr: Cond)
-  abstract fun visit(curr: Field)
+  abstract fun visit(curr: ForNode)
+  abstract fun visit(curr: WhileNode)
+  abstract fun visit(curr: CondNode)
+  abstract fun visit(curr: FieldNode)
 
   // jumps
-  abstract fun visit(curr: Jump)
+  abstract fun visit(curr: JumpNode)
 
   // expressions
-  abstract fun visit(curr: PriorExpr)
-  abstract fun visit(curr: Atom)
-  abstract fun visit(curr: InitExpr)
-  abstract fun visit(curr: FuncCall)
-  abstract fun visit(curr: MethodAccess)
-  abstract fun visit(curr: MemberAccess)
-  abstract fun visit(curr: ArrayAccess)
-  abstract fun visit(curr: SuffixExpr)
-  abstract fun visit(curr: PrefixExpr)
-  abstract fun visit(curr: BinaryExpr)
-  abstract fun visit(curr: AssignExpr)
+  abstract fun visit(curr: ExprNode)
+  abstract fun visit(curr: PriorExprNode)
+  abstract fun visit(curr: AtomNode)
+  abstract fun visit(curr: InitExprNode)
+  abstract fun visit(curr: FuncCallNode)
+  abstract fun visit(curr: MethodAccessNode)
+  abstract fun visit(curr: MemberAccessNode)
+  abstract fun visit(curr: ArrayAccessNode)
+  abstract fun visit(curr: SuffixExprNode)
+  abstract fun visit(curr: PrefixExprNode)
+  abstract fun visit(curr: BinaryExprNode)
+  abstract fun visit(curr: AssignExprNode)
 
 
 }

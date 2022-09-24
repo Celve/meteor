@@ -1,5 +1,5 @@
 import abst.control.Builder
-import abst.nodes.Prog
+import abst.nodes.ProgNode
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import parser.MeteorLexer
@@ -15,5 +15,5 @@ fun main(args: Array<String>) {
   val builder = Builder()
   val builderRoot = builder.visitProg(parserRoot)
   val checker = Checker()
-  checker.visit(builderRoot as Prog)
+  checker.visit(builderRoot as ProgNode)
 }

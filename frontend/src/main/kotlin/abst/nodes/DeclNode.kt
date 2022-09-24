@@ -3,15 +3,16 @@ package abst.nodes
 import abst.control.Visitor
 import abst.utils.Position
 
-abstract class DeclNode(pos: Position) : Base(pos)
+abstract class DeclNode(pos: Position) : BaseNode(pos)
 
-class VarDecl(pos: Position) : DeclNode(pos) {
+class VarDeclNode(pos: Position, val type: String, val assigns: List<Pair<String, BaseNode?>>) :
+  DeclNode(pos) {
   override fun accept(visitor: Visitor) {
     visitor.visit(this)
   }
 }
 
-class FuncDecl(pos: Position) : DeclNode(pos) {
+class FuncDeclNode(pos: Position) : DeclNode(pos) {
   override fun accept(visitor: Visitor) {
     visitor.visit(this)
   }
