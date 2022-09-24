@@ -3,7 +3,7 @@ package abst.nodes
 import abst.control.Visitor
 import abst.utils.Position
 
-class Suite(pos: Position, val children: List<Base>) : Base(pos) {
+class SuiteNode(pos: Position, val children: List<Base>) : Base(pos) {
   override fun accept(visitor: Visitor) {
     visitor.visit(this)
   }
