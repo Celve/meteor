@@ -1,13 +1,13 @@
 package abst.nodes
 
 import abst.control.Visitor
-import abst.utils.Position
+import abst.utils.CodePos
 import meta.ClassMeta
 import meta.FuncMeta
 
-abstract class DefNode(pos: Position) : BaseNode(pos)
+abstract class DefNode(pos: CodePos) : BaseNode(pos)
 
-class ClassDefNode(pos: Position, val className: String, val classSuite: BaseNode?) : DefNode(pos) {
+class ClassDefNode(pos: CodePos, val className: String, val classSuite: BaseNode?) : DefNode(pos) {
   val classMeta = ClassMeta(className, listOf(), listOf())
   override fun accept(visitor: Visitor) {
     visitor.visit(this)
@@ -15,7 +15,7 @@ class ClassDefNode(pos: Position, val className: String, val classSuite: BaseNod
 }
 
 class ClassCtorNode(
-  pos: Position,
+  pos: CodePos,
   val className: String,
   val paramTypes: List<String>,
   val paramNames: List<String>,
@@ -28,7 +28,7 @@ class ClassCtorNode(
 }
 
 class FuncDefNode(
-  pos: Position,
+  pos: CodePos,
   val funcName: String,
   val paramTypes: List<String>,
   val paramNames: List<String>,
@@ -41,7 +41,7 @@ class FuncDefNode(
   }
 }
 
-class LambdaDefNode(pos: Position) : DefNode(pos) {
+class LambdaDefNode(pos: CodePos) : DefNode(pos) {
   override fun accept(visitor: Visitor) {
     visitor.visit(this)
   }

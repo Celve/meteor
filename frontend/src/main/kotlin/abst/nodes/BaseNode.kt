@@ -1,8 +1,8 @@
 package abst.nodes
 
 import abst.control.Visitor
-import abst.utils.Position
+import abst.utils.CodePos
 
-open abstract class BaseNode(pos: Position) {
+open abstract class BaseNode(val pos: CodePos) {
   abstract fun accept(visitor: Visitor)
 }

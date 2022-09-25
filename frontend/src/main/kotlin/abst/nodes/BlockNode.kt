@@ -1,15 +1,15 @@
 package abst.nodes
 
 import abst.control.Visitor
-import abst.utils.Position
+import abst.utils.CodePos
 import abst.utils.Scope
 
-abstract class BlockNode(pos: Position) : BaseNode(pos)
+abstract class BlockNode(pos: CodePos) : BaseNode(pos)
 
 // init could be varDecl or expr
 // suite is actually extendedBlock, which corresponds to stmt, jump, or block
 class ForNode(
-  pos: Position,
+  pos: CodePos,
   scope: Scope,
   val init: BaseNode?,
   val cond: ExprNode?,
@@ -22,19 +22,19 @@ class ForNode(
   }
 }
 
-class WhileNode(pos: Position, val cond: ExprNode, val suite: BaseNode) : BlockNode(pos) {
+class WhileNode(pos: CodePos, val cond: ExprNode, val suite: BaseNode) : BlockNode(pos) {
   override fun accept(visitor: Visitor) {
     visitor.visit(this)
   }
 }
 
-class CondNode(pos: Position, val cond: ExprNode, val thenDo: BaseNode?, val elseDo: BaseNode?) : BlockNode(pos) {
+class CondNode(pos: CodePos, val cond: ExprNode, val thenDo: BaseNode?, val elseDo: BaseNode?) : BlockNode(pos) {
   override fun accept(visitor: Visitor) {
     visitor.visit(this)
   }
 }
 
-class FieldNode(pos: Position, val suite: FuncSuiteNode) : BlockNode(pos) {
+class FieldNode(pos: CodePos, val suite: FuncSuiteNode) : BlockNode(pos) {
   override fun accept(visitor: Visitor) {
     visitor.visit(this)
   }
