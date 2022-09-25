@@ -14,12 +14,12 @@ open abstract class Visitor {
 
   // definitions
   abstract fun visit(curr: ClassDefNode)
+  abstract fun visit(curr: ClassCtorNode)
   abstract fun visit(curr: FuncDefNode)
   abstract fun visit(curr: LambdaDefNode)
 
   // declarations
   abstract fun visit(curr: VarDeclNode)
-  abstract fun visit(curr: FuncDeclNode)
 
   // blocks
   abstract fun visit(curr: ForNode)

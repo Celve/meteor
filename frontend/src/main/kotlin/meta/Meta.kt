@@ -15,7 +15,7 @@ class FuncMeta(
   val funcName: String,
   val paramTypes: List<ClassMeta>,
   val paramNames: List<String>,
-  val returnType: ClassMeta?,
+  var returnType: ClassMeta?,
 ) {
   val funcScope = ClassScope(null)
 }

@@ -776,11 +776,11 @@ public class MeteorParser extends Parser {
 		public DeclContext decl(int i) {
 			return getRuleContext(DeclContext.class,i);
 		}
-		public List<DefContext> def() {
-			return getRuleContexts(DefContext.class);
+		public List<FuncDefContext> funcDef() {
+			return getRuleContexts(FuncDefContext.class);
 		}
-		public DefContext def(int i) {
-			return getRuleContext(DefContext.class,i);
+		public FuncDefContext funcDef(int i) {
+			return getRuleContext(FuncDefContext.class,i);
 		}
 		public List<ClassCtorContext> classCtor() {
 			return getRuleContexts(ClassCtorContext.class);
@@ -817,7 +817,7 @@ public class MeteorParser extends Parser {
 			setState(118);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (((_la) & ~0x3f) == 0 && ((1L << _la) & 576463982387265536L) != 0) {
+			while (((_la) & ~0x3f) == 0 && ((1L << _la) & 576461783095574528L) != 0) {
 				{
 				setState(116);
 				_errHandler.sync(this);
@@ -831,7 +831,7 @@ public class MeteorParser extends Parser {
 				case 2:
 					{
 					setState(114);
-					def();
+					funcDef();
 					}
 					break;
 				case 3:
@@ -3347,7 +3347,7 @@ public class MeteorParser extends Parser {
 		"\u0000\u0000i\r\u0001\u0000\u0000\u0000jh\u0001\u0000\u0000\u0000kl\u0007"+
 		"\u0000\u0000\u0000l\u000f\u0001\u0000\u0000\u0000mn\u0005$\u0000\u0000"+
 		"n\u0011\u0001\u0000\u0000\u0000op\u0005;\u0000\u0000p\u0013\u0001\u0000"+
-		"\u0000\u0000qu\u0003\b\u0004\u0000ru\u0003\n\u0005\u0000su\u0003\u0018"+
+		"\u0000\u0000qu\u0003\b\u0004\u0000ru\u0003\u001e\u000f\u0000su\u0003\u0018"+
 		"\f\u0000tq\u0001\u0000\u0000\u0000tr\u0001\u0000\u0000\u0000ts\u0001\u0000"+
 		"\u0000\u0000ux\u0001\u0000\u0000\u0000vt\u0001\u0000\u0000\u0000vw\u0001"+
 		"\u0000\u0000\u0000w\u0015\u0001\u0000\u0000\u0000xv\u0001\u0000\u0000"+

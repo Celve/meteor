@@ -35,7 +35,7 @@ voidType: Void;
 
 // 8. class, namely non-primitive type
 nonPrimitiveType: Id;
-classSuite: (decl | def | classCtor)*;
+classSuite: (decl | funcDef | classCtor)*;
 classDef: Class className = Id '{' classSuite '}';
 
 // 8.3. access class members and call class methods (in 7.3.3.)

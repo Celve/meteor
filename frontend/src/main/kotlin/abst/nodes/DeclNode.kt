@@ -11,9 +11,3 @@ class VarDeclNode(pos: Position, val type: String, val assigns: List<Pair<String
     visitor.visit(this)
   }
 }
-
-class FuncDeclNode(pos: Position) : DeclNode(pos) {
-  override fun accept(visitor: Visitor) {
-    visitor.visit(this)
-  }
-}

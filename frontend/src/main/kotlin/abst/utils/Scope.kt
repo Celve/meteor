@@ -10,7 +10,7 @@ open class Scope(var parent: Scope?) {
   }
 
   open fun getVar(name: String): ClassMeta? {
-    return parent?.getVar(name) ?: throw Exception("invalid query of non-existing variable")
+    return parent?.getVar(name)
   }
 
   open fun testVar(name: String): Boolean {
@@ -22,7 +22,7 @@ open class Scope(var parent: Scope?) {
   }
 
   open fun getFunc(name: String): FuncMeta? {
-    return parent?.getFunc(name) ?: throw Exception("invalid query of non-existing function")
+    return parent?.getFunc(name)
   }
 
   open fun setClass(name: String, type: ClassMeta) {
@@ -30,7 +30,7 @@ open class Scope(var parent: Scope?) {
   }
 
   open fun getClass(name: String): ClassMeta? {
-    return parent?.getClass(name) ?: throw Exception("invalid query of non-existing class")
+    return parent?.getClass(name)
   }
 }
 
@@ -46,8 +46,8 @@ class GlobalScope(parent: Scope?) : Scope(parent) {
     vars[name] = type
   }
 
-  override fun getVar(name: String): ClassMeta {
-    return vars[name] ?: (parent?.getVar(name) ?: throw Exception("no declaration of $name"))
+  override fun getVar(name: String): ClassMeta? {
+    return vars[name] ?: parent?.getVar(name)
   }
 
   override fun testVar(name: String): Boolean {
@@ -61,8 +61,8 @@ class GlobalScope(parent: Scope?) : Scope(parent) {
     funcs[name] = type
   }
 
-  override fun getFunc(name: String): FuncMeta {
-    return funcs[name] ?: (parent?.getFunc(name) ?: throw Exception("no declaration of $name"))
+  override fun getFunc(name: String): FuncMeta? {
+    return funcs[name] ?: parent?.getFunc(name)
   }
 
   override fun setClass(name: String, type: ClassMeta) {
@@ -72,8 +72,20 @@ class GlobalScope(parent: Scope?) : Scope(parent) {
     classes[name] = type
   }
 
-  override fun getClass(name: String): ClassMeta {
-    return classes[name] ?: (parent?.getClass(name) ?: throw Exception("no declaration of $name"))
+  override fun getClass(name: String): ClassMeta? {
+    return classes[name] ?: parent?.getClass(name)
+  }
+
+  fun debug() {
+    println("[globalScope.vars]")
+    vars.forEach { print(it.key + " ") }
+    println()
+    println("[globalScope.classes]")
+    classes.forEach { print(it.key + " ") }
+    println()
+    println("[globalScope.funcs]")
+    funcs.forEach { println(it.key + " ") }
+    println()
   }
 }
 
@@ -88,8 +100,8 @@ class ClassScope(parent: Scope?) : Scope(parent) {
     members[name] = type
   }
 
-  override fun getVar(name: String): ClassMeta {
-    return members[name] ?: (parent?.getVar(name) ?: throw Exception("no declaration of $name"))
+  override fun getVar(name: String): ClassMeta? {
+    return members[name] ?: parent?.getVar(name)
   }
 
   override fun setFunc(name: String, type: FuncMeta) {
@@ -99,8 +111,8 @@ class ClassScope(parent: Scope?) : Scope(parent) {
     methods[name] = type
   }
 
-  override fun getFunc(name: String): FuncMeta {
-    return methods[name] ?: (parent?.getFunc(name) ?: throw Exception("no declaration of $name"))
+  override fun getFunc(name: String): FuncMeta? {
+    return methods[name] ?: parent?.getFunc(name)
   }
 }
 
@@ -114,7 +126,7 @@ class FuncScope(parent: Scope?) : Scope(parent) {
     vars[name] = type
   }
 
-  override fun getVar(name: String): ClassMeta {
-    return vars[name] ?: (parent?.getVar(name) ?: throw Exception("no declaration of $name"))
+  override fun getVar(name: String): ClassMeta? {
+    return vars[name] ?: parent?.getVar(name)
   }
 }
