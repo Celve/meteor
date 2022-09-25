@@ -8,4 +8,3 @@
  */
 
 rootProject.name = "meteor"
-include("app", "list", "utilities", "frontend")
