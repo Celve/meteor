@@ -17,7 +17,7 @@ tasks.generateGrammarSource {
   // copy generated files to source
   copy {
     from("${buildDir}/generated-src/antlr/main")
-    into("src/main/java/parser")
+    into("src/main/java/frontend/parser")
   }
 
   // insert package into the first line, only applicable in macOS
@@ -30,6 +30,8 @@ tasks.generateGrammarSource {
 tasks.named("run", JavaExec::class) {
   // redirect the input from console
   standardInput = System.`in`
+
+  // disable the generation task
 }
 
 application {

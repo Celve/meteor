@@ -1,23 +1,41 @@
 package frontend.abst.meta
 
 import frontend.abst.utils.ClassScope
+import frontend.abst.utils.FuncScope
 
 
-class ClassMeta(
+data class ClassMeta(
   val className: String,
-  val classMembers: List<VarMeta>,
-  val classMethods: List<FuncMeta>,
 ) {
   val classScope = ClassScope(null)
 }
 
-class FuncMeta(
+data class FuncMeta(
   val funcName: String,
-  val paramTypes: List<ClassMeta>,
-  val paramNames: List<String>,
-  var returnType: ClassMeta?,
+  var paramInput: List<TypeMeta>,
+  var returnType: TypeMeta?,
 ) {
-  val funcScope = ClassScope(null)
+  val funcScope = FuncScope(null)
 }
 
-class VarMeta(val varName: String, val varType: ClassMeta)
+data class TypeMeta(val cl: ClassMeta, val dim: Int) {
+  fun isBool(): Boolean {
+    return cl.className == "bool" && dim == 0
+  }
+
+  fun isInt(): Boolean {
+    return cl.className == "int" && dim == 0
+  }
+
+  fun isVoid(): Boolean {
+    return cl.className == "void" && dim == 0
+  }
+
+  fun isString(): Boolean {
+    return cl.className == "string" && dim == 0
+  }
+
+  fun isArray(): Boolean {
+    return dim != 0
+  }
+}

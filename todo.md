@@ -1,1 +1,3 @@
 - [ ] Exceptions for semantic check
+- [ ] Type matching
+- [ ] Right value at left

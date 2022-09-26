@@ -1,14 +1,14 @@
 package frontend.abst.nodes
 
 import frontend.abst.control.Visitor
-import frontend.abst.utils.CodePos
 import frontend.abst.meta.ClassMeta
 import frontend.abst.meta.FuncMeta
+import frontend.abst.utils.CodePos
 
 abstract class DefNode(pos: CodePos) : BaseNode(pos)
 
 class ClassDefNode(pos: CodePos, val className: String, val classSuite: BaseNode?) : DefNode(pos) {
-  val classMeta = ClassMeta(className, listOf(), listOf())
+  val classMeta = ClassMeta(className)
   override fun accept(visitor: Visitor) {
     visitor.visit(this)
   }
@@ -17,11 +17,10 @@ class ClassDefNode(pos: CodePos, val className: String, val classSuite: BaseNode
 class ClassCtorNode(
   pos: CodePos,
   val className: String,
-  val paramTypes: List<String>,
-  val paramNames: List<String>,
+  val params: List<Pair<String, String>>,
   val funcSuite: BaseNode?
 ) : DefNode(pos) {
-  var funcMeta = FuncMeta(className, listOf(), listOf(), null)
+  var funcMeta = FuncMeta(className, listOf(), null)
   override fun accept(visitor: Visitor) {
     visitor.visit(this)
   }
@@ -30,12 +29,11 @@ class ClassCtorNode(
 class FuncDefNode(
   pos: CodePos,
   val funcName: String,
-  val paramTypes: List<String>,
-  val paramNames: List<String>,
+  val params: List<Pair<String, String>>,
   val returnType: String,
   val funcSuite: BaseNode?
 ) : DefNode(pos) {
-  var funcMeta = FuncMeta(funcName, listOf(), listOf(), null)
+  var funcMeta = FuncMeta(funcName, listOf(), null)
   override fun accept(visitor: Visitor) {
     visitor.visit(this)
   }

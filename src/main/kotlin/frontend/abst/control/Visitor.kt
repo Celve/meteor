@@ -1,9 +1,8 @@
 package frontend.abst.control
 
-import abst.nodes.*
 import frontend.abst.nodes.*
 
-open abstract class Visitor {
+abstract class Visitor {
   // more
   abstract fun visit(curr: ProgNode)
 
@@ -32,7 +31,6 @@ open abstract class Visitor {
   abstract fun visit(curr: JumpNode)
 
   // expressions
-  abstract fun visit(curr: ExprNode)
   abstract fun visit(curr: PriorExprNode)
   abstract fun visit(curr: AtomNode)
   abstract fun visit(curr: InitExprNode)

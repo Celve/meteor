@@ -36,21 +36,22 @@ voidType: Void;
 // 8. class, namely non-primitive type
 nonPrimitiveType: Id;
 classSuite: (decl | funcDef | classCtor)*;
-classDef: Class className = Id '{' classSuite '}';
+classDef: Class className = Id '{' classSuite '}' ';';
 
 // 8.3. access class members and call class methods (in 7.3.3.)
 
 // 8.4 class constructor
-classCtor: classId = Id paramDefList? '{' funcSuite '}';
+classCtor: classId = Id paramDeclList? '{' funcSuite '}';
 
 // 9. function
 returnType: primitiveType | nonPrimitiveType | voidType;
 funcSuite: (stmt | block | decl | jump)*;
-funcDef: returnType funcName = Id paramDefList '{' funcSuite '}';
+funcDef: returnType funcName = Id paramDeclList '{' funcSuite '}';
 //funcDecl: returnType funcId = Id paramDefList '{' funcSuite '}';
 
 // 9.1. function definition
-paramDefList: '(' (varType Id (',' varType Id)*)? ')';
+paramDecl: varType Id;
+paramDeclList: '(' (paramDecl(',' paramDecl)*)? ')';
 paramInputList: '(' (expr (',' expr)*)? ')';
 // TODO: does it has only one way to locate params?
 

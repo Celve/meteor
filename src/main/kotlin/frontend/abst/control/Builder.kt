@@ -1,13 +1,10 @@
 package frontend.abst.control
 
-import abst.nodes.*
-import frontend.abst.utils.CodePos
-import frontend.abst.utils.Scope
 import frontend.abst.nodes.*
+import frontend.abst.utils.CodePos
 import frontend.parser.MeteorBaseVisitor
 import frontend.parser.MeteorParser
 import java.util.*
-
 
 class Builder : MeteorBaseVisitor<BaseNode>() {
   override fun visitProg(ctx: MeteorParser.ProgContext?): BaseNode {
@@ -35,12 +32,20 @@ class Builder : MeteorBaseVisitor<BaseNode>() {
     return ClassDefNode(CodePos(ctx!!), ctx.className.text, visit(ctx.classSuite()))
   }
 
+  override fun visitClassCtor(ctx: MeteorParser.ClassCtorContext?): BaseNode {
+    return ClassCtorNode(
+      CodePos(ctx!!),
+      ctx.classId.text,
+      ctx.paramDeclList().paramDecl().map { Pair(it.varType().text, it.Id().text) },
+      visit(ctx.funcSuite())
+    )
+  }
+
   override fun visitFuncDef(ctx: MeteorParser.FuncDefContext?): BaseNode {
     return FuncDefNode(
       CodePos(ctx!!),
       ctx.funcName.text,
-      ctx.paramDefList().varType().map { it.text },
-      ctx.paramDefList().Id().map { it.text },
+      ctx.paramDeclList().paramDecl().map { Pair(it.varType().text, it.Id().text) },
       ctx.returnType().text,
       visit(ctx.funcSuite())
     )
@@ -65,7 +70,10 @@ class Builder : MeteorBaseVisitor<BaseNode>() {
     val cond = if (ctx.forCondUnit().expr() == null) null else visit(ctx.forCondUnit().expr()) as ExprNode
     val step = if (ctx.forStepUnit().expr() == null) null else visit(ctx.forStepUnit().expr()) as ExprNode
 
-    return ForNode(CodePos(ctx), Scope(null), init, cond, step, visit(ctx.extendedBlock()))
+    if (ctx.extendedBlock() == null) {
+      println("this is impossible")
+    }
+    return ForNode(CodePos(ctx), init, cond, step, visit(ctx.extendedBlock()))
   }
 
   override fun visitWhile(ctx: MeteorParser.WhileContext?): BaseNode {
@@ -83,8 +91,8 @@ class Builder : MeteorBaseVisitor<BaseNode>() {
   }
 
   override fun visitCond(ctx: MeteorParser.CondContext?): BaseNode {
-    val thenDo = if (ctx!!.extendedBlock(0) == null) null else visit(ctx.extendedBlock(0))
-    val elseDo = if (ctx.extendedBlock(1) == null) null else visit(ctx.extendedBlock(1))
+    val thenDo = visit(ctx!!.extendedBlock(0))
+    val elseDo = if (ctx.Else() == null) null else visit(ctx.extendedBlock(1))
 
     return CondNode(
       CodePos(ctx),
@@ -94,16 +102,57 @@ class Builder : MeteorBaseVisitor<BaseNode>() {
     )
   }
 
+  override fun visitField(ctx: MeteorParser.FieldContext?): BaseNode {
+    return FieldNode(CodePos(ctx!!), visit(ctx.funcSuite()))
+  }
+
+  // when let antlr automatically iterate the tree
+  // it only returns the last result of its children
+  override fun visitStmt(ctx: MeteorParser.StmtContext?): BaseNode {
+    return visit(ctx!!.expr())
+  }
+
+  override fun visitPriorExpr(ctx: MeteorParser.PriorExprContext?): BaseNode {
+    return PriorExprNode(CodePos(ctx!!), visit(ctx.expr()) as ExprNode)
+  }
+
   override fun visitAtom(ctx: MeteorParser.AtomContext?): BaseNode {
-    return AtomNode(CodePos(ctx!!), ctx.text)
+    val id = when {
+      ctx!!.basicExpr().IntegerLiteral() != null -> 0
+      ctx.basicExpr().StringLiteral() != null -> 1
+      ctx.basicExpr().Id() != null -> 2
+      ctx.basicExpr().This() != null -> 3
+      ctx.basicExpr().True() != null -> 4
+      ctx.basicExpr().False() != null -> 5
+      ctx.basicExpr().Null() != null -> 6
+      else -> throw Exception("invalid atom expression")
+    }
+    return AtomNode(CodePos(ctx), id, ctx.basicExpr().text)
+  }
+
+  override fun visitInitExpr(ctx: MeteorParser.InitExprContext?): BaseNode {
+    return InitExprNode(
+      CodePos(ctx!!),
+      ctx.varType().text,
+      ctx.LeftBracket().size + ctx.Brackets().size,
+      ctx.expr().map { visit(it) as ExprNode },
+    )
   }
 
   override fun visitFuncCall(ctx: MeteorParser.FuncCallContext?): BaseNode {
     return FuncCallNode(
       CodePos(ctx!!),
       ctx.funcName.text,
-      ctx.paramInputList().expr().map { visit(it) as ExprNode }.toTypedArray()
+      ctx.paramInputList().expr().map { visit(it) as ExprNode }
     )
+  }
+
+  override fun visitMethodAccess(ctx: MeteorParser.MethodAccessContext?): BaseNode {
+    return MethodAccessNode(
+      CodePos(ctx!!),
+      visit(ctx.expr()) as ExprNode,
+      ctx.methodName.text,
+      ctx.paramInputList().expr().map { visit(it) as ExprNode })
   }
 
   override fun visitMemberAccess(ctx: MeteorParser.MemberAccessContext?): BaseNode {

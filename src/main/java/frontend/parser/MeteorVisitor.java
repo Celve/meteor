@@ -107,11 +107,17 @@ public interface MeteorVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitFuncDef(MeteorParser.FuncDefContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link MeteorParser#paramDefList}.
+	 * Visit a parse tree produced by {@link MeteorParser#paramDecl}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitParamDefList(MeteorParser.ParamDefListContext ctx);
+	T visitParamDecl(MeteorParser.ParamDeclContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MeteorParser#paramDeclList}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitParamDeclList(MeteorParser.ParamDeclListContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MeteorParser#paramInputList}.
 	 * @param ctx the parse tree

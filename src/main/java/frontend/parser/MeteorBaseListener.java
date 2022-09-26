@@ -209,13 +209,25 @@ public class MeteorBaseListener implements MeteorListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterParamDefList(MeteorParser.ParamDefListContext ctx) { }
+	@Override public void enterParamDecl(MeteorParser.ParamDeclContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitParamDefList(MeteorParser.ParamDefListContext ctx) { }
+	@Override public void exitParamDecl(MeteorParser.ParamDeclContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterParamDeclList(MeteorParser.ParamDeclListContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitParamDeclList(MeteorParser.ParamDeclListContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
