@@ -155,6 +155,12 @@ public interface MeteorVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitPrefixOps(MeteorParser.PrefixOpsContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link MeteorParser#bracketedExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBracketedExpr(MeteorParser.BracketedExprContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code prefixExpr}
 	 * labeled alternative in {@link MeteorParser#expr}.
 	 * @param ctx the parse tree

@@ -19,6 +19,18 @@ data class FuncMeta(
 }
 
 data class TypeMeta(val cl: ClassMeta, val dim: Int) {
+  // one is concrete and one is null is matched
+  fun matchesWith(obj: TypeMeta): Boolean {
+    if (isNull() || obj.isNull()) {
+      return !isPrimitive() && !obj.isPrimitive()
+    }
+    return cl.className == obj.cl.className && dim == obj.dim
+  }
+
+  fun isPrimitive(): Boolean {
+    return isBool() || isInt() || isString()
+  }
+
   fun isBool(): Boolean {
     return cl.className == "bool" && dim == 0
   }
@@ -37,6 +49,10 @@ data class TypeMeta(val cl: ClassMeta, val dim: Int) {
 
   fun isArray(): Boolean {
     return dim != 0
+  }
+
+  fun isNull(): Boolean {
+    return cl.className == "null" && dim == 0
   }
 
   override fun toString(): String {

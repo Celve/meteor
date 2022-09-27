@@ -42,8 +42,12 @@ open class Scope(var parent: Scope?) {
     return parent?.getClass(name) != null
   }
 
-  open fun getType(name: String): TypeMeta? {
-    return parent?.getType(name)
+  open fun getVarType(name: String): TypeMeta? {
+    return parent?.getVarType(name)
+  }
+
+  open fun getFuncType(name: String): TypeMeta? {
+    return parent?.getFuncType(name)
   }
 }
 
@@ -89,11 +93,19 @@ class GlobalScope(parent: Scope?) : Scope(parent) {
     return classes[name] != null || funcs[name] != null
   }
 
-  override fun getType(name: String): TypeMeta? {
+  private fun resolveTypeMeta(name: String): TypeMeta? {
     val (className, dimIndicator) = name.partition { it != '[' && it != ']' }
     val dim = dimIndicator.count { it == '[' }
     val classMeta = getClass(className) ?: return null
     return TypeMeta(classMeta, dim)
+  }
+
+  override fun getVarType(name: String): TypeMeta? {
+    return if (name.startsWith("void")) null else resolveTypeMeta(name)
+  }
+
+  override fun getFuncType(name: String): TypeMeta? {
+    return resolveTypeMeta(name)
   }
 
   fun debug() {

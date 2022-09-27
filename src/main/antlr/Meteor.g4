@@ -17,7 +17,7 @@ decl: varDecl;
 def: classDef | funcDef | lambdaDef;
 
 // 7. type
-varType: classType Brackets*;
+varType: classType ('[' ']')*;
 classType: (primitiveType | nonPrimitiveType);
 
 // 7.1. primitives
@@ -45,7 +45,7 @@ classDef: Class className = Id '{' classSuite '}' ';';
 classCtor: classId = Id paramDeclList? '{' funcSuite '}';
 
 // 9. function
-returnType: primitiveType | nonPrimitiveType | voidType;
+returnType: varType | voidType;
 funcSuite: (stmt | block | decl | jump)*;
 funcDef: returnType funcName = Id paramDeclList '{' funcSuite '}';
 //funcDecl: returnType funcId = Id paramDefList '{' funcSuite '}';
@@ -80,15 +80,16 @@ prefixOps:
 	| Sub
 	| LogicalNot
 	| BitwiseNot;
+bracketedExpr: '[' expr? ']';
 expr:
 	'(' expr ')' #priorExpr
 	| basicExpr #atom
-	| New classType ('[' expr? ']')* '[]'* #initExpr // it make sure that all brackets with int is in the head
+	| New classType bracketedExpr* paramInputList? #initExpr // it make sure that all brackets with int is in the head
 	| lambdaDef paramInputList #lambdaCall
   | (funcName = Id) paramInputList #funcCall
 	| expr '.' (methodName = Id) paramInputList #methodAccess
 	| expr '.' (classMember = Id) #memberAccess
-	| expr ('[' expr ']')+ #arrayAccess
+	| expr '[' expr ']' #arrayAccess
 	| expr op = (Increment | Decrement) #suffixExpr
 	| <assoc=right> prefixOps expr #prefixExpr
 	| expr op = (Mul | Div | Mod) expr #binaryExpr
@@ -110,7 +111,7 @@ varDecl: varType assignUnit (',' assignUnit)* ';';
 
 // 11.2. conditional stmtements
 jump: (op = Return expr? | op = Break | op = Continue) ';';
-simpleSuite:  stmt | jump;
+simpleSuite:  stmt | jump | decl;
 extendedBlock: simpleSuite | block;
 // TODO: detail the stmt
 cond: If '(' expr ')' extendedBlock (Else extendedBlock)?;

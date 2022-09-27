@@ -37,7 +37,7 @@ Increment: '++';
 Decrement: '--';
 
 // postfix operators MemberAccess: '.'; TODO: to determine whether it maintain it
-Brackets: '[]';
+//Brackets: '[]';
 LeftBracket: '[';
 RightBracket: ']';
 LeftParen: '(';

@@ -1,5 +1,6 @@
 plugins {
   id("meteor.kotlin-application-conventions")
+  id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 
 repositories {
@@ -21,8 +22,8 @@ tasks.generateGrammarSource {
   }
 
   // insert package into the first line, only applicable in macOS
+  // its default dir is project dir
   exec {
-    // its default dir is project dir
     commandLine("./package.sh")
   }
 }
@@ -30,8 +31,6 @@ tasks.generateGrammarSource {
 tasks.named("run", JavaExec::class) {
   // redirect the input from console
   standardInput = System.`in`
-
-  // disable the generation task
 }
 
 application {

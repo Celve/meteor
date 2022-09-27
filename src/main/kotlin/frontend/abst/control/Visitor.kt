@@ -31,6 +31,7 @@ abstract class Visitor {
   abstract fun visit(curr: JumpNode)
 
   // expressions
+  abstract fun visit(curr: StmtNode)
   abstract fun visit(curr: PriorExprNode)
   abstract fun visit(curr: AtomNode)
   abstract fun visit(curr: InitExprNode)

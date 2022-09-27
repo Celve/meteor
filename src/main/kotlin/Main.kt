@@ -1,3 +1,4 @@
+import frontend.abst.control.AntlrErrorListener
 import frontend.abst.control.Builder
 import frontend.abst.meta.ClassMeta
 import frontend.abst.meta.FuncMeta
@@ -20,9 +21,9 @@ fun setPrimitives(scope: GlobalScope) {
 }
 
 fun setBuiltinFuncs(scope: GlobalScope) {
-  val voidType = scope.getType("void")!!
-  val intType = scope.getType("int")!!
-  val stringType = scope.getType("string")!!
+  val voidType = scope.getFuncType("void")!!
+  val intType = scope.getVarType("int")!!
+  val stringType = scope.getVarType("string")!!
 
   scope.setFunc("print", FuncMeta("print", listOf(stringType), voidType))
   scope.setFunc("println", FuncMeta("println", listOf(stringType), voidType))
@@ -41,16 +42,25 @@ fun setBuiltinFuncs(scope: GlobalScope) {
 
 fun main(args: Array<String>) {
   val input = if (args.size > 1) FileInputStream(args[1]) else System.`in`
+
   val lexer = MeteorLexer(CharStreams.fromStream(input))
+  lexer.removeErrorListeners()
+  lexer.addErrorListener(AntlrErrorListener())
+
   val parser = MeteorParser(CommonTokenStream(lexer))
+  parser.removeErrorListeners()
+  parser.addErrorListener(AntlrErrorListener())
   val parserRoot = parser.prog()
+
   val builder = Builder()
   val builderRoot = builder.visitProg(parserRoot) as ProgNode
+
   setPrimitives(builderRoot.scope)
   setBuiltinFuncs(builderRoot.scope)
+
   val symbolCollector = SymbolCollector()
   symbolCollector.visit(builderRoot)
-  builderRoot.scope.debug()
+
   val semanticChecker = SemanticChecker()
   semanticChecker.visit(builderRoot)
 }

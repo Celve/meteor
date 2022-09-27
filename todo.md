@@ -1,4 +1,5 @@
 - [ ] Exceptions for semantic check
 - [ ] Type matching
 - [ ] Right value at left
-- [ ] basic-71
+- [ ] deal with new int[][4]
+- [ ] new with ctor

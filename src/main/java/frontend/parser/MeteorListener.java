@@ -248,6 +248,16 @@ public interface MeteorListener extends ParseTreeListener {
 	 */
 	void exitPrefixOps(MeteorParser.PrefixOpsContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link MeteorParser#bracketedExpr}.
+	 * @param ctx the parse tree
+	 */
+	void enterBracketedExpr(MeteorParser.BracketedExprContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#bracketedExpr}.
+	 * @param ctx the parse tree
+	 */
+	void exitBracketedExpr(MeteorParser.BracketedExprContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code prefixExpr}
 	 * labeled alternative in {@link MeteorParser#expr}.
 	 * @param ctx the parse tree

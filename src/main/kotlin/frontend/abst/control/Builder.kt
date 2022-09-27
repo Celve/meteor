@@ -109,7 +109,7 @@ class Builder : MeteorBaseVisitor<BaseNode>() {
   // when let antlr automatically iterate the tree
   // it only returns the last result of its children
   override fun visitStmt(ctx: MeteorParser.StmtContext?): BaseNode {
-    return visit(ctx!!.expr())
+    return StmtNode(CodePos(ctx!!), if (ctx.expr() == null) null else visit(ctx.expr()) as ExprNode)
   }
 
   override fun visitPriorExpr(ctx: MeteorParser.PriorExprContext?): BaseNode {
@@ -131,11 +131,19 @@ class Builder : MeteorBaseVisitor<BaseNode>() {
   }
 
   override fun visitInitExpr(ctx: MeteorParser.InitExprContext?): BaseNode {
+    val exprs: Vector<ExprNode?> = Vector()
+    for (it in ctx!!.bracketedExpr()) {
+      if (it.expr() != null) {
+        exprs.addElement(visit(it.expr()) as ExprNode)
+      } else {
+        exprs.addElement(null)
+      }
+    }
     return InitExprNode(
-      CodePos(ctx!!),
+      CodePos(ctx),
       ctx.classType().text,
-      ctx.LeftBracket().size + ctx.Brackets().size,
-      ctx.expr().map { visit(it) as ExprNode },
+      ctx.bracketedExpr().size,
+      exprs.elements().toList()
     )
   }
 

@@ -13,13 +13,13 @@ import java.util.*
  */
 class SymbolCollector : Visitor() {
   private val scopeManager = ScopeManager()
-  private val currClassName = String()
 
   override fun visit(curr: ProgNode) {
     scopeManager.addLast(curr.scope)
     curr.suite.accept(this)
     scopeManager.removeLast()
 
+    // and the main has to be int
     curr.scope.getFunc("main") ?: throw SemanticException(curr.pos, "No main function")
   }
 
@@ -35,7 +35,7 @@ class SymbolCollector : Visitor() {
         }
         globalScope.setClass(it.className, it.classMeta)
         // use this special format to stand for implicit class creator
-        globalScope.setFunc(it.className, FuncMeta(it.className, listOf(), globalScope.getType("null")))
+        globalScope.setFunc(it.className, FuncMeta(it.className, listOf(), globalScope.getFuncType("null")))
       }
     }
 
@@ -78,7 +78,7 @@ class SymbolCollector : Visitor() {
     val innerScope = curr.funcMeta.funcScope
     val paramInput: Vector<TypeMeta> = Vector()
 
-    if (curr.className != currClassName) {
+    if (curr.className != scopeManager.getClass()!!.className) {
       throw SemanticException(curr.pos, "Class can't have this constructor")
     }
 
@@ -89,13 +89,13 @@ class SymbolCollector : Visitor() {
 
     // init params and add them into local scope
     for (it in curr.params) {
-      val type = outerScope.getType(it.first) ?: throw SemanticException(curr.pos, "No type called ${it.first}")
-      paramInput.addElement(type)
-      innerScope.setVar(it.second, type)
+      val varType = outerScope.getVarType(it.first) ?: throw SemanticException(curr.pos, "No type called ${it.first}")
+      paramInput.addElement(varType)
+      innerScope.setVar(it.second, varType)
     }
     curr.funcMeta.paramInput = paramInput.elements().toList()
 
-    curr.funcMeta.returnType = globalScope.getType("void")
+    curr.funcMeta.returnType = globalScope.getFuncType("void")
     globalScope.setFunc(curr.className, curr.funcMeta)
   }
 
@@ -112,15 +112,26 @@ class SymbolCollector : Visitor() {
 
     // init params and add them into local scope
     for (it in curr.params) {
-      val type = outerScope.getType(it.first) ?: throw SemanticException(curr.pos, "No type called ${it.first}")
-      paramInput.addElement(type)
-      innerScope.setVar(it.second, type)
+      val varType = outerScope.getVarType(it.first) ?: throw SemanticException(curr.pos, "No type called ${it.first}")
+      paramInput.addElement(varType)
+      innerScope.setVar(it.second, varType)
     }
     curr.funcMeta.paramInput = paramInput.elements().toList()
 
     // check for its return type
     curr.funcMeta.returnType =
-      outerScope.getType(curr.returnType) ?: throw SemanticException(curr.pos, "${curr.returnType} is not defined")
+      outerScope.getFuncType(curr.returnType) ?: throw SemanticException(curr.pos, "${curr.returnType} is not defined")
+
+    // for main only
+    if (curr.funcName == "main") {
+      if (!curr.funcMeta.returnType!!.isInt()) {
+        throw SemanticException(curr.pos, "Function main has to have a int return ")
+      }
+      if (curr.params.size != 0) {
+        throw SemanticException(curr.pos, "Function main should not have parameters")
+      }
+    }
+
     outerScope.setFunc(curr.funcName, curr.funcMeta)
   }
 
@@ -132,15 +143,15 @@ class SymbolCollector : Visitor() {
   override fun visit(curr: VarDeclNode) {
     val globalScope = scopeManager.first()
     val classScope = scopeManager.last()
-    val type =
-      globalScope.getType(curr.type) ?: throw SemanticException(curr.pos, "${curr.type} is not defined")
+    val varType =
+      globalScope.getVarType(curr.varType) ?: throw SemanticException(curr.pos, "${curr.varType} is not defined")
 
     for (it in curr.assigns) {
       if (classScope.getVar(it.first) != null) {
         throw Exception("Redeclare class member ${it.first}")
       }
       // TODO: can the member's type to be the class itself?
-      classScope.setVar(it.first, type)
+      classScope.setVar(it.first, varType)
     }
   }
 
@@ -161,6 +172,10 @@ class SymbolCollector : Visitor() {
   }
 
   override fun visit(curr: JumpNode) {
+    TODO("Not yet implemented")
+  }
+
+  override fun visit(curr: StmtNode) {
     TODO("Not yet implemented")
   }
 

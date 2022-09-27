@@ -43,7 +43,7 @@ class SemanticChecker : Visitor() {
   }
 
   override fun visit(curr: ClassCtorNode) {
-    scopeManager.addLast(curr.funcMeta.funcScope)
+    scopeManager.addLast(curr.funcMeta.funcScope, null, curr.funcMeta.returnType)
     curr.funcSuite?.accept(this)
     scopeManager.removeLast()
   }
@@ -65,21 +65,22 @@ class SemanticChecker : Visitor() {
     val innerScope = scopeManager.last()
 
     // only judge for some exceptions
-    val type = globalScope.getType(curr.type) ?: throw SemanticException(curr.pos, "No type called ${curr.type}")
+    val varType =
+      globalScope.getVarType(curr.varType) ?: throw SemanticException(curr.pos, "No type called ${curr.varType}")
     for (it in curr.assigns) {
       if (innerScope !is ClassScope && innerScope.testVar(it.first)) {
         throw SemanticException(curr.pos, "Redeclare ${it.first}")
       } else if (it.second != null) {
         it.second!!.accept(this)
-        if (it.second!!.type != type) {
+        if (!varType.matchesWith(it.second!!.type!!)) {
           throw SemanticException(
             curr.pos,
-            "Wrong type, expected ${type}, found ${it.second!!.type}"
+            "Wrong type, expected ${varType}, found ${it.second!!.type}"
           )
         }
       }
       if (innerScope !is ClassScope) {
-        innerScope.setVar(it.first, type)
+        innerScope.setVar(it.first, varType)
       }
     }
   }
@@ -132,7 +133,6 @@ class SemanticChecker : Visitor() {
   }
 
   override fun visit(curr: JumpNode) {
-    val globalScope = scopeManager.first()
     when (curr.type) {
       "return" -> {
         val returnType =
@@ -141,7 +141,7 @@ class SemanticChecker : Visitor() {
           throw SemanticException(curr.pos, "Return type doesn't match")
         } else if (curr.expr != null) {
           curr.expr.accept(this)
-          if (curr.expr.type != returnType) {
+          if (!returnType.matchesWith(curr.expr.type!!)) {
             throw SemanticException(curr.pos, "Return type doesn't match")
           }
         }
@@ -154,16 +154,22 @@ class SemanticChecker : Visitor() {
     }
   }
 
+  override fun visit(curr: StmtNode) {
+    curr.expr?.accept(this)
+  }
+
   override fun visit(curr: PriorExprNode) {
     curr.expr.accept(this)
     curr.type = curr.expr.type
+    curr.assignable = curr.expr.assignable
+    println("${curr.pos} is ${curr.assignable}")
   }
 
   override fun visit(curr: AtomNode) {
     val scope = scopeManager.last()
     when (curr.id) {
-      0 -> curr.type = scope.getType("int")!!
-      1 -> curr.type = scope.getType("string")!!
+      0 -> curr.type = scope.getVarType("int")!!
+      1 -> curr.type = scope.getVarType("string")!!
       2 -> curr.type = scope.getVar(curr.literal) ?: throw SemanticException(curr.pos, "${curr.literal} is undeclared")
       // TODO: how to deal with this pointer?
       3 -> {
@@ -173,23 +179,28 @@ class SemanticChecker : Visitor() {
         curr.type = TypeMeta(cl, 0)
       }
 
-      4 -> curr.type = scope.getType("bool")!!
-      5 -> curr.type = scope.getType("bool")!!
-      6 -> curr.type = scope.getType("null")!!
+      4 -> curr.type = scope.getVarType("bool")!!
+      5 -> curr.type = scope.getVarType("bool")!!
+      6 -> curr.type = scope.getVarType("null")!!
     }
   }
 
   override fun visit(curr: InitExprNode) {
-    println("get in initexpr")
     val type =
       scopeManager.first().getClass(curr.typeDef) ?: throw SemanticException(curr.pos, "Type ${curr.typeDef} not found")
-    for (it in curr.arraySize) {
+    var isNull = false
+    for (it in curr.arraySizeList) {
+      if (it == null) {
+        isNull = true
+        continue
+      } else if (isNull) {
+        throw SemanticException(it.pos, "Such new is not allowed")
+      }
       it.accept(this)
       if (it.type!!.cl.className != "int") {
         throw SemanticException(curr.pos, "Invalid expression for array declaration")
       }
     }
-    println(curr.dim)
     curr.type = TypeMeta(type, curr.dim)
   }
 
@@ -199,7 +210,7 @@ class SemanticChecker : Visitor() {
       throw SemanticException(curr.pos, "Not enough parameters for ${method.funcName}")
     }
     for (pair in stdInput.zip(usrInput)) {
-      if (pair.first != pair.second.type) {
+      if (!pair.first.matchesWith(pair.second.type!!)) {
         throw SemanticException(pair.second.pos, "Expect ${pair.first}, find ${pair.second.type}")
       }
     }
@@ -216,10 +227,17 @@ class SemanticChecker : Visitor() {
     curr.expr.accept(this)
     curr.params.forEach { it.accept(this) }
 
-    val method = curr.expr.type!!.cl.classScope.getFunc(curr.method) ?: throw SemanticException(
-      curr.pos,
-      "No correspond method for ${curr.expr.type!!.cl.className}.${curr.method}"
-    )
+    val varType = curr.expr.type!!
+    val method = if (!curr.expr.type!!.isArray()) {
+      varType.cl.classScope.getFunc(curr.method) ?: throw SemanticException(
+        curr.pos,
+        "No correspond method for ${varType.cl.className}.${curr.method}"
+      )
+    } else if (curr.method == "size") {
+      FuncMeta("size", listOf(), scopeManager.last().getVarType("int")!!)
+    } else {
+      throw SemanticException(curr.pos, "No correspond method for ${varType.cl.className}.${curr.method}")
+    }
 
     checkParamsForFunc(curr, method, curr.params)
   }
@@ -237,7 +255,7 @@ class SemanticChecker : Visitor() {
     curr.index.accept(this)
     val arrayType = curr.array.type!!
     val indexType = curr.index.type!!
-    if (arrayType.dim == 0 || (indexType.cl.className != "int" && indexType.dim != 0)) {
+    if (!arrayType.isArray() || !indexType.isInt()) {
       throw SemanticException(curr.pos, "Invalid array access")
     }
     curr.type = TypeMeta(arrayType.cl, arrayType.dim - 1)
@@ -245,8 +263,11 @@ class SemanticChecker : Visitor() {
 
   override fun visit(curr: SuffixExprNode) {
     curr.expr.accept(this)
+    if (!curr.expr.assignable) {
+      throw SemanticException(curr.pos, "Expression is not assignable")
+    }
     val src = curr.expr.type!!
-    if (src.cl.className != "int" || src.dim != 0) {
+    if (!src.isInt()) {
       throw SemanticException(curr.pos, "Invalid unary operator ${curr.op} for ${src.cl}")
     }
     curr.type = src
@@ -256,20 +277,29 @@ class SemanticChecker : Visitor() {
     curr.expr.accept(this)
     val src = curr.expr.type!!
     when (curr.op) {
-      "++", "--", "+", "-", "~" -> {
-        if (src.cl.className != "int" || src.dim != 0) {
+      "++", "--" -> {
+        if (!curr.expr.assignable) {
+          throw SemanticException(curr.pos, "Expression is not assignable")
+        }
+        if (!src.isInt()) {
           throw SemanticException(curr.pos, "Invalid unary operator ${curr.op} for ${src.cl}")
         }
-        curr.type = src
+      }
+
+      "+", "-", "~" -> {
+        if (!src.isInt()) {
+          throw SemanticException(curr.pos, "Invalid unary operator ${curr.op} for ${src.cl}")
+        }
       }
 
       "!" -> {
-        if (src.cl.className != "bool" || src.dim != 0) {
+        if (!src.isBool()) {
           throw SemanticException(curr.pos, "Invalid unary operator ${curr.op} for ${src.cl}")
         }
-        curr.type = src
       }
     }
+
+    curr.type = src
   }
 
   override fun visit(curr: BinaryExprNode) {
@@ -281,33 +311,30 @@ class SemanticChecker : Visitor() {
     when (curr.op) {
       "+", "<", "<=", ">", ">=" -> {
         // all binary operators require the opposite to be the same for int and bool
-        if (lhs.cl.className != rhs.cl.className) {
+        if (!lhs.matchesWith(rhs)) {
           throw SemanticException(curr.pos, "Type don't match")
         }
-        if ((lhs.cl.className != "int" && lhs.cl.className != "string") || lhs.dim != 0 || rhs.dim != 0) {
+        if (!lhs.isInt() && !lhs.isString()) {
           throw SemanticException(curr.pos, "Invalid binary operator ${curr.op} for ${lhs.cl}")
         }
         // TODO: determine whether it should use copy or reference to TypeMeta
         if (curr.op == "+") {
           curr.type = lhs
         } else {
-          curr.type = scopeManager.first().getType("bool")
+          curr.type = scopeManager.first().getVarType("bool")
         }
       }
 
       "*", "/", "%", "-", "<<", ">>", "&", "^", "|" -> {
-        if (lhs.cl.className != rhs.cl.className) {
-          throw SemanticException(curr.pos, "Type don't match")
-        }
-        if (lhs.cl.className != "int" || lhs.dim != 0 || rhs.dim != 0) { // those operators are only for int
+        if (!lhs.isInt() || !rhs.isInt()) { // those operators are only for int
           throw SemanticException(curr.pos, "Invalid binary operator ${curr.op} for ${lhs.cl}")
         }
         curr.type = lhs
       }
 
       "==", "!=" -> {
-        if (lhs.dim != 0 || rhs.dim != 0) { // for arrays
-          if (lhs.cl.className != "null" && rhs.cl.className != "null") {
+        if (lhs.isArray() || rhs.isArray()) { // for arrays
+          if (!lhs.isNull() && !rhs.isNull()) {
             throw SemanticException(
               curr.pos,
               "Invalid binary operator ${curr.op} for ${lhs.cl} and ${rhs.cl}"
@@ -315,17 +342,14 @@ class SemanticChecker : Visitor() {
           }
         }
         // all binary operators require the opposite to be the same for int and bool
-        if (lhs != rhs) {
+        if (!lhs.matchesWith(rhs)) {
           throw SemanticException(curr.pos, "Type don't match")
         }
         curr.type = TypeMeta(scopeManager.first().getClass("bool")!!, 0)
       }
 
       "&&", "||" -> {
-        if (lhs.cl.className != rhs.cl.className) {
-          throw SemanticException(curr.pos, "Type don't match")
-        }
-        if (lhs.cl.className != "bool" || lhs.dim != 0 || rhs.dim != 0) {
+        if (!lhs.isBool() || !rhs.isBool()) {
           throw SemanticException(curr.pos, "Invalid binary operator ${curr.op} for ${lhs.cl}")
         }
         curr.type = lhs
@@ -337,7 +361,10 @@ class SemanticChecker : Visitor() {
     curr.lhs.accept(this)
     curr.rhs.accept(this)
     val lhs = curr.lhs
-    if ((lhs is AtomNode && lhs.id == 2) || (lhs is MemberAccessNode) || (lhs is ArrayAccessNode)) {
+    if (lhs.assignable) {
+      if (!curr.lhs.type!!.matchesWith(curr.rhs.type!!)) {
+        throw SemanticException(curr.pos, "Type mismatching in assignment")
+      }
       curr.type = curr.rhs.type
     } else {
       throw SemanticException(lhs.pos, "Invalid left value")
