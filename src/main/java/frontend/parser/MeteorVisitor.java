@@ -53,6 +53,12 @@ public interface MeteorVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitVarType(MeteorParser.VarTypeContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link MeteorParser#classType}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitClassType(MeteorParser.ClassTypeContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link MeteorParser#primitiveType}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

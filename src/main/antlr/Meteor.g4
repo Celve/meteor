@@ -17,7 +17,8 @@ decl: varDecl;
 def: classDef | funcDef | lambdaDef;
 
 // 7. type
-varType: (primitiveType | nonPrimitiveType) Brackets*;
+varType: classType Brackets*;
+classType: (primitiveType | nonPrimitiveType);
 
 // 7.1. primitives
 primitiveType: Bool | Int | String;
@@ -82,7 +83,7 @@ prefixOps:
 expr:
 	'(' expr ')' #priorExpr
 	| basicExpr #atom
-	| New varType ('[' expr? ']')* '[]'* #initExpr // it make sure that all brackets with int is in the head
+	| New classType ('[' expr? ']')* '[]'* #initExpr // it make sure that all brackets with int is in the head
 	| lambdaDef paramInputList #lambdaCall
   | (funcName = Id) paramInputList #funcCall
 	| expr '.' (methodName = Id) paramInputList #methodAccess

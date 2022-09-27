@@ -6,7 +6,6 @@ import frontend.abst.meta.FuncMeta
 import frontend.abst.meta.TypeMeta
 import frontend.abst.nodes.*
 import frontend.abst.utils.ClassScope
-import frontend.abst.utils.GlobalScope
 import frontend.abst.utils.ScopeManager
 
 class SemanticChecker : Visitor() {
@@ -33,12 +32,12 @@ class SemanticChecker : Visitor() {
   }
 
   // the definition of class should be in global scope
-  // the antlr guarantees it, so here is no check
+  // the antlr guarantees it, so here is not check
   // the member and method should be put in both global scope and local scope
   override fun visit(curr: ClassDefNode) {
     val scope = scopeManager.first()
     scope.setClass(curr.className, curr.classMeta)
-    scopeManager.addLast(curr.classMeta.classScope)
+    scopeManager.addLast(curr.classMeta.classScope, curr.classMeta)
     curr.classSuite?.accept(this)
     scopeManager.removeLast()
   }
@@ -49,10 +48,10 @@ class SemanticChecker : Visitor() {
     scopeManager.removeLast()
   }
 
-  // the definition of function should be in global scope
+  // the definition of function should be 'in global scope
   // the antlr guarantees it, so here is no check
   override fun visit(curr: FuncDefNode) {
-    scopeManager.addLast(curr.funcMeta.funcScope, curr.funcMeta.returnType)
+    scopeManager.addLast(curr.funcMeta.funcScope, null, curr.funcMeta.returnType)
     curr.funcSuite?.accept(this)
     scopeManager.removeLast()
   }
@@ -64,22 +63,24 @@ class SemanticChecker : Visitor() {
   override fun visit(curr: VarDeclNode) {
     val globalScope = scopeManager.first()
     val innerScope = scopeManager.last()
-    if (innerScope is ClassScope || innerScope is GlobalScope) { // the declaration is implemented in symbol collector
-      return
-    }
 
     // only judge for some exceptions
     val type = globalScope.getType(curr.type) ?: throw SemanticException(curr.pos, "No type called ${curr.type}")
     for (it in curr.assigns) {
-      if (innerScope.testVar(it.first)) {
+      if (innerScope !is ClassScope && innerScope.testVar(it.first)) {
         throw SemanticException(curr.pos, "Redeclare ${it.first}")
       } else if (it.second != null) {
         it.second!!.accept(this)
-        if ((it.second as ExprNode).type!!.cl.className != curr.type) {
-          throw SemanticException(curr.pos, "Wrong type matching for ${it.second}")
+        if (it.second!!.type != type) {
+          throw SemanticException(
+            curr.pos,
+            "Wrong type, expected ${type}, found ${it.second!!.type}"
+          )
         }
       }
-      innerScope.setVar(it.first, type)
+      if (innerScope !is ClassScope) {
+        innerScope.setVar(it.first, type)
+      }
     }
   }
 
@@ -134,7 +135,8 @@ class SemanticChecker : Visitor() {
     val globalScope = scopeManager.first()
     when (curr.type) {
       "return" -> {
-        val returnType = scopeManager.isFunc()
+        val returnType =
+          scopeManager.getFunc() ?: throw SemanticException(curr.pos, "Return can only be used inside a function")
         if (curr.expr == null && !returnType.isVoid()) {
           throw SemanticException(curr.pos, "Return type doesn't match")
         } else if (curr.expr != null) {
@@ -162,9 +164,15 @@ class SemanticChecker : Visitor() {
     when (curr.id) {
       0 -> curr.type = scope.getType("int")!!
       1 -> curr.type = scope.getType("string")!!
-      2 -> curr.type = scope.getVar(curr.literal)!!
+      2 -> curr.type = scope.getVar(curr.literal) ?: throw SemanticException(curr.pos, "${curr.literal} is undeclared")
       // TODO: how to deal with this pointer?
-//      3 -> curr.type = scope.getVar("int")!!
+      3 -> {
+        scopeManager.getFunc() ?: throw SemanticException(curr.pos, "This could only be used inside a class method")
+        val cl =
+          scopeManager.getClass() ?: throw SemanticException(curr.pos, "This could only be used inside a class method")
+        curr.type = TypeMeta(cl, 0)
+      }
+
       4 -> curr.type = scope.getType("bool")!!
       5 -> curr.type = scope.getType("bool")!!
       6 -> curr.type = scope.getType("null")!!
@@ -172,6 +180,7 @@ class SemanticChecker : Visitor() {
   }
 
   override fun visit(curr: InitExprNode) {
+    println("get in initexpr")
     val type =
       scopeManager.first().getClass(curr.typeDef) ?: throw SemanticException(curr.pos, "Type ${curr.typeDef} not found")
     for (it in curr.arraySize) {
@@ -180,6 +189,7 @@ class SemanticChecker : Visitor() {
         throw SemanticException(curr.pos, "Invalid expression for array declaration")
       }
     }
+    println(curr.dim)
     curr.type = TypeMeta(type, curr.dim)
   }
 

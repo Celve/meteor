@@ -78,6 +78,16 @@ public interface MeteorListener extends ParseTreeListener {
 	 */
 	void exitVarType(MeteorParser.VarTypeContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link MeteorParser#classType}.
+	 * @param ctx the parse tree
+	 */
+	void enterClassType(MeteorParser.ClassTypeContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#classType}.
+	 * @param ctx the parse tree
+	 */
+	void exitClassType(MeteorParser.ClassTypeContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link MeteorParser#primitiveType}.
 	 * @param ctx the parse tree
 	 */

@@ -28,10 +28,10 @@ class SymbolCollector : Visitor() {
     val globalScope = scopeManager.first()
     for (it in curr.children) {
       if (it is ClassDefNode) {
-        if (globalScope.getClass(it.className) != null) {
+        if (globalScope.testClass(it.className)) {
           throw SemanticException(curr.pos, "Redeclare class ${it.className}")
-        } else if (globalScope.getFunc(it.className) != null) {
-          throw SemanticException(curr.pos, "Redeclare func ${it.className}")
+        } else if (globalScope.testFunc(it.className)) {
+          throw SemanticException(curr.pos, "Class ${it.className} has the same name with another function")
         }
         globalScope.setClass(it.className, it.classMeta)
         // use this special format to stand for implicit class creator
@@ -66,7 +66,7 @@ class SymbolCollector : Visitor() {
   }
 
   override fun visit(curr: ClassDefNode) {
-    scopeManager.addLast(curr.classMeta.classScope)
+    scopeManager.addLast(curr.classMeta.classScope, curr.classMeta)
     curr.classSuite?.accept(this)
     scopeManager.removeLast()
   }
@@ -105,10 +105,10 @@ class SymbolCollector : Visitor() {
     val innerScope = curr.funcMeta.funcScope
     val paramInput: Vector<TypeMeta> = Vector()
 
-    // do not need to check here, which is checked above
-//    if (outerScope.getFunc(curr.funcName) != null) {
-//      throw SemanticException(curr.pos, "Redeclare ${curr.funcName}")
-//    }
+    // need to check here, there is no check above
+    if (outerScope.testFunc(curr.funcName)) {
+      throw SemanticException(curr.pos, "Redeclare ${curr.funcName}")
+    }
 
     // init params and add them into local scope
     for (it in curr.params) {

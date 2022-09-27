@@ -5,7 +5,7 @@ import frontend.abst.utils.CodePos
 
 abstract class DeclNode(pos: CodePos) : BaseNode(pos)
 
-class VarDeclNode(pos: CodePos, val type: String, val assigns: List<Pair<String, BaseNode?>>) :
+class VarDeclNode(pos: CodePos, val type: String, val assigns: List<Pair<String, ExprNode?>>) :
   DeclNode(pos) {
   override fun accept(visitor: Visitor) {
     visitor.visit(this)

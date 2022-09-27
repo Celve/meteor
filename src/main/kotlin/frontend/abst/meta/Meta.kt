@@ -38,4 +38,8 @@ data class TypeMeta(val cl: ClassMeta, val dim: Int) {
   fun isArray(): Boolean {
     return dim != 0
   }
+
+  override fun toString(): String {
+    return cl.className + "[]".repeat(dim)
+  }
 }

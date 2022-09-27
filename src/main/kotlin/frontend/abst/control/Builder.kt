@@ -57,7 +57,7 @@ class Builder : MeteorBaseVisitor<BaseNode>() {
       val expr = if (it.expr() == null) null else visit(it.expr())
       assigns.addElement(Pair(it.Id().text, expr))
     }
-    return VarDeclNode(CodePos(ctx), ctx.varType().text, assigns.elements().toList())
+    return VarDeclNode(CodePos(ctx), ctx.varType().text, assigns.map { Pair(it.first, it.second as ExprNode?) })
   }
 
   override fun visitFor(ctx: MeteorParser.ForContext?): BaseNode {
@@ -133,7 +133,7 @@ class Builder : MeteorBaseVisitor<BaseNode>() {
   override fun visitInitExpr(ctx: MeteorParser.InitExprContext?): BaseNode {
     return InitExprNode(
       CodePos(ctx!!),
-      ctx.varType().text,
+      ctx.classType().text,
       ctx.LeftBracket().size + ctx.Brackets().size,
       ctx.expr().map { visit(it) as ExprNode },
     )

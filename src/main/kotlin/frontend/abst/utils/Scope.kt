@@ -15,7 +15,7 @@ open class Scope(var parent: Scope?) {
   }
 
   open fun testVar(name: String): Boolean {
-    return false
+    return parent?.getClass(name) != null
   }
 
   open fun setFunc(name: String, type: FuncMeta) {
@@ -26,12 +26,20 @@ open class Scope(var parent: Scope?) {
     return parent?.getFunc(name)
   }
 
+  open fun testFunc(name: String): Boolean {
+    return parent?.getClass(name) != null
+  }
+
   open fun setClass(name: String, type: ClassMeta) {
     parent?.setClass(name, type)
   }
 
   open fun getClass(name: String): ClassMeta? {
     return parent?.getClass(name)
+  }
+
+  open fun testClass(name: String): Boolean {
+    return parent?.getClass(name) != null
   }
 
   open fun getType(name: String): TypeMeta? {
@@ -45,9 +53,6 @@ class GlobalScope(parent: Scope?) : Scope(parent) {
   private val classes: HashMap<String, ClassMeta> = HashMap()
 
   override fun setVar(name: String, type: TypeMeta) {
-    if (vars.containsKey(name)) {
-      throw Exception("redeclaration of $name")
-    }
     vars[name] = type
   }
 
@@ -60,9 +65,6 @@ class GlobalScope(parent: Scope?) : Scope(parent) {
   }
 
   override fun setFunc(name: String, type: FuncMeta) {
-//    if (funcs.containsKey(name)) {
-//      throw Exception("redeclaration of $name")
-//    }
     funcs[name] = type
   }
 
@@ -70,15 +72,21 @@ class GlobalScope(parent: Scope?) : Scope(parent) {
     return funcs[name] ?: parent?.getFunc(name)
   }
 
+  override fun testFunc(name: String): Boolean {
+    // this might be duplicate, because every class would init a ctor in global scope
+    return funcs[name] != null || classes[name] != null
+  }
+
   override fun setClass(name: String, type: ClassMeta) {
-//    if (classes.containsKey(name)) {
-//      throw Exception("redeclaration of $name")
-//    }
     classes[name] = type
   }
 
   override fun getClass(name: String): ClassMeta? {
     return classes[name] ?: parent?.getClass(name)
+  }
+
+  override fun testClass(name: String): Boolean {
+    return classes[name] != null || funcs[name] != null
   }
 
   override fun getType(name: String): TypeMeta? {
@@ -111,9 +119,6 @@ class ClassScope(parent: Scope?) : Scope(parent) {
   private val methods: HashMap<String, FuncMeta> = HashMap()
 
   override fun setVar(name: String, type: TypeMeta) {
-    if (members.containsKey(name)) {
-      throw Exception("redeclaration of $name")
-    }
     members[name] = type
   }
 
