@@ -1,7 +1,7 @@
-package frontend.abst.control
+package frontend.abst.controller
 
 import exceptions.SemanticException
-import frontend.abst.utils.CodePos
+import frontend.utils.CodePos
 import org.antlr.v4.runtime.BaseErrorListener
 import org.antlr.v4.runtime.RecognitionException
 import org.antlr.v4.runtime.Recognizer

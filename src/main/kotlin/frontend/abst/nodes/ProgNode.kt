@@ -1,12 +1,12 @@
 package frontend.abst.nodes
 
-import frontend.abst.control.Visitor
-import frontend.abst.utils.CodePos
-import frontend.abst.utils.GlobalScope
+import frontend.abst.controller.AbstVisitor
+import frontend.utils.CodePos
+import frontend.utils.GlobalScope
 
 class ProgNode(pos: CodePos, val suite: BaseNode) : BaseNode(pos) {
   val scope = GlobalScope(null)
-  override fun accept(visitor: Visitor) {
+  override fun accept(visitor: AbstVisitor) {
     visitor.visit(this)
   }
 }

@@ -1,13 +1,13 @@
-import frontend.abst.control.AntlrErrorListener
-import frontend.abst.control.Builder
-import frontend.abst.meta.ClassMeta
-import frontend.abst.meta.FuncMeta
+import frontend.abst.controller.AbstBuilder
+import frontend.abst.controller.AntlrErrorListener
 import frontend.abst.nodes.ProgNode
-import frontend.abst.utils.GlobalScope
+import frontend.meta.ClassMeta
+import frontend.meta.FuncMeta
 import frontend.parser.MeteorLexer
 import frontend.parser.MeteorParser
 import frontend.semantic.SemanticChecker
 import frontend.semantic.SymbolCollector
+import frontend.utils.GlobalScope
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import java.io.FileInputStream
@@ -52,8 +52,8 @@ fun main(args: Array<String>) {
   parser.addErrorListener(AntlrErrorListener())
   val parserRoot = parser.prog()
 
-  val builder = Builder()
-  val builderRoot = builder.visitProg(parserRoot) as ProgNode
+  val abstBuilder = AbstBuilder()
+  val builderRoot = abstBuilder.visitProg(parserRoot) as ProgNode
 
   setPrimitives(builderRoot.scope)
   setBuiltinFuncs(builderRoot.scope)

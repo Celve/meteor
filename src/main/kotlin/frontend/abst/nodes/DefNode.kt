@@ -1,15 +1,15 @@
 package frontend.abst.nodes
 
-import frontend.abst.control.Visitor
-import frontend.abst.meta.ClassMeta
-import frontend.abst.meta.FuncMeta
-import frontend.abst.utils.CodePos
+import frontend.abst.controller.AbstVisitor
+import frontend.meta.ClassMeta
+import frontend.meta.FuncMeta
+import frontend.utils.CodePos
 
 abstract class DefNode(pos: CodePos) : BaseNode(pos)
 
 class ClassDefNode(pos: CodePos, val className: String, val classSuite: BaseNode?) : DefNode(pos) {
   val classMeta = ClassMeta(className)
-  override fun accept(visitor: Visitor) {
+  override fun accept(visitor: AbstVisitor) {
     visitor.visit(this)
   }
 }
@@ -21,7 +21,7 @@ class ClassCtorNode(
   val funcSuite: BaseNode?
 ) : DefNode(pos) {
   var funcMeta = FuncMeta(className, listOf(), null)
-  override fun accept(visitor: Visitor) {
+  override fun accept(visitor: AbstVisitor) {
     visitor.visit(this)
   }
 }
@@ -35,7 +35,7 @@ class FuncDefNode(
 ) : DefNode(pos) {
   var funcMeta = FuncMeta(funcName, listOf(), null)
 
-  override fun accept(visitor: Visitor) {
+  override fun accept(visitor: AbstVisitor) {
     visitor.visit(this)
   }
 }
@@ -49,7 +49,7 @@ class LambdaDefNode(
   DefNode(pos) {
   var funcMeta = FuncMeta("lambda", listOf(), null, isRef)
 
-  override fun accept(visitor: Visitor) {
+  override fun accept(visitor: AbstVisitor) {
     visitor.visit(this)
   }
 }

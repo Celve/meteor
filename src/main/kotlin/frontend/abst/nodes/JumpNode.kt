@@ -1,10 +1,10 @@
 package frontend.abst.nodes
 
-import frontend.abst.control.Visitor
-import frontend.abst.utils.CodePos
+import frontend.abst.controller.AbstVisitor
+import frontend.utils.CodePos
 
 class JumpNode(pos: CodePos, val type: String, val expr: ExprNode?) : BaseNode(pos) {
-  override fun accept(visitor: Visitor) {
+  override fun accept(visitor: AbstVisitor) {
     visitor.visit(this)
   }
 }

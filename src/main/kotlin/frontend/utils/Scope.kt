@@ -1,8 +1,8 @@
-package frontend.abst.utils
+package frontend.utils
 
-import frontend.abst.meta.ClassMeta
-import frontend.abst.meta.FuncMeta
-import frontend.abst.meta.TypeMeta
+import frontend.meta.ClassMeta
+import frontend.meta.FuncMeta
+import frontend.meta.TypeMeta
 
 // scopes are a tree-structure
 open class Scope(var parent: Scope?) {

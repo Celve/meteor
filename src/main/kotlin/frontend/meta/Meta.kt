@@ -1,7 +1,7 @@
-package frontend.abst.meta
+package frontend.meta
 
-import frontend.abst.utils.ClassScope
-import frontend.abst.utils.FuncScope
+import frontend.utils.ClassScope
+import frontend.utils.FuncScope
 
 
 data class ClassMeta(val className: String) {

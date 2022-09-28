@@ -1,15 +1,15 @@
 package frontend.semantic
 
 import exceptions.SemanticException
-import frontend.abst.control.Visitor
-import frontend.abst.meta.FuncMeta
-import frontend.abst.meta.TypeMeta
+import frontend.abst.controller.AbstVisitor
 import frontend.abst.nodes.*
-import frontend.abst.utils.ClassScope
-import frontend.abst.utils.ScopeManager
+import frontend.meta.FuncMeta
+import frontend.meta.TypeMeta
+import frontend.utils.ClassScope
+import frontend.utils.ScopeManager
 import java.util.*
 
-class SemanticChecker : Visitor() {
+class SemanticChecker : AbstVisitor() {
   private val scopeManager = ScopeManager()
   override fun visit(curr: ProgNode) {
     scopeManager.addLast(curr.scope)

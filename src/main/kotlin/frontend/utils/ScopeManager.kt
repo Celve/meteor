@@ -1,7 +1,7 @@
-package frontend.abst.utils
+package frontend.utils
 
-import frontend.abst.meta.ClassMeta
-import frontend.abst.meta.FuncMeta
+import frontend.meta.ClassMeta
+import frontend.meta.FuncMeta
 import java.util.*
 
 class ScopeManager {
