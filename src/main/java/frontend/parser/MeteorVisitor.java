@@ -143,11 +143,11 @@ public interface MeteorVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitBasicExpr(MeteorParser.BasicExprContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link MeteorParser#stmt}.
+	 * Visit a parse tree produced by {@link MeteorParser#short}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitStmt(MeteorParser.StmtContext ctx);
+	T visitShort(MeteorParser.ShortContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MeteorParser#prefixOps}.
 	 * @param ctx the parse tree

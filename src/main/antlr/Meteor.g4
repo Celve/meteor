@@ -4,7 +4,7 @@ import Stardust;
 
 // program
 prog: progSuite;
-progSuite: (stmt | def | block | decl | jump)*;
+progSuite: (short | def | block | decl | jump)*;
 
 // block
 block: for | while | cond | field;
@@ -44,7 +44,7 @@ classCtor: classId = Id paramDeclList? '{' funcSuite '}';
 
 // 9. function
 returnType: varType | voidType;
-funcSuite: (stmt | block | decl | jump)*;
+funcSuite: (short | block | decl | jump)*;
 funcDef: returnType funcName = Id paramDeclList '{' funcSuite '}';
 //funcDecl: returnType funcId = Id paramDefList '{' funcSuite '}';
 
@@ -69,7 +69,7 @@ basicExpr:
 	| Null;
 
 // 10.2. arithmetic expressions and assign expressions leftValue: Id | memberAccess | arrayAccess;
-stmt: expr? ';';
+short: expr? ';';
 prefixOps:
 	Increment
 	| Decrement
@@ -108,7 +108,7 @@ varDecl: varType assignUnit (',' assignUnit)* ';';
 
 // 11.2. conditional stmtements
 jump: (op = Return expr? | op = Break | op = Continue) ';';
-simpleSuite:  stmt | jump | decl;
+simpleSuite: short | jump | decl;
 extendedBlock: simpleSuite | block;
 cond: If '(' expr ')' extendedBlock (Else extendedBlock)?;
 // 11.3. loops

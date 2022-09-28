@@ -34,7 +34,7 @@ class SemanticChecker : AstVisitor() {
 
   // the definition of class should be in global scope
   // the antlr guarantees it, so here is not check
-  // the member and method should be put in both global scope and local scope
+  // the member and method should be put only inside the local space
   override fun visit(curr: ClassDefNode) {
     val scope = scopeManager.first()
     scope.setClass(curr.className, curr.classMeta)
@@ -49,8 +49,8 @@ class SemanticChecker : AstVisitor() {
     scopeManager.removeLast()
   }
 
-  // the definition of function should be 'in global scope
-  // the antlr guarantees it, so here is no check
+  // definition of function should be in global scope
+  // antlr guarantees it, so here is no check
   override fun visit(curr: FuncDefNode) {
     scopeManager.addLast(curr.funcMeta)
     curr.funcSuite?.accept(this)
@@ -188,7 +188,7 @@ class SemanticChecker : AstVisitor() {
     }
   }
 
-  override fun visit(curr: StmtNode) {
+  override fun visit(curr: ShortNode) {
     curr.expr?.accept(this)
   }
 

@@ -281,13 +281,13 @@ public class MeteorBaseListener implements MeteorListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterStmt(MeteorParser.StmtContext ctx) { }
+	@Override public void enterShort(MeteorParser.ShortContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitStmt(MeteorParser.StmtContext ctx) { }
+	@Override public void exitShort(MeteorParser.ShortContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

@@ -117,8 +117,8 @@ class AstBuilder : MeteorBaseVisitor<BaseNode>() {
 
   // when let antlr automatically iterate the tree
   // it only returns the last result of its children
-  override fun visitStmt(ctx: MeteorParser.StmtContext?): BaseNode {
-    return StmtNode(CodePos(ctx!!), if (ctx.expr() == null) null else visit(ctx.expr()) as ExprNode)
+  override fun visitShort(ctx: MeteorParser.ShortContext?): BaseNode {
+    return ShortNode(CodePos(ctx!!), if (ctx.expr() == null) null else visit(ctx.expr()) as ExprNode)
   }
 
   override fun visitPriorExpr(ctx: MeteorParser.PriorExprContext?): BaseNode {

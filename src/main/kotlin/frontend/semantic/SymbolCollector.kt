@@ -175,7 +175,7 @@ class SymbolCollector : AstVisitor() {
     TODO("Not yet implemented")
   }
 
-  override fun visit(curr: StmtNode) {
+  override fun visit(curr: ShortNode) {
     TODO("Not yet implemented")
   }
 

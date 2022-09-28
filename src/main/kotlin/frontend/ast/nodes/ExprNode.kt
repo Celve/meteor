@@ -5,7 +5,7 @@ import frontend.meta.TypeMeta
 import frontend.utils.CodePos
 
 // although but, stmt should be put inside Stmt.kt, however, it's now
-class StmtNode(pos: CodePos, val expr: ExprNode?) : BaseNode(pos) {
+class ShortNode(pos: CodePos, val expr: ExprNode?) : BaseNode(pos) {
   override fun accept(visitor: AstVisitor) {
     visitor.visit(this)
   }

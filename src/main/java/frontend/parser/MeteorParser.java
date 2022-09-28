@@ -32,7 +32,7 @@ public class MeteorParser extends Parser {
 		RULE_voidType = 9, RULE_nonPrimitiveType = 10, RULE_classSuite = 11, RULE_classDef = 12, 
 		RULE_classCtor = 13, RULE_returnType = 14, RULE_funcSuite = 15, RULE_funcDef = 16, 
 		RULE_paramDecl = 17, RULE_paramDeclList = 18, RULE_paramInputList = 19, 
-		RULE_lambdaDef = 20, RULE_basicExpr = 21, RULE_stmt = 22, RULE_prefixOps = 23, 
+		RULE_lambdaDef = 20, RULE_basicExpr = 21, RULE_short = 22, RULE_prefixOps = 23, 
 		RULE_bracketedExpr = 24, RULE_expr = 25, RULE_assignUnit = 26, RULE_varDecl = 27, 
 		RULE_jump = 28, RULE_simpleSuite = 29, RULE_extendedBlock = 30, RULE_cond = 31, 
 		RULE_while = 32, RULE_forInitUnit = 33, RULE_forCondUnit = 34, RULE_forStepUnit = 35, 
@@ -42,7 +42,7 @@ public class MeteorParser extends Parser {
 			"prog", "progSuite", "block", "field", "decl", "def", "varType", "classType", 
 			"primitiveType", "voidType", "nonPrimitiveType", "classSuite", "classDef", 
 			"classCtor", "returnType", "funcSuite", "funcDef", "paramDecl", "paramDeclList", 
-			"paramInputList", "lambdaDef", "basicExpr", "stmt", "prefixOps", "bracketedExpr", 
+			"paramInputList", "lambdaDef", "basicExpr", "short", "prefixOps", "bracketedExpr", 
 			"expr", "assignUnit", "varDecl", "jump", "simpleSuite", "extendedBlock", 
 			"cond", "while", "forInitUnit", "forCondUnit", "forStepUnit", "for"
 		};
@@ -172,11 +172,11 @@ public class MeteorParser extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class ProgSuiteContext extends ParserRuleContext {
-		public List<StmtContext> stmt() {
-			return getRuleContexts(StmtContext.class);
+		public List<ShortContext> short_() {
+			return getRuleContexts(ShortContext.class);
 		}
-		public StmtContext stmt(int i) {
-			return getRuleContext(StmtContext.class,i);
+		public ShortContext short_(int i) {
+			return getRuleContext(ShortContext.class,i);
 		}
 		public List<DefContext> def() {
 			return getRuleContexts(DefContext.class);
@@ -239,7 +239,7 @@ public class MeteorParser extends Parser {
 				case 1:
 					{
 					setState(76);
-					stmt();
+					short_();
 					}
 					break;
 				case 2:
@@ -1095,11 +1095,11 @@ public class MeteorParser extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class FuncSuiteContext extends ParserRuleContext {
-		public List<StmtContext> stmt() {
-			return getRuleContexts(StmtContext.class);
+		public List<ShortContext> short_() {
+			return getRuleContexts(ShortContext.class);
 		}
-		public StmtContext stmt(int i) {
-			return getRuleContext(StmtContext.class,i);
+		public ShortContext short_(int i) {
+			return getRuleContext(ShortContext.class,i);
 		}
 		public List<BlockContext> block() {
 			return getRuleContexts(BlockContext.class);
@@ -1156,7 +1156,7 @@ public class MeteorParser extends Parser {
 				case 1:
 					{
 					setState(147);
-					stmt();
+					short_();
 					}
 					break;
 				case 2:
@@ -1603,32 +1603,32 @@ public class MeteorParser extends Parser {
 	}
 
 	@SuppressWarnings("CheckReturnValue")
-	public static class StmtContext extends ParserRuleContext {
+	public static class ShortContext extends ParserRuleContext {
 		public ExprContext expr() {
 			return getRuleContext(ExprContext.class,0);
 		}
-		public StmtContext(ParserRuleContext parent, int invokingState) {
+		public ShortContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
-		@Override public int getRuleIndex() { return RULE_stmt; }
+		@Override public int getRuleIndex() { return RULE_short; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof MeteorListener ) ((MeteorListener)listener).enterStmt(this);
+			if ( listener instanceof MeteorListener ) ((MeteorListener)listener).enterShort(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof MeteorListener ) ((MeteorListener)listener).exitStmt(this);
+			if ( listener instanceof MeteorListener ) ((MeteorListener)listener).exitShort(this);
 		}
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MeteorVisitor ) return ((MeteorVisitor<? extends T>)visitor).visitStmt(this);
+			if ( visitor instanceof MeteorVisitor ) return ((MeteorVisitor<? extends T>)visitor).visitShort(this);
 			else return visitor.visitChildren(this);
 		}
 	}
 
-	public final StmtContext stmt() throws RecognitionException {
-		StmtContext _localctx = new StmtContext(_ctx, getState());
-		enterRule(_localctx, 44, RULE_stmt);
+	public final ShortContext short_() throws RecognitionException {
+		ShortContext _localctx = new ShortContext(_ctx, getState());
+		enterRule(_localctx, 44, RULE_short);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -2697,8 +2697,8 @@ public class MeteorParser extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class SimpleSuiteContext extends ParserRuleContext {
-		public StmtContext stmt() {
-			return getRuleContext(StmtContext.class,0);
+		public ShortContext short_() {
+			return getRuleContext(ShortContext.class,0);
 		}
 		public JumpContext jump() {
 			return getRuleContext(JumpContext.class,0);
@@ -2736,7 +2736,7 @@ public class MeteorParser extends Parser {
 				enterOuterAlt(_localctx, 1);
 				{
 				setState(324);
-				stmt();
+				short_();
 				}
 				break;
 			case 2:
