@@ -23,7 +23,7 @@ class SymbolCollector : AbstVisitor() {
     curr.scope.getFunc("main") ?: throw SemanticException(curr.pos, "No main function")
   }
 
-  override fun visit(curr: SuiteNode) {
+  override fun visit(curr: ProgSuiteNode) {
     // check for redefinition and register classes and funcs
     val globalScope = scopeManager.first()
     for (it in curr.children) {

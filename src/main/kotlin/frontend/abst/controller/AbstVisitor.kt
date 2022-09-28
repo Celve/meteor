@@ -7,7 +7,7 @@ abstract class AbstVisitor {
   abstract fun visit(curr: ProgNode)
 
   // suites
-  abstract fun visit(curr: SuiteNode)
+  abstract fun visit(curr: ProgSuiteNode)
   abstract fun visit(curr: FuncSuiteNode)
   abstract fun visit(curr: ClassSuiteNode)
   abstract fun visit(curr: SimpleSuiteNode)

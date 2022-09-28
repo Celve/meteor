@@ -8,11 +8,11 @@ import java.util.*
 
 class AbstBuilder : MeteorBaseVisitor<BaseNode>() {
   override fun visitProg(ctx: MeteorParser.ProgContext?): BaseNode {
-    return ProgNode(CodePos(ctx!!), visit(ctx.suite()))
+    return ProgNode(CodePos(ctx!!), visit(ctx.progSuite()))
   }
 
-  override fun visitSuite(ctx: MeteorParser.SuiteContext?): BaseNode {
-    return SuiteNode(CodePos(ctx!!), ctx.children?.map { visit(it) } ?: listOf())
+  override fun visitProgSuite(ctx: MeteorParser.ProgSuiteContext?): BaseNode {
+    return ProgSuiteNode(CodePos(ctx!!), ctx.children?.map { visit(it) } ?: listOf())
   }
 
   override fun visitFuncSuite(ctx: MeteorParser.FuncSuiteContext?): BaseNode {

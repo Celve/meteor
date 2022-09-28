@@ -18,15 +18,15 @@ public interface MeteorListener extends ParseTreeListener {
 	 */
 	void exitProg(MeteorParser.ProgContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link MeteorParser#suite}.
+	 * Enter a parse tree produced by {@link MeteorParser#progSuite}.
 	 * @param ctx the parse tree
 	 */
-	void enterSuite(MeteorParser.SuiteContext ctx);
+	void enterProgSuite(MeteorParser.ProgSuiteContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link MeteorParser#suite}.
+	 * Exit a parse tree produced by {@link MeteorParser#progSuite}.
 	 * @param ctx the parse tree
 	 */
-	void exitSuite(MeteorParser.SuiteContext ctx);
+	void exitProgSuite(MeteorParser.ProgSuiteContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link MeteorParser#block}.
 	 * @param ctx the parse tree

@@ -4,7 +4,7 @@ import frontend.abst.controller.AbstVisitor
 import frontend.meta.FuncMeta
 import frontend.utils.CodePos
 
-class SuiteNode(pos: CodePos, val children: List<BaseNode>) : BaseNode(pos) {
+class ProgSuiteNode(pos: CodePos, val children: List<BaseNode>) : BaseNode(pos) {
   override fun accept(visitor: AbstVisitor) {
     visitor.visit(this)
   }

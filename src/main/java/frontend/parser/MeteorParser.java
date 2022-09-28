@@ -27,7 +27,7 @@ public class MeteorParser extends Parser {
 		Else=46, For=47, While=48, Break=49, Continue=50, Return=51, IntegerLiteral=52, 
 		StringLiteral=53, Escape=54, WhiteSpace=55, NewLine=56, Access=57, Id=58;
 	public static final int
-		RULE_prog = 0, RULE_suite = 1, RULE_block = 2, RULE_field = 3, RULE_decl = 4, 
+		RULE_prog = 0, RULE_progSuite = 1, RULE_block = 2, RULE_field = 3, RULE_decl = 4, 
 		RULE_def = 5, RULE_varType = 6, RULE_classType = 7, RULE_primitiveType = 8, 
 		RULE_voidType = 9, RULE_nonPrimitiveType = 10, RULE_classSuite = 11, RULE_classDef = 12, 
 		RULE_classCtor = 13, RULE_returnType = 14, RULE_funcSuite = 15, RULE_funcDef = 16, 
@@ -39,7 +39,7 @@ public class MeteorParser extends Parser {
 		RULE_for = 36;
 	private static String[] makeRuleNames() {
 		return new String[] {
-			"prog", "suite", "block", "field", "decl", "def", "varType", "classType", 
+			"prog", "progSuite", "block", "field", "decl", "def", "varType", "classType", 
 			"primitiveType", "voidType", "nonPrimitiveType", "classSuite", "classDef", 
 			"classCtor", "returnType", "funcSuite", "funcDef", "paramDecl", "paramDeclList", 
 			"paramInputList", "lambdaDef", "basicExpr", "stmt", "prefixOps", "bracketedExpr", 
@@ -127,8 +127,8 @@ public class MeteorParser extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class ProgContext extends ParserRuleContext {
-		public SuiteContext suite() {
-			return getRuleContext(SuiteContext.class,0);
+		public ProgSuiteContext progSuite() {
+			return getRuleContext(ProgSuiteContext.class,0);
 		}
 		public ProgContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -156,7 +156,7 @@ public class MeteorParser extends Parser {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(74);
-			suite();
+			progSuite();
 			}
 		}
 		catch (RecognitionException re) {
@@ -171,7 +171,7 @@ public class MeteorParser extends Parser {
 	}
 
 	@SuppressWarnings("CheckReturnValue")
-	public static class SuiteContext extends ParserRuleContext {
+	public static class ProgSuiteContext extends ParserRuleContext {
 		public List<StmtContext> stmt() {
 			return getRuleContexts(StmtContext.class);
 		}
@@ -202,28 +202,28 @@ public class MeteorParser extends Parser {
 		public JumpContext jump(int i) {
 			return getRuleContext(JumpContext.class,i);
 		}
-		public SuiteContext(ParserRuleContext parent, int invokingState) {
+		public ProgSuiteContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
-		@Override public int getRuleIndex() { return RULE_suite; }
+		@Override public int getRuleIndex() { return RULE_progSuite; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof MeteorListener ) ((MeteorListener)listener).enterSuite(this);
+			if ( listener instanceof MeteorListener ) ((MeteorListener)listener).enterProgSuite(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof MeteorListener ) ((MeteorListener)listener).exitSuite(this);
+			if ( listener instanceof MeteorListener ) ((MeteorListener)listener).exitProgSuite(this);
 		}
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MeteorVisitor ) return ((MeteorVisitor<? extends T>)visitor).visitSuite(this);
+			if ( visitor instanceof MeteorVisitor ) return ((MeteorVisitor<? extends T>)visitor).visitProgSuite(this);
 			else return visitor.visitChildren(this);
 		}
 	}
 
-	public final SuiteContext suite() throws RecognitionException {
-		SuiteContext _localctx = new SuiteContext(_ctx, getState());
-		enterRule(_localctx, 2, RULE_suite);
+	public final ProgSuiteContext progSuite() throws RecognitionException {
+		ProgSuiteContext _localctx = new ProgSuiteContext(_ctx, getState());
+		enterRule(_localctx, 2, RULE_progSuite);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);

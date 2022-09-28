@@ -3,8 +3,8 @@ grammar Meteor;
 import Stardust;
 
 // program
-prog: suite;
-suite: (stmt | def | block | decl | jump)*;
+prog: progSuite;
+progSuite: (stmt | def | block | decl | jump)*;
 
 // block
 block: for | while | cond | field;

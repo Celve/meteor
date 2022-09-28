@@ -29,13 +29,13 @@ public class MeteorBaseListener implements MeteorListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterSuite(MeteorParser.SuiteContext ctx) { }
+	@Override public void enterProgSuite(MeteorParser.ProgSuiteContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitSuite(MeteorParser.SuiteContext ctx) { }
+	@Override public void exitProgSuite(MeteorParser.ProgSuiteContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

@@ -16,7 +16,7 @@ class SemanticChecker : AbstVisitor() {
     curr.suite.accept(this)
   }
 
-  override fun visit(curr: SuiteNode) {
+  override fun visit(curr: ProgSuiteNode) {
     curr.children.forEach { it.accept(this) }
   }
 

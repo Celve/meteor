@@ -17,11 +17,11 @@ public interface MeteorVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitProg(MeteorParser.ProgContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link MeteorParser#suite}.
+	 * Visit a parse tree produced by {@link MeteorParser#progSuite}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitSuite(MeteorParser.SuiteContext ctx);
+	T visitProgSuite(MeteorParser.ProgSuiteContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MeteorParser#block}.
 	 * @param ctx the parse tree
