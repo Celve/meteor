@@ -9,7 +9,7 @@ import frontend.abst.utils.LoopScope
 abstract class BlockNode(pos: CodePos) : BaseNode(pos)
 
 // init could be varDecl or expr
-// suite is actually extendedBlock, which corresponds to stmt, jump, or block
+// suite is actually extendedBlock, which corresponds to stmt, jump, decl, or block
 class ForNode(
   pos: CodePos,
   val init: BaseNode?,

@@ -4,6 +4,7 @@ import frontend.abst.control.Visitor
 import frontend.abst.meta.TypeMeta
 import frontend.abst.utils.CodePos
 
+// although but, stmt should be put inside Stmt.kt, however, it's now
 class StmtNode(pos: CodePos, val expr: ExprNode?) : BaseNode(pos) {
   override fun accept(visitor: Visitor) {
     visitor.visit(this)
@@ -31,6 +32,13 @@ class AtomNode(pos: CodePos, val id: Int, val literal: String) : ExprNode(pos, i
 }
 
 class InitExprNode(pos: CodePos, val typeDef: String, val dim: Int, val arraySizeList: List<ExprNode?>) :
+  ExprNode(pos, false) {
+  override fun accept(visitor: Visitor) {
+    visitor.visit(this)
+  }
+}
+
+class LambdaCallNode(pos: CodePos, val lambdaDef: LambdaDefNode, val params: List<ExprNode>) :
   ExprNode(pos, false) {
   override fun accept(visitor: Visitor) {
     visitor.visit(this)

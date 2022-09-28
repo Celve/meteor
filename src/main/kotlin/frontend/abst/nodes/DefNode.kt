@@ -34,12 +34,21 @@ class FuncDefNode(
   val funcSuite: BaseNode?
 ) : DefNode(pos) {
   var funcMeta = FuncMeta(funcName, listOf(), null)
+
   override fun accept(visitor: Visitor) {
     visitor.visit(this)
   }
 }
 
-class LambdaDefNode(pos: CodePos) : DefNode(pos) {
+class LambdaDefNode(
+  pos: CodePos,
+  val isRef: Boolean,
+  val params: List<Pair<String, String>>,
+  val funcSuite: BaseNode?
+) :
+  DefNode(pos) {
+  var funcMeta = FuncMeta("lambda", listOf(), null, isRef)
+
   override fun accept(visitor: Visitor) {
     visitor.visit(this)
   }

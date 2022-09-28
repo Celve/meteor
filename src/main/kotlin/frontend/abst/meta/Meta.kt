@@ -4,22 +4,21 @@ import frontend.abst.utils.ClassScope
 import frontend.abst.utils.FuncScope
 
 
-data class ClassMeta(
-  val className: String,
-) {
-  val classScope = ClassScope(null)
+data class ClassMeta(val className: String) {
+  val classScope = ClassScope(null, className) // className is only needed for ctor
 }
 
 data class FuncMeta(
   val funcName: String,
   var paramInput: List<TypeMeta>,
   var returnType: TypeMeta?,
+  val ableOut: Boolean = true
 ) {
-  val funcScope = FuncScope(null)
+  val funcScope = FuncScope(null, ableOut) // ableOut is only for lambda
 }
 
 data class TypeMeta(val cl: ClassMeta, val dim: Int) {
-  // one is concrete and one is null is matched
+  // one is concrete and one is null is matched, which is differed from ==
   fun matchesWith(obj: TypeMeta): Boolean {
     if (isNull() || obj.isNull()) {
       return !isPrimitive() && !obj.isPrimitive()
@@ -27,7 +26,7 @@ data class TypeMeta(val cl: ClassMeta, val dim: Int) {
     return cl.className == obj.cl.className && dim == obj.dim
   }
 
-  fun isPrimitive(): Boolean {
+  private fun isPrimitive(): Boolean {
     return isBool() || isInt() || isString()
   }
 

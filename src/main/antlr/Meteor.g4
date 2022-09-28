@@ -14,7 +14,7 @@ field: '{' funcSuite '}';
 decl: varDecl;
 
 // definitions
-def: classDef | funcDef | lambdaDef;
+def: classDef | funcDef;
 
 // 7. type
 varType: classType ('[' ']')*;
@@ -26,9 +26,7 @@ voidType: Void;
 
 // 7.3.1. array type's declaration and access arrayAccess: expr ('[' expr ']')+;
 
-// TODO: array objects support assign by reference
-
-// 7.3.2 array creation 
+// 7.3.2 array creation
 
 // 7.3.3. built-in methods, or generally, method calls
 
@@ -58,7 +56,7 @@ paramInputList: '(' (expr (',' expr)*)? ')';
 
 // 9.4. lambda
 lambdaDef:
-	'[' (op = '&')? ']' paramInputList '->' '{' stmt* '}';
+	'[' (op = '&')? ']' paramDeclList '->' '{' funcSuite '}';
 
 // 10.1. basic expressions
 basicExpr:
@@ -71,7 +69,6 @@ basicExpr:
 	| Null;
 
 // 10.2. arithmetic expressions and assign expressions leftValue: Id | memberAccess | arrayAccess;
-// TODO: the formal parameters of function, see in the doc
 stmt: expr? ';';
 prefixOps:
 	Increment
@@ -84,7 +81,7 @@ bracketedExpr: '[' expr? ']';
 expr:
 	'(' expr ')' #priorExpr
 	| basicExpr #atom
-	| New classType bracketedExpr* paramInputList? #initExpr // it make sure that all brackets with int is in the head
+	| New classType bracketedExpr* ('(' ')')? #initExpr // constructor with parameters is undefined behavior
 	| lambdaDef paramInputList #lambdaCall
   | (funcName = Id) paramInputList #funcCall
 	| expr '.' (methodName = Id) paramInputList #methodAccess
@@ -113,7 +110,6 @@ varDecl: varType assignUnit (',' assignUnit)* ';';
 jump: (op = Return expr? | op = Break | op = Continue) ';';
 simpleSuite:  stmt | jump | decl;
 extendedBlock: simpleSuite | block;
-// TODO: detail the stmt
 cond: If '(' expr ')' extendedBlock (Else extendedBlock)?;
 // 11.3. loops
 while: While '(' expr ')' extendedBlock;

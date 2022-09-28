@@ -51,6 +51,15 @@ class Builder : MeteorBaseVisitor<BaseNode>() {
     )
   }
 
+  override fun visitLambdaDef(ctx: MeteorParser.LambdaDefContext?): BaseNode {
+    return LambdaDefNode(
+      CodePos(ctx!!),
+      ctx.BitwiseAnd() != null,
+      ctx.paramDeclList().paramDecl().map { Pair(it.varType().text, it.Id().text) },
+      visit(ctx.funcSuite())
+    )
+  }
+
   override fun visitVarDecl(ctx: MeteorParser.VarDeclContext?): BaseNode {
     val assigns: Vector<Pair<String, BaseNode?>> = Vector()
     for (it in ctx!!.assignUnit()) {
@@ -144,6 +153,14 @@ class Builder : MeteorBaseVisitor<BaseNode>() {
       ctx.classType().text,
       ctx.bracketedExpr().size,
       exprs.elements().toList()
+    )
+  }
+
+  override fun visitLambdaCall(ctx: MeteorParser.LambdaCallContext?): BaseNode {
+    return LambdaCallNode(
+      CodePos(ctx!!),
+      visit(ctx.lambdaDef()) as LambdaDefNode,
+      ctx.paramInputList().expr().map { visit(it) as ExprNode }
     )
   }
 

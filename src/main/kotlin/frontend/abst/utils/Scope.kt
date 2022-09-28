@@ -126,7 +126,7 @@ class GlobalScope(parent: Scope?) : Scope(parent) {
   }
 }
 
-class ClassScope(parent: Scope?) : Scope(parent) {
+class ClassScope(parent: Scope?, val className: String) : Scope(parent) {
   private val members: HashMap<String, TypeMeta> = HashMap()
   private val methods: HashMap<String, FuncMeta> = HashMap()
 
@@ -151,7 +151,7 @@ class ClassScope(parent: Scope?) : Scope(parent) {
 }
 
 open class FieldScope(parent: Scope?) : Scope(parent) {
-  private val vars: HashMap<String, TypeMeta> = HashMap()
+  protected val vars: HashMap<String, TypeMeta> = HashMap()
 
   override fun setVar(name: String, type: TypeMeta) {
     if (vars.containsKey(name)) {
@@ -171,4 +171,8 @@ class LoopScope(parent: Scope?) : FieldScope(parent)
 
 class CondScope(parent: Scope?) : FieldScope(parent)
 
-class FuncScope(parent: Scope?) : FieldScope(parent)
+class FuncScope(parent: Scope?, private val ableOut: Boolean) : FieldScope(parent) {
+  override fun getVar(name: String): TypeMeta? {
+    return vars[name] ?: if (ableOut) parent?.getVar(name) else null
+  }
+}

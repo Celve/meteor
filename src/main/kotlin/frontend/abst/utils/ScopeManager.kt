@@ -1,33 +1,35 @@
 package frontend.abst.utils
 
 import frontend.abst.meta.ClassMeta
-import frontend.abst.meta.TypeMeta
+import frontend.abst.meta.FuncMeta
+import java.util.*
 
 class ScopeManager {
-  private val scopes: ArrayDeque<Scope> = ArrayDeque()
-  private var loopCount = 0
-  private var isClass: ClassMeta? = null
-  private var isFunc: TypeMeta? = null
+  private val scopes: Vector<Scope> = Vector()
+  private var classMeta: ClassMeta? = null
+  private var funcMetas: Vector<FuncMeta> = Vector()
 
-  fun addLast(scope: Scope, cl: ClassMeta? = null, type: TypeMeta? = null) {
+  fun addLast(scope: Scope) {
     scope.parent = scopes.lastOrNull()
-    scopes.addLast(scope)
-    if (scope is LoopScope) {
-      loopCount++
-    } else if (scope is ClassScope) {
-      isClass = cl!!
-    } else if (scope is FuncScope) {
-      // TODO: whether to check that isFunc should be null here?
-      isFunc = type!!
-    }
+    scopes.addElement(scope)
+  }
+
+  fun addLast(input: ClassMeta) {
+    addLast(input.classScope)
+    classMeta = input
+  }
+
+  fun addLast(input: FuncMeta) {
+    addLast(input.funcScope)
+    funcMetas.addElement(input)
   }
 
   fun removeLast() {
     val scope = scopes.removeLast()
-    if (scope is LoopScope) {
-      loopCount--
-    } else if (scope is FuncScope) {
-      isFunc = null
+    if (scope is FuncScope) {
+      funcMetas.removeLast()
+    } else if (scope is ClassScope) {
+      classMeta = null
     }
   }
 
@@ -40,14 +42,21 @@ class ScopeManager {
   }
 
   fun isInLoop(): Boolean {
-    return loopCount != 0
+    for (i in scopes.size - 1 downTo 0) {
+      if (scopes[i] is LoopScope) {
+        return true
+      } else if (scopes[i] is FuncScope) {
+        return false
+      }
+    }
+    return false
   }
 
-  fun getFunc(): TypeMeta? {
-    return isFunc
+  fun getRecentFunc(): FuncMeta? {
+    return funcMetas.lastOrNull()
   }
 
-  fun getClass(): ClassMeta? {
-    return isClass
+  fun getRecentClass(): ClassMeta? {
+    return classMeta
   }
 }

@@ -3,3 +3,4 @@
 - [ ] Right value at left
 - [ ] deal with new int[][4]
 - [ ] new with ctor
+- [ ] optimization of AST structures

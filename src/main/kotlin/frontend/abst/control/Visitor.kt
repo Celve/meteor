@@ -35,6 +35,7 @@ abstract class Visitor {
   abstract fun visit(curr: PriorExprNode)
   abstract fun visit(curr: AtomNode)
   abstract fun visit(curr: InitExprNode)
+  abstract fun visit(curr: LambdaCallNode)
   abstract fun visit(curr: FuncCallNode)
   abstract fun visit(curr: MethodAccessNode)
   abstract fun visit(curr: MemberAccessNode)

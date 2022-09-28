@@ -66,7 +66,7 @@ class SymbolCollector : Visitor() {
   }
 
   override fun visit(curr: ClassDefNode) {
-    scopeManager.addLast(curr.classMeta.classScope, curr.classMeta)
+    scopeManager.addLast(curr.classMeta)
     curr.classSuite?.accept(this)
     scopeManager.removeLast()
   }
@@ -78,7 +78,7 @@ class SymbolCollector : Visitor() {
     val innerScope = curr.funcMeta.funcScope
     val paramInput: Vector<TypeMeta> = Vector()
 
-    if (curr.className != scopeManager.getClass()!!.className) {
+    if (curr.className != scopeManager.getRecentClass()!!.className) {
       throw SemanticException(curr.pos, "Class can't have this constructor")
     }
 
@@ -188,6 +188,10 @@ class SymbolCollector : Visitor() {
   }
 
   override fun visit(curr: InitExprNode) {
+    TODO("Not yet implemented")
+  }
+
+  override fun visit(curr: LambdaCallNode) {
     TODO("Not yet implemented")
   }
 
