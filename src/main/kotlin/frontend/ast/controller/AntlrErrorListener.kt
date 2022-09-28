@@ -1,4 +1,4 @@
-package frontend.abst.controller
+package frontend.ast.controller
 
 import exceptions.SemanticException
 import frontend.utils.CodePos

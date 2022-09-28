@@ -1,8 +1,8 @@
-package frontend.abst.controller
+package frontend.ast.controller
 
-import frontend.abst.nodes.*
+import frontend.ast.nodes.*
 
-abstract class AbstVisitor {
+abstract class AstVisitor {
   // more
   abstract fun visit(curr: ProgNode)
 

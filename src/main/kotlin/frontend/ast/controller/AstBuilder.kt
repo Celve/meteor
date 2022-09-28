@@ -1,12 +1,12 @@
-package frontend.abst.controller
+package frontend.ast.controller
 
-import frontend.abst.nodes.*
+import frontend.ast.nodes.*
 import frontend.parser.MeteorBaseVisitor
 import frontend.parser.MeteorParser
 import frontend.utils.CodePos
 import java.util.*
 
-class AbstBuilder : MeteorBaseVisitor<BaseNode>() {
+class AstBuilder : MeteorBaseVisitor<BaseNode>() {
   override fun visitProg(ctx: MeteorParser.ProgContext?): BaseNode {
     return ProgNode(CodePos(ctx!!), visit(ctx.progSuite()))
   }

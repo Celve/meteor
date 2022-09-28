@@ -1,6 +1,6 @@
-package frontend.abst.nodes
+package frontend.ast.nodes
 
-import frontend.abst.controller.AbstVisitor
+import frontend.ast.controller.AstVisitor
 import frontend.utils.CodePos
 import frontend.utils.CondScope
 import frontend.utils.FieldScope
@@ -19,14 +19,14 @@ class ForNode(
 ) :
   BlockNode(pos) {
   val scope = LoopScope(null)
-  override fun accept(visitor: AbstVisitor) {
+  override fun accept(visitor: AstVisitor) {
     visitor.visit(this)
   }
 }
 
 class WhileNode(pos: CodePos, val cond: ExprNode, val suite: BaseNode) : BlockNode(pos) {
   val scope = LoopScope(null)
-  override fun accept(visitor: AbstVisitor) {
+  override fun accept(visitor: AstVisitor) {
     visitor.visit(this)
   }
 }
@@ -34,14 +34,14 @@ class WhileNode(pos: CodePos, val cond: ExprNode, val suite: BaseNode) : BlockNo
 class CondNode(pos: CodePos, val cond: ExprNode, val thenDo: BaseNode, val elseDo: BaseNode?) : BlockNode(pos) {
   val thenScope = CondScope(null)
   val elseScope = CondScope(null)
-  override fun accept(visitor: AbstVisitor) {
+  override fun accept(visitor: AstVisitor) {
     visitor.visit(this)
   }
 }
 
 class FieldNode(pos: CodePos, val suite: BaseNode) : BlockNode(pos) {
   val scope = FieldScope(null)
-  override fun accept(visitor: AbstVisitor) {
+  override fun accept(visitor: AstVisitor) {
     visitor.visit(this)
   }
 }

@@ -1,6 +1,6 @@
-import frontend.abst.controller.AbstBuilder
-import frontend.abst.controller.AntlrErrorListener
-import frontend.abst.nodes.ProgNode
+import frontend.ast.controller.AntlrErrorListener
+import frontend.ast.controller.AstBuilder
+import frontend.ast.nodes.ProgNode
 import frontend.meta.ClassMeta
 import frontend.meta.FuncMeta
 import frontend.parser.MeteorLexer
@@ -52,8 +52,8 @@ fun main(args: Array<String>) {
   parser.addErrorListener(AntlrErrorListener())
   val parserRoot = parser.prog()
 
-  val abstBuilder = AbstBuilder()
-  val builderRoot = abstBuilder.visitProg(parserRoot) as ProgNode
+  val astBuilder = AstBuilder()
+  val builderRoot = astBuilder.visitProg(parserRoot) as ProgNode
 
   setPrimitives(builderRoot.scope)
   setBuiltinFuncs(builderRoot.scope)

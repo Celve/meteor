@@ -1,8 +1,8 @@
 package frontend.semantic
 
 import exceptions.SemanticException
-import frontend.abst.controller.AbstVisitor
-import frontend.abst.nodes.*
+import frontend.ast.controller.AstVisitor
+import frontend.ast.nodes.*
 import frontend.meta.FuncMeta
 import frontend.meta.TypeMeta
 import frontend.utils.ScopeManager
@@ -11,7 +11,7 @@ import java.util.*
 /**
  * SymbolCollector is used to collect classes and funcs which support forward reference
  */
-class SymbolCollector : AbstVisitor() {
+class SymbolCollector : AstVisitor() {
   private val scopeManager = ScopeManager()
 
   override fun visit(curr: ProgNode) {
