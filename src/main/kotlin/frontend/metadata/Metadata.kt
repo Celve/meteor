@@ -1,25 +1,25 @@
-package frontend.meta
+package frontend.metadata
 
 import frontend.utils.ClassScope
 import frontend.utils.FuncScope
 
 
-data class ClassMeta(val className: String) {
+data class ClassMetadata(val className: String) {
   val classScope = ClassScope(null, className) // className is only needed for ctor
 }
 
-data class FuncMeta(
+data class FuncMetadata(
   val funcName: String,
-  var paramInput: List<TypeMeta>,
-  var returnType: TypeMeta?,
+  var paramInput: List<TypeMetadata>,
+  var returnType: TypeMetadata?,
   val ableOut: Boolean = true
 ) {
   val funcScope = FuncScope(null, ableOut) // ableOut is only for lambda
 }
 
-data class TypeMeta(val cl: ClassMeta, val dim: Int) {
+data class TypeMetadata(val cl: ClassMetadata, val dim: Int) {
   // one is concrete and one is null is matched, which is differed from ==
-  fun matchesWith(obj: TypeMeta): Boolean {
+  fun matchesWith(obj: TypeMetadata): Boolean {
     if (isNull() || obj.isNull()) {
       return !isPrimitive() && !obj.isPrimitive()
     }

@@ -7,10 +7,10 @@ abstract class AstVisitor {
   abstract fun visit(curr: ProgNode)
 
   // suites
-  abstract fun visit(curr: ProgSuiteNode)
-  abstract fun visit(curr: FuncSuiteNode)
-  abstract fun visit(curr: ClassSuiteNode)
-  abstract fun visit(curr: SimpleSuiteNode)
+  abstract fun visit(curr: ProgBlockNode)
+  abstract fun visit(curr: FuncBlockNode)
+  abstract fun visit(curr: ClassBlockNode)
+  abstract fun visit(curr: SimpleBlockNode)
 
   // definitions
   abstract fun visit(curr: ClassDefNode)

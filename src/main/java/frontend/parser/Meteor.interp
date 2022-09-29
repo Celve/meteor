@@ -122,8 +122,8 @@ Id
 
 rule names:
 prog
-progSuite
-block
+progBlock
+suite
 field
 decl
 def
@@ -132,11 +132,11 @@ classType
 primitiveType
 voidType
 nonPrimitiveType
-classSuite
+classBlock
 classDef
 classCtor
 returnType
-funcSuite
+funcBlock
 funcDef
 paramDecl
 paramDeclList
@@ -150,8 +150,8 @@ expr
 assignUnit
 varDecl
 jump
-simpleSuite
-extendedBlock
+simpleBlock
+extendedSuite
 cond
 while
 forInitUnit

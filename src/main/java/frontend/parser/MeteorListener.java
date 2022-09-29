@@ -18,25 +18,25 @@ public interface MeteorListener extends ParseTreeListener {
 	 */
 	void exitProg(MeteorParser.ProgContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link MeteorParser#progSuite}.
+	 * Enter a parse tree produced by {@link MeteorParser#progBlock}.
 	 * @param ctx the parse tree
 	 */
-	void enterProgSuite(MeteorParser.ProgSuiteContext ctx);
+	void enterProgBlock(MeteorParser.ProgBlockContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link MeteorParser#progSuite}.
+	 * Exit a parse tree produced by {@link MeteorParser#progBlock}.
 	 * @param ctx the parse tree
 	 */
-	void exitProgSuite(MeteorParser.ProgSuiteContext ctx);
+	void exitProgBlock(MeteorParser.ProgBlockContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link MeteorParser#block}.
+	 * Enter a parse tree produced by {@link MeteorParser#suite}.
 	 * @param ctx the parse tree
 	 */
-	void enterBlock(MeteorParser.BlockContext ctx);
+	void enterSuite(MeteorParser.SuiteContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link MeteorParser#block}.
+	 * Exit a parse tree produced by {@link MeteorParser#suite}.
 	 * @param ctx the parse tree
 	 */
-	void exitBlock(MeteorParser.BlockContext ctx);
+	void exitSuite(MeteorParser.SuiteContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link MeteorParser#field}.
 	 * @param ctx the parse tree
@@ -118,15 +118,15 @@ public interface MeteorListener extends ParseTreeListener {
 	 */
 	void exitNonPrimitiveType(MeteorParser.NonPrimitiveTypeContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link MeteorParser#classSuite}.
+	 * Enter a parse tree produced by {@link MeteorParser#classBlock}.
 	 * @param ctx the parse tree
 	 */
-	void enterClassSuite(MeteorParser.ClassSuiteContext ctx);
+	void enterClassBlock(MeteorParser.ClassBlockContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link MeteorParser#classSuite}.
+	 * Exit a parse tree produced by {@link MeteorParser#classBlock}.
 	 * @param ctx the parse tree
 	 */
-	void exitClassSuite(MeteorParser.ClassSuiteContext ctx);
+	void exitClassBlock(MeteorParser.ClassBlockContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link MeteorParser#classDef}.
 	 * @param ctx the parse tree
@@ -158,15 +158,15 @@ public interface MeteorListener extends ParseTreeListener {
 	 */
 	void exitReturnType(MeteorParser.ReturnTypeContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link MeteorParser#funcSuite}.
+	 * Enter a parse tree produced by {@link MeteorParser#funcBlock}.
 	 * @param ctx the parse tree
 	 */
-	void enterFuncSuite(MeteorParser.FuncSuiteContext ctx);
+	void enterFuncBlock(MeteorParser.FuncBlockContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link MeteorParser#funcSuite}.
+	 * Exit a parse tree produced by {@link MeteorParser#funcBlock}.
 	 * @param ctx the parse tree
 	 */
-	void exitFuncSuite(MeteorParser.FuncSuiteContext ctx);
+	void exitFuncBlock(MeteorParser.FuncBlockContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link MeteorParser#funcDef}.
 	 * @param ctx the parse tree
@@ -432,25 +432,25 @@ public interface MeteorListener extends ParseTreeListener {
 	 */
 	void exitJump(MeteorParser.JumpContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link MeteorParser#simpleSuite}.
+	 * Enter a parse tree produced by {@link MeteorParser#simpleBlock}.
 	 * @param ctx the parse tree
 	 */
-	void enterSimpleSuite(MeteorParser.SimpleSuiteContext ctx);
+	void enterSimpleBlock(MeteorParser.SimpleBlockContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link MeteorParser#simpleSuite}.
+	 * Exit a parse tree produced by {@link MeteorParser#simpleBlock}.
 	 * @param ctx the parse tree
 	 */
-	void exitSimpleSuite(MeteorParser.SimpleSuiteContext ctx);
+	void exitSimpleBlock(MeteorParser.SimpleBlockContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link MeteorParser#extendedBlock}.
+	 * Enter a parse tree produced by {@link MeteorParser#extendedSuite}.
 	 * @param ctx the parse tree
 	 */
-	void enterExtendedBlock(MeteorParser.ExtendedBlockContext ctx);
+	void enterExtendedSuite(MeteorParser.ExtendedSuiteContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link MeteorParser#extendedBlock}.
+	 * Exit a parse tree produced by {@link MeteorParser#extendedSuite}.
 	 * @param ctx the parse tree
 	 */
-	void exitExtendedBlock(MeteorParser.ExtendedBlockContext ctx);
+	void exitExtendedSuite(MeteorParser.ExtendedSuiteContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link MeteorParser#cond}.
 	 * @param ctx the parse tree

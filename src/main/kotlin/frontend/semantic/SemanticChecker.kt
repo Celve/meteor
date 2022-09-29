@@ -3,8 +3,8 @@ package frontend.semantic
 import exceptions.SemanticException
 import frontend.ast.controller.AstVisitor
 import frontend.ast.nodes.*
-import frontend.meta.FuncMeta
-import frontend.meta.TypeMeta
+import frontend.metadata.FuncMetadata
+import frontend.metadata.TypeMetadata
 import frontend.utils.ClassScope
 import frontend.utils.ScopeManager
 import java.util.*
@@ -16,19 +16,19 @@ class SemanticChecker : AstVisitor() {
     curr.suite.accept(this)
   }
 
-  override fun visit(curr: ProgSuiteNode) {
+  override fun visit(curr: ProgBlockNode) {
     curr.children.forEach { it.accept(this) }
   }
 
-  override fun visit(curr: FuncSuiteNode) {
+  override fun visit(curr: FuncBlockNode) {
     curr.children.forEach { it.accept(this) }
   }
 
-  override fun visit(curr: ClassSuiteNode) {
+  override fun visit(curr: ClassBlockNode) {
     curr.children.forEach { it.accept(this) }
   }
 
-  override fun visit(curr: SimpleSuiteNode) {
+  override fun visit(curr: SimpleBlockNode) {
     curr.child.accept(this)
   }
 
@@ -37,14 +37,14 @@ class SemanticChecker : AstVisitor() {
   // the member and method should be put only inside the local space
   override fun visit(curr: ClassDefNode) {
     val scope = scopeManager.first()
-    scope.setClass(curr.className, curr.classMeta)
-    scopeManager.addLast(curr.classMeta)
+    scope.setClass(curr.className, curr.classMetadata)
+    scopeManager.addLast(curr.classMetadata)
     curr.classSuite?.accept(this)
     scopeManager.removeLast()
   }
 
   override fun visit(curr: ClassCtorNode) {
-    scopeManager.addLast(curr.funcMeta)
+    scopeManager.addLast(curr.funcMetadata)
     curr.funcSuite?.accept(this)
     scopeManager.removeLast()
   }
@@ -52,7 +52,7 @@ class SemanticChecker : AstVisitor() {
   // definition of function should be in global scope
   // antlr guarantees it, so here is no check
   override fun visit(curr: FuncDefNode) {
-    scopeManager.addLast(curr.funcMeta)
+    scopeManager.addLast(curr.funcMetadata)
     curr.funcSuite?.accept(this)
     scopeManager.removeLast()
   }
@@ -60,9 +60,9 @@ class SemanticChecker : AstVisitor() {
   override fun visit(curr: LambdaDefNode) {
     println("get in lambda def in ${curr.pos}")
     // omit this duplication for the time being
-    val innerScope = curr.funcMeta.funcScope
+    val innerScope = curr.funcMetadata.funcScope
     val globalScope = scopeManager.first()
-    val paramInput: Vector<TypeMeta> = Vector()
+    val paramInput: Vector<TypeMetadata> = Vector()
 
     // init params and add them into local scope
     for (it in curr.params) {
@@ -70,14 +70,14 @@ class SemanticChecker : AstVisitor() {
       paramInput.addElement(varType)
       innerScope.setVar(it.second, varType)
     }
-    curr.funcMeta.paramInput = paramInput.elements().toList()
+    curr.funcMetadata.paramInput = paramInput.elements().toList()
 
-    scopeManager.addLast(curr.funcMeta)
+    scopeManager.addLast(curr.funcMetadata)
     curr.funcSuite?.accept(this)
     scopeManager.removeLast()
 
-    if (curr.funcMeta.returnType == null) { // this part is a double check, another check is in "return;" situation
-      curr.funcMeta.returnType = globalScope.getFuncType("void")
+    if (curr.funcMetadata.returnType == null) { // this part is a double check, another check is in "return;" situation
+      curr.funcMetadata.returnType = globalScope.getFuncType("void")
     }
   }
 
@@ -214,7 +214,7 @@ class SemanticChecker : AstVisitor() {
             curr.pos,
             "This could only be used inside a class method"
           )
-        curr.type = TypeMeta(cl, 0)
+        curr.type = TypeMetadata(cl, 0)
       }
 
       4 -> curr.type = scope.getVarType("bool")!!
@@ -223,7 +223,7 @@ class SemanticChecker : AstVisitor() {
     }
   }
 
-  private fun checkParamsForFunc(curr: ExprNode, func: FuncMeta, usrInput: List<ExprNode>) {
+  private fun checkParamsForFunc(curr: ExprNode, func: FuncMetadata, usrInput: List<ExprNode>) {
     val stdInput = func.paramInput
     if (stdInput.size != usrInput.size) {
       throw SemanticException(curr.pos, "Unequal parameters for ${func.funcName}")
@@ -253,13 +253,13 @@ class SemanticChecker : AstVisitor() {
         throw SemanticException(curr.pos, "Invalid expression for array declaration")
       }
     }
-    curr.type = TypeMeta(type, curr.dim)
+    curr.type = TypeMetadata(type, curr.dim)
   }
 
   override fun visit(curr: LambdaCallNode) {
     curr.params.forEach { it.accept(this) }
     curr.lambdaDef.accept(this)
-    val func = curr.lambdaDef.funcMeta
+    val func = curr.lambdaDef.funcMetadata
     checkParamsForFunc(curr, func, curr.params)
     if (curr.type == null) {
       println("lambda's result is null in ${curr.pos}")
@@ -283,7 +283,7 @@ class SemanticChecker : AstVisitor() {
         "No correspond method for ${varType.cl.className}.${curr.method}"
       )
     } else if (curr.method == "size") {
-      FuncMeta("size", listOf(), scopeManager.last().getVarType("int")!!)
+      FuncMetadata("size", listOf(), scopeManager.last().getVarType("int")!!)
     } else {
       throw SemanticException(curr.pos, "No correspond method for ${varType.cl.className}.${curr.method}")
     }
@@ -307,7 +307,7 @@ class SemanticChecker : AstVisitor() {
     if (!arrayType.isArray() || !indexType.isInt()) {
       throw SemanticException(curr.pos, "Invalid array access")
     }
-    curr.type = TypeMeta(arrayType.cl, arrayType.dim - 1)
+    curr.type = TypeMetadata(arrayType.cl, arrayType.dim - 1)
   }
 
   override fun visit(curr: SuffixExprNode) {
@@ -393,7 +393,7 @@ class SemanticChecker : AstVisitor() {
         if (!lhs.matchesWith(rhs)) {
           throw SemanticException(curr.pos, "Type don't match")
         }
-        curr.type = TypeMeta(scopeManager.first().getClass("bool")!!, 0)
+        curr.type = TypeMetadata(scopeManager.first().getClass("bool")!!, 0)
       }
 
       "&&", "||" -> {

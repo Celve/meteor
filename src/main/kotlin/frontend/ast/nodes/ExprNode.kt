@@ -1,7 +1,7 @@
 package frontend.ast.nodes
 
 import frontend.ast.controller.AstVisitor
-import frontend.meta.TypeMeta
+import frontend.metadata.TypeMetadata
 import frontend.utils.CodePos
 
 // although but, stmt should be put inside Stmt.kt, however, it's now
@@ -13,7 +13,7 @@ class ShortNode(pos: CodePos, val expr: ExprNode?) : BaseNode(pos) {
 
 // assignable is all determined in builder
 abstract class ExprNode(pos: CodePos, var assignable: Boolean) : BaseNode(pos) {
-  var type: TypeMeta? = null
+  var type: TypeMetadata? = null
 //  override fun accept(visitor: Visitor) {
 //    visitor.visit(this)
 //  }

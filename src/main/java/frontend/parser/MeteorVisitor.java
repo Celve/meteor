@@ -17,17 +17,17 @@ public interface MeteorVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitProg(MeteorParser.ProgContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link MeteorParser#progSuite}.
+	 * Visit a parse tree produced by {@link MeteorParser#progBlock}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitProgSuite(MeteorParser.ProgSuiteContext ctx);
+	T visitProgBlock(MeteorParser.ProgBlockContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link MeteorParser#block}.
+	 * Visit a parse tree produced by {@link MeteorParser#suite}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitBlock(MeteorParser.BlockContext ctx);
+	T visitSuite(MeteorParser.SuiteContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MeteorParser#field}.
 	 * @param ctx the parse tree
@@ -77,11 +77,11 @@ public interface MeteorVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitNonPrimitiveType(MeteorParser.NonPrimitiveTypeContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link MeteorParser#classSuite}.
+	 * Visit a parse tree produced by {@link MeteorParser#classBlock}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitClassSuite(MeteorParser.ClassSuiteContext ctx);
+	T visitClassBlock(MeteorParser.ClassBlockContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MeteorParser#classDef}.
 	 * @param ctx the parse tree
@@ -101,11 +101,11 @@ public interface MeteorVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitReturnType(MeteorParser.ReturnTypeContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link MeteorParser#funcSuite}.
+	 * Visit a parse tree produced by {@link MeteorParser#funcBlock}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitFuncSuite(MeteorParser.FuncSuiteContext ctx);
+	T visitFuncBlock(MeteorParser.FuncBlockContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MeteorParser#funcDef}.
 	 * @param ctx the parse tree
@@ -263,17 +263,17 @@ public interface MeteorVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitJump(MeteorParser.JumpContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link MeteorParser#simpleSuite}.
+	 * Visit a parse tree produced by {@link MeteorParser#simpleBlock}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitSimpleSuite(MeteorParser.SimpleSuiteContext ctx);
+	T visitSimpleBlock(MeteorParser.SimpleBlockContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link MeteorParser#extendedBlock}.
+	 * Visit a parse tree produced by {@link MeteorParser#extendedSuite}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitExtendedBlock(MeteorParser.ExtendedBlockContext ctx);
+	T visitExtendedSuite(MeteorParser.ExtendedSuiteContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MeteorParser#cond}.
 	 * @param ctx the parse tree

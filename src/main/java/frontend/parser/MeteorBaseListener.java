@@ -29,25 +29,25 @@ public class MeteorBaseListener implements MeteorListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterProgSuite(MeteorParser.ProgSuiteContext ctx) { }
+	@Override public void enterProgBlock(MeteorParser.ProgBlockContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitProgSuite(MeteorParser.ProgSuiteContext ctx) { }
+	@Override public void exitProgBlock(MeteorParser.ProgBlockContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterBlock(MeteorParser.BlockContext ctx) { }
+	@Override public void enterSuite(MeteorParser.SuiteContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitBlock(MeteorParser.BlockContext ctx) { }
+	@Override public void exitSuite(MeteorParser.SuiteContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -149,13 +149,13 @@ public class MeteorBaseListener implements MeteorListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterClassSuite(MeteorParser.ClassSuiteContext ctx) { }
+	@Override public void enterClassBlock(MeteorParser.ClassBlockContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitClassSuite(MeteorParser.ClassSuiteContext ctx) { }
+	@Override public void exitClassBlock(MeteorParser.ClassBlockContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -197,13 +197,13 @@ public class MeteorBaseListener implements MeteorListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterFuncSuite(MeteorParser.FuncSuiteContext ctx) { }
+	@Override public void enterFuncBlock(MeteorParser.FuncBlockContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitFuncSuite(MeteorParser.FuncSuiteContext ctx) { }
+	@Override public void exitFuncBlock(MeteorParser.FuncBlockContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -497,25 +497,25 @@ public class MeteorBaseListener implements MeteorListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterSimpleSuite(MeteorParser.SimpleSuiteContext ctx) { }
+	@Override public void enterSimpleBlock(MeteorParser.SimpleBlockContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitSimpleSuite(MeteorParser.SimpleSuiteContext ctx) { }
+	@Override public void exitSimpleBlock(MeteorParser.SimpleBlockContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterExtendedBlock(MeteorParser.ExtendedBlockContext ctx) { }
+	@Override public void enterExtendedSuite(MeteorParser.ExtendedSuiteContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitExtendedBlock(MeteorParser.ExtendedBlockContext ctx) { }
+	@Override public void exitExtendedSuite(MeteorParser.ExtendedSuiteContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

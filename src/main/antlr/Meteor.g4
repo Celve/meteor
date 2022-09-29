@@ -3,12 +3,12 @@ grammar Meteor;
 import Stardust;
 
 // program
-prog: progSuite;
-progSuite: (short | def | block | decl | jump)*;
+prog: progBlock;
+progBlock: (short | def | suite | decl | jump)*;
 
-// block
-block: for | while | cond | field;
-field: '{' funcSuite '}';
+// suite
+suite: for | while | cond | field;
+field: '{' funcBlock '}';
 
 // declarations
 decl: varDecl;
@@ -34,19 +34,19 @@ voidType: Void;
 
 // 8. class, namely non-primitive type
 nonPrimitiveType: Id;
-classSuite: (decl | funcDef | classCtor)*;
-classDef: Class className = Id '{' classSuite '}' ';';
+classBlock: (decl | funcDef | classCtor)*;
+classDef: Class className = Id '{' classBlock '}' ';';
 
 // 8.3. access class members and call class methods (in 7.3.3.)
 
 // 8.4 class constructor
-classCtor: classId = Id paramDeclList? '{' funcSuite '}';
+classCtor: classId = Id paramDeclList? '{' funcBlock '}';
 
 // 9. function
 returnType: varType | voidType;
-funcSuite: (short | block | decl | jump)*;
-funcDef: returnType funcName = Id paramDeclList '{' funcSuite '}';
-//funcDecl: returnType funcId = Id paramDefList '{' funcSuite '}';
+funcBlock: (short | suite | decl | jump)*;
+funcDef: returnType funcName = Id paramDeclList '{' funcBlock '}';
+//funcDecl: returnType funcId = Id paramDefList '{' funcBlock '}';
 
 // 9.1. function definition
 paramDecl: varType Id;
@@ -56,7 +56,7 @@ paramInputList: '(' (expr (',' expr)*)? ')';
 
 // 9.4. lambda
 lambdaDef:
-	'[' (op = '&')? ']' paramDeclList '->' '{' funcSuite '}';
+	'[' (op = '&')? ']' paramDeclList '->' '{' funcBlock '}';
 
 // 10.1. basic expressions
 basicExpr:
@@ -108,13 +108,13 @@ varDecl: varType assignUnit (',' assignUnit)* ';';
 
 // 11.2. conditional stmtements
 jump: (op = Return expr? | op = Break | op = Continue) ';';
-simpleSuite: short | jump | decl;
-extendedBlock: simpleSuite | block;
-cond: If '(' expr ')' extendedBlock (Else extendedBlock)?;
+simpleBlock: short | jump | decl;
+extendedSuite: simpleBlock | suite;
+cond: If '(' expr ')' extendedSuite (Else extendedSuite)?;
 // 11.3. loops
-while: While '(' expr ')' extendedBlock;
+while: While '(' expr ')' extendedSuite;
 forInitUnit: (varDecl | expr ';') | ';';
 forCondUnit: expr? ';';
 forStepUnit: expr?;
 for:
-	For '(' forInitUnit forCondUnit forStepUnit ')' extendedBlock;
+	For '(' forInitUnit forCondUnit forStepUnit ')' extendedSuite;

@@ -8,28 +8,28 @@ import java.util.*
 
 class AstBuilder : MeteorBaseVisitor<BaseNode>() {
   override fun visitProg(ctx: MeteorParser.ProgContext?): BaseNode {
-    return ProgNode(CodePos(ctx!!), visit(ctx.progSuite()))
+    return ProgNode(CodePos(ctx!!), visit(ctx.progBlock()))
   }
 
-  override fun visitProgSuite(ctx: MeteorParser.ProgSuiteContext?): BaseNode {
-    return ProgSuiteNode(CodePos(ctx!!), ctx.children?.map { visit(it) } ?: listOf())
+  override fun visitProgBlock(ctx: MeteorParser.ProgBlockContext?): BaseNode {
+    return ProgBlockNode(CodePos(ctx!!), ctx.children?.map { visit(it) } ?: listOf())
   }
 
-  override fun visitFuncSuite(ctx: MeteorParser.FuncSuiteContext?): BaseNode {
-    return FuncSuiteNode(CodePos(ctx!!), ctx.children?.map { visit(it) } ?: listOf())
+  override fun visitFuncBlock(ctx: MeteorParser.FuncBlockContext?): BaseNode {
+    return FuncBlockNode(CodePos(ctx!!), ctx.children?.map { visit(it) } ?: listOf())
   }
 
-  override fun visitClassSuite(ctx: MeteorParser.ClassSuiteContext?): BaseNode {
-    return ClassSuiteNode(CodePos(ctx!!), ctx.children?.map { visit(it) } ?: listOf())
+  override fun visitClassBlock(ctx: MeteorParser.ClassBlockContext?): BaseNode {
+    return ClassBlockNode(CodePos(ctx!!), ctx.children?.map { visit(it) } ?: listOf())
   }
 
-  override fun visitSimpleSuite(ctx: MeteorParser.SimpleSuiteContext?): BaseNode {
+  override fun visitSimpleBlock(ctx: MeteorParser.SimpleBlockContext?): BaseNode {
     // TODO: double check this, I don't sure the getChild() work
-    return SimpleSuiteNode(CodePos(ctx!!), visit(ctx.getChild(0)))
+    return SimpleBlockNode(CodePos(ctx!!), visit(ctx.getChild(0)))
   }
 
   override fun visitClassDef(ctx: MeteorParser.ClassDefContext?): BaseNode {
-    return ClassDefNode(CodePos(ctx!!), ctx.className.text, visit(ctx.classSuite()))
+    return ClassDefNode(CodePos(ctx!!), ctx.className.text, visit(ctx.classBlock()))
   }
 
   override fun visitClassCtor(ctx: MeteorParser.ClassCtorContext?): BaseNode {
@@ -37,7 +37,7 @@ class AstBuilder : MeteorBaseVisitor<BaseNode>() {
       CodePos(ctx!!),
       ctx.classId.text,
       ctx.paramDeclList().paramDecl().map { Pair(it.varType().text, it.Id().text) },
-      visit(ctx.funcSuite())
+      visit(ctx.funcBlock())
     )
   }
 
@@ -47,7 +47,7 @@ class AstBuilder : MeteorBaseVisitor<BaseNode>() {
       ctx.funcName.text,
       ctx.paramDeclList().paramDecl().map { Pair(it.varType().text, it.Id().text) },
       ctx.returnType().text,
-      visit(ctx.funcSuite())
+      visit(ctx.funcBlock())
     )
   }
 
@@ -56,7 +56,7 @@ class AstBuilder : MeteorBaseVisitor<BaseNode>() {
       CodePos(ctx!!),
       ctx.BitwiseAnd() != null,
       ctx.paramDeclList().paramDecl().map { Pair(it.varType().text, it.Id().text) },
-      visit(ctx.funcSuite())
+      visit(ctx.funcBlock())
     )
   }
 
@@ -79,14 +79,14 @@ class AstBuilder : MeteorBaseVisitor<BaseNode>() {
     val cond = if (ctx.forCondUnit().expr() == null) null else visit(ctx.forCondUnit().expr()) as ExprNode
     val step = if (ctx.forStepUnit().expr() == null) null else visit(ctx.forStepUnit().expr()) as ExprNode
 
-    if (ctx.extendedBlock() == null) {
+    if (ctx.extendedSuite() == null) {
       println("this is impossible")
     }
-    return ForNode(CodePos(ctx), init, cond, step, visit(ctx.extendedBlock()))
+    return ForNode(CodePos(ctx), init, cond, step, visit(ctx.extendedSuite()))
   }
 
   override fun visitWhile(ctx: MeteorParser.WhileContext?): BaseNode {
-    return WhileNode(CodePos(ctx!!), visit(ctx.expr()) as ExprNode, visit(ctx.extendedBlock()))
+    return WhileNode(CodePos(ctx!!), visit(ctx.expr()) as ExprNode, visit(ctx.extendedSuite()))
   }
 
   override fun visitJump(ctx: MeteorParser.JumpContext?): BaseNode {
@@ -100,8 +100,8 @@ class AstBuilder : MeteorBaseVisitor<BaseNode>() {
   }
 
   override fun visitCond(ctx: MeteorParser.CondContext?): BaseNode {
-    val thenDo = visit(ctx!!.extendedBlock(0))
-    val elseDo = if (ctx.Else() == null) null else visit(ctx.extendedBlock(1))
+    val thenDo = visit(ctx!!.extendedSuite(0))
+    val elseDo = if (ctx.Else() == null) null else visit(ctx.extendedSuite(1))
 
     return CondNode(
       CodePos(ctx),
@@ -112,7 +112,7 @@ class AstBuilder : MeteorBaseVisitor<BaseNode>() {
   }
 
   override fun visitField(ctx: MeteorParser.FieldContext?): BaseNode {
-    return FieldNode(CodePos(ctx!!), visit(ctx.funcSuite()))
+    return FieldNode(CodePos(ctx!!), visit(ctx.funcBlock()))
   }
 
   // when let antlr automatically iterate the tree

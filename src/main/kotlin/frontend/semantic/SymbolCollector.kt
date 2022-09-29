@@ -3,8 +3,8 @@ package frontend.semantic
 import exceptions.SemanticException
 import frontend.ast.controller.AstVisitor
 import frontend.ast.nodes.*
-import frontend.meta.FuncMeta
-import frontend.meta.TypeMeta
+import frontend.metadata.FuncMetadata
+import frontend.metadata.TypeMetadata
 import frontend.utils.ScopeManager
 import java.util.*
 
@@ -23,7 +23,7 @@ class SymbolCollector : AstVisitor() {
     curr.scope.getFunc("main") ?: throw SemanticException(curr.pos, "No main function")
   }
 
-  override fun visit(curr: ProgSuiteNode) {
+  override fun visit(curr: ProgBlockNode) {
     // check for redefinition and register classes and funcs
     val globalScope = scopeManager.first()
     for (it in curr.children) {
@@ -33,9 +33,9 @@ class SymbolCollector : AstVisitor() {
         } else if (globalScope.testFunc(it.className)) {
           throw SemanticException(curr.pos, "Class ${it.className} has the same name with another function")
         }
-        globalScope.setClass(it.className, it.classMeta)
+        globalScope.setClass(it.className, it.classMetadata)
         // use this special format to stand for implicit class creator
-        globalScope.setFunc(it.className, FuncMeta(it.className, listOf(), globalScope.getFuncType("null")))
+        globalScope.setFunc(it.className, FuncMetadata(it.className, listOf(), globalScope.getFuncType("null")))
       }
     }
 
@@ -53,20 +53,20 @@ class SymbolCollector : AstVisitor() {
     }
   }
 
-  override fun visit(curr: FuncSuiteNode) {
+  override fun visit(curr: FuncBlockNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visit(curr: ClassSuiteNode) {
+  override fun visit(curr: ClassBlockNode) {
     curr.children.forEach { it.accept(this) }
   }
 
-  override fun visit(curr: SimpleSuiteNode) {
+  override fun visit(curr: SimpleBlockNode) {
     TODO("Not yet implemented")
   }
 
   override fun visit(curr: ClassDefNode) {
-    scopeManager.addLast(curr.classMeta)
+    scopeManager.addLast(curr.classMetadata)
     curr.classSuite?.accept(this)
     scopeManager.removeLast()
   }
@@ -75,8 +75,8 @@ class SymbolCollector : AstVisitor() {
     // omit this duplication for the time being
     val globalScope = scopeManager.first()
     val outerScope = scopeManager.last()
-    val innerScope = curr.funcMeta.funcScope
-    val paramInput: Vector<TypeMeta> = Vector()
+    val innerScope = curr.funcMetadata.funcScope
+    val paramInput: Vector<TypeMetadata> = Vector()
 
     if (curr.className != scopeManager.getRecentClass()!!.className) {
       throw SemanticException(curr.pos, "Class can't have this constructor")
@@ -93,17 +93,17 @@ class SymbolCollector : AstVisitor() {
       paramInput.addElement(varType)
       innerScope.setVar(it.second, varType)
     }
-    curr.funcMeta.paramInput = paramInput.elements().toList()
+    curr.funcMetadata.paramInput = paramInput.elements().toList()
 
-    curr.funcMeta.returnType = globalScope.getFuncType("void")
-    globalScope.setFunc(curr.className, curr.funcMeta)
+    curr.funcMetadata.returnType = globalScope.getFuncType("void")
+    globalScope.setFunc(curr.className, curr.funcMetadata)
   }
 
   override fun visit(curr: FuncDefNode) {
     // omit this duplication for the time being
     val outerScope = scopeManager.last()
-    val innerScope = curr.funcMeta.funcScope
-    val paramInput: Vector<TypeMeta> = Vector()
+    val innerScope = curr.funcMetadata.funcScope
+    val paramInput: Vector<TypeMetadata> = Vector()
 
     // need to check here, there is no check above
     if (outerScope.testFunc(curr.funcName)) {
@@ -116,15 +116,15 @@ class SymbolCollector : AstVisitor() {
       paramInput.addElement(varType)
       innerScope.setVar(it.second, varType)
     }
-    curr.funcMeta.paramInput = paramInput.elements().toList()
+    curr.funcMetadata.paramInput = paramInput.elements().toList()
 
     // check for its return type
-    curr.funcMeta.returnType =
+    curr.funcMetadata.returnType =
       outerScope.getFuncType(curr.returnType) ?: throw SemanticException(curr.pos, "${curr.returnType} is not defined")
 
     // for main only
     if (curr.funcName == "main") {
-      if (!curr.funcMeta.returnType!!.isInt()) {
+      if (!curr.funcMetadata.returnType!!.isInt()) {
         throw SemanticException(curr.pos, "Function main has to have a int return ")
       }
       if (curr.params.size != 0) {
@@ -132,7 +132,7 @@ class SymbolCollector : AstVisitor() {
       }
     }
 
-    outerScope.setFunc(curr.funcName, curr.funcMeta)
+    outerScope.setFunc(curr.funcName, curr.funcMetadata)
   }
 
   override fun visit(curr: LambdaDefNode) {

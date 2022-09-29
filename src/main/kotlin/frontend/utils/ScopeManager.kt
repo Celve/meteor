@@ -1,35 +1,35 @@
 package frontend.utils
 
-import frontend.meta.ClassMeta
-import frontend.meta.FuncMeta
+import frontend.metadata.ClassMetadata
+import frontend.metadata.FuncMetadata
 import java.util.*
 
 class ScopeManager {
   private val scopes: Vector<Scope> = Vector()
-  private var classMeta: ClassMeta? = null
-  private var funcMetas: Vector<FuncMeta> = Vector()
+  private var classMetadata: ClassMetadata? = null
+  private var funcMetadata: Vector<FuncMetadata> = Vector()
 
   fun addLast(scope: Scope) {
     scope.parent = scopes.lastOrNull()
     scopes.addElement(scope)
   }
 
-  fun addLast(input: ClassMeta) {
+  fun addLast(input: ClassMetadata) {
     addLast(input.classScope)
-    classMeta = input
+    classMetadata = input
   }
 
-  fun addLast(input: FuncMeta) {
+  fun addLast(input: FuncMetadata) {
     addLast(input.funcScope)
-    funcMetas.addElement(input)
+    funcMetadata.addElement(input)
   }
 
   fun removeLast() {
     val scope = scopes.removeLast()
     if (scope is FuncScope) {
-      funcMetas.removeLast()
+      funcMetadata.removeLast()
     } else if (scope is ClassScope) {
-      classMeta = null
+      classMetadata = null
     }
   }
 
@@ -52,11 +52,11 @@ class ScopeManager {
     return false
   }
 
-  fun getRecentFunc(): FuncMeta? {
-    return funcMetas.lastOrNull()
+  fun getRecentFunc(): FuncMetadata? {
+    return funcMetadata.lastOrNull()
   }
 
-  fun getRecentClass(): ClassMeta? {
-    return classMeta
+  fun getRecentClass(): ClassMetadata? {
+    return classMetadata
   }
 }

@@ -1,8 +1,8 @@
 import frontend.ast.controller.AntlrErrorListener
 import frontend.ast.controller.AstBuilder
 import frontend.ast.nodes.ProgNode
-import frontend.meta.ClassMeta
-import frontend.meta.FuncMeta
+import frontend.metadata.ClassMetadata
+import frontend.metadata.FuncMetadata
 import frontend.parser.MeteorLexer
 import frontend.parser.MeteorParser
 import frontend.semantic.SemanticChecker
@@ -13,11 +13,11 @@ import org.antlr.v4.runtime.CommonTokenStream
 import java.io.FileInputStream
 
 fun setPrimitives(scope: GlobalScope) {
-  scope.setClass("void", ClassMeta("void"))
-  scope.setClass("int", ClassMeta("int"))
-  scope.setClass("bool", ClassMeta("bool"))
-  scope.setClass("null", ClassMeta("null"))
-  scope.setClass("string", ClassMeta("string"))
+  scope.setClass("void", ClassMetadata("void"))
+  scope.setClass("int", ClassMetadata("int"))
+  scope.setClass("bool", ClassMetadata("bool"))
+  scope.setClass("null", ClassMetadata("null"))
+  scope.setClass("string", ClassMetadata("string"))
 }
 
 fun setBuiltinFuncs(scope: GlobalScope) {
@@ -25,19 +25,19 @@ fun setBuiltinFuncs(scope: GlobalScope) {
   val intType = scope.getVarType("int")!!
   val stringType = scope.getVarType("string")!!
 
-  scope.setFunc("print", FuncMeta("print", listOf(stringType), voidType))
-  scope.setFunc("println", FuncMeta("println", listOf(stringType), voidType))
-  scope.setFunc("printInt", FuncMeta("printInt", listOf(intType), voidType))
-  scope.setFunc("printlnInt", FuncMeta("printlnInt", listOf(intType), voidType))
-  scope.setFunc("getString", FuncMeta("getString", listOf(), stringType))
-  scope.setFunc("getInt", FuncMeta("getInt", listOf(), intType))
-  scope.setFunc("toString", FuncMeta("toString", listOf(intType), stringType))
+  scope.setFunc("print", FuncMetadata("print", listOf(stringType), voidType))
+  scope.setFunc("println", FuncMetadata("println", listOf(stringType), voidType))
+  scope.setFunc("printInt", FuncMetadata("printInt", listOf(intType), voidType))
+  scope.setFunc("printlnInt", FuncMetadata("printlnInt", listOf(intType), voidType))
+  scope.setFunc("getString", FuncMetadata("getString", listOf(), stringType))
+  scope.setFunc("getInt", FuncMetadata("getInt", listOf(), intType))
+  scope.setFunc("toString", FuncMetadata("toString", listOf(intType), stringType))
 
   val classMeta = scope.getClass("string")!!
-  classMeta.classScope.setFunc("length", FuncMeta("length", listOf(), intType))
-  classMeta.classScope.setFunc("substring", FuncMeta("substring", listOf(intType, intType), stringType))
-  classMeta.classScope.setFunc("parseInt", FuncMeta("parseInt", listOf(), intType))
-  classMeta.classScope.setFunc("ord", FuncMeta("ord", listOf(intType), intType))
+  classMeta.classScope.setFunc("length", FuncMetadata("length", listOf(), intType))
+  classMeta.classScope.setFunc("substring", FuncMetadata("substring", listOf(intType, intType), stringType))
+  classMeta.classScope.setFunc("parseInt", FuncMetadata("parseInt", listOf(), intType))
+  classMeta.classScope.setFunc("ord", FuncMetadata("ord", listOf(intType), intType))
 }
 
 fun main(args: Array<String>) {

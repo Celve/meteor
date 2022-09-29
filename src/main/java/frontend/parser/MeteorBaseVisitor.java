@@ -25,14 +25,14 @@ public class MeteorBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitProgSuite(MeteorParser.ProgSuiteContext ctx) { return visitChildren(ctx); }
+	@Override public T visitProgBlock(MeteorParser.ProgBlockContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitBlock(MeteorParser.BlockContext ctx) { return visitChildren(ctx); }
+	@Override public T visitSuite(MeteorParser.SuiteContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -95,7 +95,7 @@ public class MeteorBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitClassSuite(MeteorParser.ClassSuiteContext ctx) { return visitChildren(ctx); }
+	@Override public T visitClassBlock(MeteorParser.ClassBlockContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -123,7 +123,7 @@ public class MeteorBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitFuncSuite(MeteorParser.FuncSuiteContext ctx) { return visitChildren(ctx); }
+	@Override public T visitFuncBlock(MeteorParser.FuncBlockContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -298,14 +298,14 @@ public class MeteorBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitSimpleSuite(MeteorParser.SimpleSuiteContext ctx) { return visitChildren(ctx); }
+	@Override public T visitSimpleBlock(MeteorParser.SimpleBlockContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitExtendedBlock(MeteorParser.ExtendedBlockContext ctx) { return visitChildren(ctx); }
+	@Override public T visitExtendedSuite(MeteorParser.ExtendedSuiteContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
