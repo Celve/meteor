@@ -39,7 +39,7 @@ public class MeteorBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitField(MeteorParser.FieldContext ctx) { return visitChildren(ctx); }
+	@Override public T visitFieldSuite(MeteorParser.FieldSuiteContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -312,14 +312,14 @@ public class MeteorBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitCond(MeteorParser.CondContext ctx) { return visitChildren(ctx); }
+	@Override public T visitCondSuite(MeteorParser.CondSuiteContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitWhile(MeteorParser.WhileContext ctx) { return visitChildren(ctx); }
+	@Override public T visitWhileSuite(MeteorParser.WhileSuiteContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -347,5 +347,5 @@ public class MeteorBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitFor(MeteorParser.ForContext ctx) { return visitChildren(ctx); }
+	@Override public T visitForSuite(MeteorParser.ForSuiteContext ctx) { return visitChildren(ctx); }
 }

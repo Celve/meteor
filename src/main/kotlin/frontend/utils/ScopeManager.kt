@@ -4,6 +4,8 @@ import frontend.metadata.ClassMetadata
 import frontend.metadata.FuncMetadata
 import java.util.*
 
+// it forms a tree structure for scopes
+// when a var or something else is not discovered in the current scope, it would look upward to search
 class ScopeManager {
   private val scopes: Vector<Scope> = Vector()
   private var classMetadata: ClassMetadata? = null

@@ -29,11 +29,11 @@ public interface MeteorVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitSuite(MeteorParser.SuiteContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link MeteorParser#field}.
+	 * Visit a parse tree produced by {@link MeteorParser#fieldSuite}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitField(MeteorParser.FieldContext ctx);
+	T visitFieldSuite(MeteorParser.FieldSuiteContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MeteorParser#decl}.
 	 * @param ctx the parse tree
@@ -275,17 +275,17 @@ public interface MeteorVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExtendedSuite(MeteorParser.ExtendedSuiteContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link MeteorParser#cond}.
+	 * Visit a parse tree produced by {@link MeteorParser#condSuite}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitCond(MeteorParser.CondContext ctx);
+	T visitCondSuite(MeteorParser.CondSuiteContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link MeteorParser#while}.
+	 * Visit a parse tree produced by {@link MeteorParser#whileSuite}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitWhile(MeteorParser.WhileContext ctx);
+	T visitWhileSuite(MeteorParser.WhileSuiteContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MeteorParser#forInitUnit}.
 	 * @param ctx the parse tree
@@ -305,9 +305,9 @@ public interface MeteorVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitForStepUnit(MeteorParser.ForStepUnitContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link MeteorParser#for}.
+	 * Visit a parse tree produced by {@link MeteorParser#forSuite}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitFor(MeteorParser.ForContext ctx);
+	T visitForSuite(MeteorParser.ForSuiteContext ctx);
 }

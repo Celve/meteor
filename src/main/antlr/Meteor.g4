@@ -7,8 +7,8 @@ prog: progBlock;
 progBlock: (short | def | suite | decl | jump)*;
 
 // suite
-suite: for | while | cond | field;
-field: '{' funcBlock '}';
+suite: forSuite | whileSuite | condSuite | fieldSuite;
+fieldSuite: '{' funcBlock '}';
 
 // declarations
 decl: varDecl;
@@ -24,13 +24,13 @@ classType: (primitiveType | nonPrimitiveType);
 primitiveType: Bool | Int | String;
 voidType: Void;
 
-// 7.3.1. array type's declaration and access arrayAccess: expr ('[' expr ']')+;
+// 7.3.1. array type's declaration and access (in 11.1.)
 
 // 7.3.2 array creation
 
-// 7.3.3. built-in methods, or generally, method calls
+// 7.3.3. built-in methods, or generally, method calls (in 10.2.)
 
-// 7.3.4 multi-dimensional arrays
+// 7.3.4 multi-dimensional arrays (in 11.1.)
 
 // 8. class, namely non-primitive type
 nonPrimitiveType: Id;
@@ -46,17 +46,14 @@ classCtor: classId = Id paramDeclList? '{' funcBlock '}';
 returnType: varType | voidType;
 funcBlock: (short | suite | decl | jump)*;
 funcDef: returnType funcName = Id paramDeclList '{' funcBlock '}';
-//funcDecl: returnType funcId = Id paramDefList '{' funcBlock '}';
 
 // 9.1. function definition
 paramDecl: varType Id;
 paramDeclList: '(' (paramDecl(',' paramDecl)*)? ')';
 paramInputList: '(' (expr (',' expr)*)? ')';
-// TODO: does it has only one way to locate params?
 
 // 9.4. lambda
-lambdaDef:
-	'[' (op = '&')? ']' paramDeclList '->' '{' funcBlock '}';
+lambdaDef: '[' (op = '&')? ']' paramDeclList '->' '{' funcBlock '}';
 
 // 10.1. basic expressions
 basicExpr:
@@ -110,11 +107,11 @@ varDecl: varType assignUnit (',' assignUnit)* ';';
 jump: (op = Return expr? | op = Break | op = Continue) ';';
 simpleBlock: short | jump | decl;
 extendedSuite: simpleBlock | suite;
-cond: If '(' expr ')' extendedSuite (Else extendedSuite)?;
+condSuite: If '(' expr ')' extendedSuite (Else extendedSuite)?;
+
 // 11.3. loops
-while: While '(' expr ')' extendedSuite;
+whileSuite: While '(' expr ')' extendedSuite;
 forInitUnit: (varDecl | expr ';') | ';';
 forCondUnit: expr? ';';
 forStepUnit: expr?;
-for:
-	For '(' forInitUnit forCondUnit forStepUnit ')' extendedSuite;
+forSuite: For '(' forInitUnit forCondUnit forStepUnit ')' extendedSuite;

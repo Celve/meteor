@@ -38,15 +38,15 @@ public interface MeteorListener extends ParseTreeListener {
 	 */
 	void exitSuite(MeteorParser.SuiteContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link MeteorParser#field}.
+	 * Enter a parse tree produced by {@link MeteorParser#fieldSuite}.
 	 * @param ctx the parse tree
 	 */
-	void enterField(MeteorParser.FieldContext ctx);
+	void enterFieldSuite(MeteorParser.FieldSuiteContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link MeteorParser#field}.
+	 * Exit a parse tree produced by {@link MeteorParser#fieldSuite}.
 	 * @param ctx the parse tree
 	 */
-	void exitField(MeteorParser.FieldContext ctx);
+	void exitFieldSuite(MeteorParser.FieldSuiteContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link MeteorParser#decl}.
 	 * @param ctx the parse tree
@@ -452,25 +452,25 @@ public interface MeteorListener extends ParseTreeListener {
 	 */
 	void exitExtendedSuite(MeteorParser.ExtendedSuiteContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link MeteorParser#cond}.
+	 * Enter a parse tree produced by {@link MeteorParser#condSuite}.
 	 * @param ctx the parse tree
 	 */
-	void enterCond(MeteorParser.CondContext ctx);
+	void enterCondSuite(MeteorParser.CondSuiteContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link MeteorParser#cond}.
+	 * Exit a parse tree produced by {@link MeteorParser#condSuite}.
 	 * @param ctx the parse tree
 	 */
-	void exitCond(MeteorParser.CondContext ctx);
+	void exitCondSuite(MeteorParser.CondSuiteContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link MeteorParser#while}.
+	 * Enter a parse tree produced by {@link MeteorParser#whileSuite}.
 	 * @param ctx the parse tree
 	 */
-	void enterWhile(MeteorParser.WhileContext ctx);
+	void enterWhileSuite(MeteorParser.WhileSuiteContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link MeteorParser#while}.
+	 * Exit a parse tree produced by {@link MeteorParser#whileSuite}.
 	 * @param ctx the parse tree
 	 */
-	void exitWhile(MeteorParser.WhileContext ctx);
+	void exitWhileSuite(MeteorParser.WhileSuiteContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link MeteorParser#forInitUnit}.
 	 * @param ctx the parse tree
@@ -502,13 +502,13 @@ public interface MeteorListener extends ParseTreeListener {
 	 */
 	void exitForStepUnit(MeteorParser.ForStepUnitContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link MeteorParser#for}.
+	 * Enter a parse tree produced by {@link MeteorParser#forSuite}.
 	 * @param ctx the parse tree
 	 */
-	void enterFor(MeteorParser.ForContext ctx);
+	void enterForSuite(MeteorParser.ForSuiteContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link MeteorParser#for}.
+	 * Exit a parse tree produced by {@link MeteorParser#forSuite}.
 	 * @param ctx the parse tree
 	 */
-	void exitFor(MeteorParser.ForContext ctx);
+	void exitForSuite(MeteorParser.ForSuiteContext ctx);
 }

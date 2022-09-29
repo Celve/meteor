@@ -22,10 +22,10 @@ abstract class AstVisitor {
   abstract fun visit(curr: VarDeclNode)
 
   // blocks
-  abstract fun visit(curr: ForNode)
-  abstract fun visit(curr: WhileNode)
-  abstract fun visit(curr: CondNode)
-  abstract fun visit(curr: FieldNode)
+  abstract fun visit(curr: ForSuiteNode)
+  abstract fun visit(curr: WhileSuiteNode)
+  abstract fun visit(curr: CondSuiteNode)
+  abstract fun visit(curr: FieldSuiteNode)
 
   // jumps
   abstract fun visit(curr: JumpNode)

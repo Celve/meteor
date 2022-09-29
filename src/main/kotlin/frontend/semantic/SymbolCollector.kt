@@ -155,19 +155,19 @@ class SymbolCollector : AstVisitor() {
     }
   }
 
-  override fun visit(curr: ForNode) {
+  override fun visit(curr: ForSuiteNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visit(curr: WhileNode) {
+  override fun visit(curr: WhileSuiteNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visit(curr: CondNode) {
+  override fun visit(curr: CondSuiteNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visit(curr: FieldNode) {
+  override fun visit(curr: FieldSuiteNode) {
     TODO("Not yet implemented")
   }
 

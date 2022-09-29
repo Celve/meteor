@@ -3,11 +3,12 @@ package frontend.metadata
 import frontend.utils.ClassScope
 import frontend.utils.FuncScope
 
-
+// ClassMetadata is used to identify a particular class, with all info inside
 data class ClassMetadata(val className: String) {
   val classScope = ClassScope(null, className) // className is only needed for ctor
 }
 
+// the FuncMetadata is the same to ClassMetadata
 data class FuncMetadata(
   val funcName: String,
   var paramInput: List<TypeMetadata>,
@@ -17,6 +18,9 @@ data class FuncMetadata(
   val funcScope = FuncScope(null, ableOut) // ableOut is only for lambda
 }
 
+// this is a class extends the ClassMetadata
+// a ClassMetadata could be regarded as an instance type, and TypeMetadata coul be regarded as a general type
+// because it additionally takes dimension into considerations
 data class TypeMetadata(val cl: ClassMetadata, val dim: Int) {
   // one is concrete and one is null is matched, which is differed from ==
   fun matchesWith(obj: TypeMetadata): Boolean {

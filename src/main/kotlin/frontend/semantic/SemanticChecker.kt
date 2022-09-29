@@ -107,7 +107,7 @@ class SemanticChecker : AstVisitor() {
     }
   }
 
-  override fun visit(curr: ForNode) {
+  override fun visit(curr: ForSuiteNode) {
     scopeManager.addLast(curr.scope)
     curr.init?.accept(this)
     if (curr.cond != null) {
@@ -121,7 +121,7 @@ class SemanticChecker : AstVisitor() {
     scopeManager.removeLast()
   }
 
-  override fun visit(curr: WhileNode) {
+  override fun visit(curr: WhileSuiteNode) {
     // omit this duplication
     curr.cond.accept(this)
     if (!curr.cond.type!!.isBool()) {
@@ -132,7 +132,7 @@ class SemanticChecker : AstVisitor() {
     scopeManager.removeLast()
   }
 
-  override fun visit(curr: CondNode) {
+  override fun visit(curr: CondSuiteNode) {
     // omit this duplication
     curr.cond.accept(this)
     if (!curr.cond.type!!.isBool()) {
@@ -148,7 +148,7 @@ class SemanticChecker : AstVisitor() {
     }
   }
 
-  override fun visit(curr: FieldNode) {
+  override fun visit(curr: FieldSuiteNode) {
     scopeManager.addLast(curr.scope)
     curr.suite.accept(this)
     scopeManager.removeLast()

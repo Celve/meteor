@@ -53,13 +53,13 @@ public class MeteorBaseListener implements MeteorListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterField(MeteorParser.FieldContext ctx) { }
+	@Override public void enterFieldSuite(MeteorParser.FieldSuiteContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitField(MeteorParser.FieldContext ctx) { }
+	@Override public void exitFieldSuite(MeteorParser.FieldSuiteContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -521,25 +521,25 @@ public class MeteorBaseListener implements MeteorListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterCond(MeteorParser.CondContext ctx) { }
+	@Override public void enterCondSuite(MeteorParser.CondSuiteContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitCond(MeteorParser.CondContext ctx) { }
+	@Override public void exitCondSuite(MeteorParser.CondSuiteContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterWhile(MeteorParser.WhileContext ctx) { }
+	@Override public void enterWhileSuite(MeteorParser.WhileSuiteContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitWhile(MeteorParser.WhileContext ctx) { }
+	@Override public void exitWhileSuite(MeteorParser.WhileSuiteContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -581,13 +581,13 @@ public class MeteorBaseListener implements MeteorListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterFor(MeteorParser.ForContext ctx) { }
+	@Override public void enterForSuite(MeteorParser.ForSuiteContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitFor(MeteorParser.ForContext ctx) { }
+	@Override public void exitForSuite(MeteorParser.ForSuiteContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

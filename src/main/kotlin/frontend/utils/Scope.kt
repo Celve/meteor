@@ -4,7 +4,9 @@ import frontend.metadata.ClassMetadata
 import frontend.metadata.FuncMetadata
 import frontend.metadata.TypeMetadata
 
-// scopes are a tree-structure
+// scope represents a namespace for any kind of block
+// it could register var, class, or func, determined by the block's property
+// scopes form a tree in scope manager
 open class Scope(var parent: Scope?) {
   open fun setVar(name: String, type: TypeMetadata) {
     parent?.setVar(name, type)
@@ -51,6 +53,9 @@ open class Scope(var parent: Scope?) {
   }
 }
 
+// the largest scope
+// be able to register var, func, and class
+// generally, it must be the root in the scope tree
 class GlobalScope(parent: Scope?) : Scope(parent) {
   private val vars: HashMap<String, TypeMetadata> = HashMap()
   private val funcs: HashMap<String, FuncMetadata> = HashMap()
@@ -126,6 +131,8 @@ class GlobalScope(parent: Scope?) : Scope(parent) {
   }
 }
 
+// the scope owned by class
+// be able to register var and func, namely member and method
 class ClassScope(parent: Scope?, val className: String) : Scope(parent) {
   private val members: HashMap<String, TypeMetadata> = HashMap()
   private val methods: HashMap<String, FuncMetadata> = HashMap()
@@ -150,6 +157,8 @@ class ClassScope(parent: Scope?, val className: String) : Scope(parent) {
   }
 }
 
+// a particular kind of block which could only register var
+// it's the scope type of loop, func, and mere {}
 open class FieldScope(parent: Scope?) : Scope(parent) {
   protected val vars: HashMap<String, TypeMetadata> = HashMap()
 
@@ -165,7 +174,6 @@ open class FieldScope(parent: Scope?) : Scope(parent) {
   }
 }
 
-// honestly, the two are the same to func scope
 // it is used to distinguish loop and func in favor of jump
 class LoopScope(parent: Scope?) : FieldScope(parent)
 

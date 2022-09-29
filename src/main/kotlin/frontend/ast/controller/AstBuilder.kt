@@ -69,7 +69,7 @@ class AstBuilder : MeteorBaseVisitor<BaseNode>() {
     return VarDeclNode(CodePos(ctx), ctx.varType().text, assigns.map { Pair(it.first, it.second as ExprNode?) })
   }
 
-  override fun visitFor(ctx: MeteorParser.ForContext?): BaseNode {
+  override fun visitForSuite(ctx: MeteorParser.ForSuiteContext?): BaseNode {
     val init = if (ctx!!.forInitUnit().varDecl() == null) {
       null
     } else {
@@ -82,11 +82,11 @@ class AstBuilder : MeteorBaseVisitor<BaseNode>() {
     if (ctx.extendedSuite() == null) {
       println("this is impossible")
     }
-    return ForNode(CodePos(ctx), init, cond, step, visit(ctx.extendedSuite()))
+    return ForSuiteNode(CodePos(ctx), init, cond, step, visit(ctx.extendedSuite()))
   }
 
-  override fun visitWhile(ctx: MeteorParser.WhileContext?): BaseNode {
-    return WhileNode(CodePos(ctx!!), visit(ctx.expr()) as ExprNode, visit(ctx.extendedSuite()))
+  override fun visitWhileSuite(ctx: MeteorParser.WhileSuiteContext?): BaseNode {
+    return WhileSuiteNode(CodePos(ctx!!), visit(ctx.expr()) as ExprNode, visit(ctx.extendedSuite()))
   }
 
   override fun visitJump(ctx: MeteorParser.JumpContext?): BaseNode {
@@ -99,11 +99,11 @@ class AstBuilder : MeteorBaseVisitor<BaseNode>() {
     )
   }
 
-  override fun visitCond(ctx: MeteorParser.CondContext?): BaseNode {
+  override fun visitCondSuite(ctx: MeteorParser.CondSuiteContext?): BaseNode {
     val thenDo = visit(ctx!!.extendedSuite(0))
     val elseDo = if (ctx.Else() == null) null else visit(ctx.extendedSuite(1))
 
-    return CondNode(
+    return CondSuiteNode(
       CodePos(ctx),
       visit(ctx.expr()) as ExprNode,
       thenDo,
@@ -111,8 +111,8 @@ class AstBuilder : MeteorBaseVisitor<BaseNode>() {
     )
   }
 
-  override fun visitField(ctx: MeteorParser.FieldContext?): BaseNode {
-    return FieldNode(CodePos(ctx!!), visit(ctx.funcBlock()))
+  override fun visitFieldSuite(ctx: MeteorParser.FieldSuiteContext?): BaseNode {
+    return FieldSuiteNode(CodePos(ctx!!), visit(ctx.funcBlock()))
   }
 
   // when let antlr automatically iterate the tree

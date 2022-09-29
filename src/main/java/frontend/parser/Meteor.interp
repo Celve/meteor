@@ -124,7 +124,7 @@ rule names:
 prog
 progBlock
 suite
-field
+fieldSuite
 decl
 def
 varType
@@ -152,12 +152,12 @@ varDecl
 jump
 simpleBlock
 extendedSuite
-cond
-while
+condSuite
+whileSuite
 forInitUnit
 forCondUnit
 forStepUnit
-for
+forSuite
 
 
 atn:
