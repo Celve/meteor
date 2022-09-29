@@ -79,9 +79,6 @@ class AstBuilder : MeteorBaseVisitor<BaseNode>() {
     val cond = if (ctx.forCondUnit().expr() == null) null else visit(ctx.forCondUnit().expr()) as ExprNode
     val step = if (ctx.forStepUnit().expr() == null) null else visit(ctx.forStepUnit().expr()) as ExprNode
 
-    if (ctx.extendedSuite() == null) {
-      println("this is impossible")
-    }
     return ForSuiteNode(CodePos(ctx), init, cond, step, visit(ctx.extendedSuite()))
   }
 
@@ -91,7 +88,6 @@ class AstBuilder : MeteorBaseVisitor<BaseNode>() {
 
   override fun visitJump(ctx: MeteorParser.JumpContext?): BaseNode {
     val expr = if (ctx!!.expr() == null) null else visit(ctx.expr()) as ExprNode // cannot pass null to visit
-
     return JumpNode(
       CodePos(ctx),
       ctx.op.text,

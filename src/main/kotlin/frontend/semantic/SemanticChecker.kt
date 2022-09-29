@@ -58,7 +58,6 @@ class SemanticChecker : AstVisitor() {
   }
 
   override fun visit(curr: LambdaDefNode) {
-    println("get in lambda def in ${curr.pos}")
     // omit this duplication for the time being
     val innerScope = curr.funcMetadata.funcScope
     val globalScope = scopeManager.first()
@@ -93,7 +92,6 @@ class SemanticChecker : AstVisitor() {
         throw SemanticException(curr.pos, "Redeclare ${it.first}")
       } else if (it.second != null) {
         it.second!!.accept(this)
-        println(curr.pos)
         if (!varType.matchesWith(it.second!!.type!!)) {
           throw SemanticException(
             curr.pos,
@@ -164,7 +162,6 @@ class SemanticChecker : AstVisitor() {
         val returnType = recentFunc.returnType
 
         if (returnType == null) { // check for lambda expr only
-          println("get in for lambda only")
           recentFunc.returnType = if (curr.expr == null) { // this allows the origin value in scopeManager to be changed
             scopeManager.first().getFuncType("void")
           } else {
@@ -261,9 +258,6 @@ class SemanticChecker : AstVisitor() {
     curr.lambdaDef.accept(this)
     val func = curr.lambdaDef.funcMetadata
     checkParamsForFunc(curr, func, curr.params)
-    if (curr.type == null) {
-      println("lambda's result is null in ${curr.pos}")
-    }
   }
 
   override fun visit(curr: FuncCallNode) {
