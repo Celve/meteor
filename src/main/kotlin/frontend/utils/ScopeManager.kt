@@ -1,37 +1,37 @@
 package frontend.utils
 
-import frontend.metadata.ClassMetadata
-import frontend.metadata.FuncMetadata
+import frontend.metadata.ClassMd
+import frontend.metadata.FuncMd
 import java.util.*
 
 // it forms a tree structure for scopes
 // when a var or something else is not discovered in the current scope, it would look upward to search
 class ScopeManager {
   private val scopes: Vector<Scope> = Vector()
-  private var classMetadata: ClassMetadata? = null
-  private var funcMetadata: Vector<FuncMetadata> = Vector()
+  private var classMd: ClassMd? = null
+  private var funcMd: Vector<FuncMd> = Vector()
 
   fun addLast(scope: Scope) {
     scope.parent = scopes.lastOrNull()
     scopes.addElement(scope)
   }
 
-  fun addLast(input: ClassMetadata) {
+  fun addLast(input: ClassMd) {
     addLast(input.classScope)
-    classMetadata = input
+    classMd = input
   }
 
-  fun addLast(input: FuncMetadata) {
+  fun addLast(input: FuncMd) {
     addLast(input.funcScope)
-    funcMetadata.addElement(input)
+    funcMd.addElement(input)
   }
 
   fun removeLast() {
     val scope = scopes.removeLast()
     if (scope is FuncScope) {
-      funcMetadata.removeLast()
+      funcMd.removeLast()
     } else if (scope is ClassScope) {
-      classMetadata = null
+      classMd = null
     }
   }
 
@@ -54,11 +54,11 @@ class ScopeManager {
     return false
   }
 
-  fun getRecentFunc(): FuncMetadata? {
-    return funcMetadata.lastOrNull()
+  fun getRecentFunc(): FuncMd? {
+    return funcMd.lastOrNull()
   }
 
-  fun getRecentClass(): ClassMetadata? {
-    return classMetadata
+  fun getRecentClass(): ClassMd? {
+    return classMd
   }
 }

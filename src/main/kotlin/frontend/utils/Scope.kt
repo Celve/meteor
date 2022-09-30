@@ -1,18 +1,18 @@
 package frontend.utils
 
-import frontend.metadata.ClassMetadata
-import frontend.metadata.FuncMetadata
-import frontend.metadata.TypeMetadata
+import frontend.metadata.ClassMd
+import frontend.metadata.FuncMd
+import frontend.metadata.TypeMd
 
 // scope represents a namespace for any kind of block
 // it could register var, class, or func, determined by the block's property
 // scopes form a tree in scope manager
 open class Scope(var parent: Scope?) {
-  open fun setVar(name: String, type: TypeMetadata) {
+  open fun setVar(name: String, type: TypeMd) {
     parent?.setVar(name, type)
   }
 
-  open fun getVar(name: String): TypeMetadata? {
+  open fun getVar(name: String): TypeMd? {
     return parent?.getVar(name)
   }
 
@@ -20,11 +20,11 @@ open class Scope(var parent: Scope?) {
     return parent?.getClass(name) != null
   }
 
-  open fun setFunc(name: String, type: FuncMetadata) {
+  open fun setFunc(name: String, type: FuncMd) {
     parent?.setFunc(name, type)
   }
 
-  open fun getFunc(name: String): FuncMetadata? {
+  open fun getFunc(name: String): FuncMd? {
     return parent?.getFunc(name)
   }
 
@@ -32,11 +32,11 @@ open class Scope(var parent: Scope?) {
     return parent?.getClass(name) != null
   }
 
-  open fun setClass(name: String, type: ClassMetadata) {
+  open fun setClass(name: String, type: ClassMd) {
     parent?.setClass(name, type)
   }
 
-  open fun getClass(name: String): ClassMetadata? {
+  open fun getClass(name: String): ClassMd? {
     return parent?.getClass(name)
   }
 
@@ -44,11 +44,11 @@ open class Scope(var parent: Scope?) {
     return parent?.getClass(name) != null
   }
 
-  open fun getVarType(name: String): TypeMetadata? {
+  open fun getVarType(name: String): TypeMd? {
     return parent?.getVarType(name)
   }
 
-  open fun getFuncType(name: String): TypeMetadata? {
+  open fun getFuncType(name: String): TypeMd? {
     return parent?.getFuncType(name)
   }
 }
@@ -57,15 +57,15 @@ open class Scope(var parent: Scope?) {
 // be able to register var, func, and class
 // generally, it must be the root in the scope tree
 class GlobalScope(parent: Scope?) : Scope(parent) {
-  private val vars: HashMap<String, TypeMetadata> = HashMap()
-  private val funcs: HashMap<String, FuncMetadata> = HashMap()
-  private val classes: HashMap<String, ClassMetadata> = HashMap()
+  private val vars: HashMap<String, TypeMd> = HashMap()
+  private val funcs: HashMap<String, FuncMd> = HashMap()
+  private val classes: HashMap<String, ClassMd> = HashMap()
 
-  override fun setVar(name: String, type: TypeMetadata) {
+  override fun setVar(name: String, type: TypeMd) {
     vars[name] = type
   }
 
-  override fun getVar(name: String): TypeMetadata? {
+  override fun getVar(name: String): TypeMd? {
     return vars[name] ?: parent?.getVar(name)
   }
 
@@ -73,11 +73,11 @@ class GlobalScope(parent: Scope?) : Scope(parent) {
     return vars.containsKey(name)
   }
 
-  override fun setFunc(name: String, type: FuncMetadata) {
+  override fun setFunc(name: String, type: FuncMd) {
     funcs[name] = type
   }
 
-  override fun getFunc(name: String): FuncMetadata? {
+  override fun getFunc(name: String): FuncMd? {
     return funcs[name] ?: parent?.getFunc(name)
   }
 
@@ -86,11 +86,11 @@ class GlobalScope(parent: Scope?) : Scope(parent) {
     return funcs[name] != null || classes[name] != null
   }
 
-  override fun setClass(name: String, type: ClassMetadata) {
+  override fun setClass(name: String, type: ClassMd) {
     classes[name] = type
   }
 
-  override fun getClass(name: String): ClassMetadata? {
+  override fun getClass(name: String): ClassMd? {
     return classes[name] ?: parent?.getClass(name)
   }
 
@@ -98,18 +98,18 @@ class GlobalScope(parent: Scope?) : Scope(parent) {
     return classes[name] != null || funcs[name] != null
   }
 
-  private fun resolveTypeMeta(name: String): TypeMetadata? {
+  private fun resolveTypeMeta(name: String): TypeMd? {
     val (className, dimIndicator) = name.partition { it != '[' && it != ']' }
     val dim = dimIndicator.count { it == '[' }
     val classMeta = getClass(className) ?: return null
-    return TypeMetadata(classMeta, dim)
+    return TypeMd(classMeta, dim)
   }
 
-  override fun getVarType(name: String): TypeMetadata? {
+  override fun getVarType(name: String): TypeMd? {
     return if (name.startsWith("void")) null else resolveTypeMeta(name)
   }
 
-  override fun getFuncType(name: String): TypeMetadata? {
+  override fun getFuncType(name: String): TypeMd? {
     return resolveTypeMeta(name)
   }
 
@@ -134,25 +134,25 @@ class GlobalScope(parent: Scope?) : Scope(parent) {
 // the scope owned by class
 // be able to register var and func, namely member and method
 class ClassScope(parent: Scope?, val className: String) : Scope(parent) {
-  private val members: HashMap<String, TypeMetadata> = HashMap()
-  private val methods: HashMap<String, FuncMetadata> = HashMap()
+  private val members: HashMap<String, TypeMd> = HashMap()
+  private val methods: HashMap<String, FuncMd> = HashMap()
 
-  override fun setVar(name: String, type: TypeMetadata) {
+  override fun setVar(name: String, type: TypeMd) {
     members[name] = type
   }
 
-  override fun getVar(name: String): TypeMetadata? {
+  override fun getVar(name: String): TypeMd? {
     return members[name] ?: parent?.getVar(name)
   }
 
-  override fun setFunc(name: String, type: FuncMetadata) {
+  override fun setFunc(name: String, type: FuncMd) {
     if (methods.containsKey(name)) {
       throw Exception("redeclaration of $name")
     }
     methods[name] = type
   }
 
-  override fun getFunc(name: String): FuncMetadata? {
+  override fun getFunc(name: String): FuncMd? {
     return methods[name] ?: parent?.getFunc(name)
   }
 }
@@ -160,16 +160,16 @@ class ClassScope(parent: Scope?, val className: String) : Scope(parent) {
 // a particular kind of block which could only register var
 // it's the scope type of loop, func, and mere {}
 open class FieldScope(parent: Scope?) : Scope(parent) {
-  protected val vars: HashMap<String, TypeMetadata> = HashMap()
+  protected val vars: HashMap<String, TypeMd> = HashMap()
 
-  override fun setVar(name: String, type: TypeMetadata) {
+  override fun setVar(name: String, type: TypeMd) {
     if (vars.containsKey(name)) {
       throw Exception("redeclaration of $name")
     }
     vars[name] = type
   }
 
-  override fun getVar(name: String): TypeMetadata? {
+  override fun getVar(name: String): TypeMd? {
     return vars[name] ?: parent?.getVar(name)
   }
 }
@@ -180,7 +180,7 @@ class LoopScope(parent: Scope?) : FieldScope(parent)
 class CondScope(parent: Scope?) : FieldScope(parent)
 
 class FuncScope(parent: Scope?, private val ableOut: Boolean) : FieldScope(parent) {
-  override fun getVar(name: String): TypeMetadata? {
+  override fun getVar(name: String): TypeMd? {
     return vars[name] ?: if (ableOut) parent?.getVar(name) else null
   }
 }

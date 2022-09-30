@@ -4,7 +4,6 @@ import frontend.ast.node.*
 import frontend.parser.MeteorBaseVisitor
 import frontend.parser.MeteorParser
 import frontend.utils.SrcPos
-import java.util.*
 
 class AstBuilder : MeteorBaseVisitor<BaseNode>() {
   override fun visitProg(ctx: MeteorParser.ProgContext?): BaseNode {
@@ -61,12 +60,12 @@ class AstBuilder : MeteorBaseVisitor<BaseNode>() {
   }
 
   override fun visitVarDecl(ctx: MeteorParser.VarDeclContext?): BaseNode {
-    val assigns: Vector<Pair<String, BaseNode?>> = Vector()
+    val assigns: MutableList<Pair<String, ExprNode?>> = mutableListOf()
     for (it in ctx!!.assignUnit()) {
       val expr = if (it.expr() == null) null else visit(it.expr())
-      assigns.addElement(Pair(it.Id().text, expr))
+      assigns.add(Pair(it.Id().text, expr as ExprNode?))
     }
-    return VarDeclNode(SrcPos(ctx), ctx.varType().text, assigns.map { Pair(it.first, it.second as ExprNode?) })
+    return VarDeclNode(SrcPos(ctx), ctx.varType().text, assigns)
   }
 
   override fun visitForSuite(ctx: MeteorParser.ForSuiteContext?): BaseNode {
@@ -136,19 +135,15 @@ class AstBuilder : MeteorBaseVisitor<BaseNode>() {
   }
 
   override fun visitInitExpr(ctx: MeteorParser.InitExprContext?): BaseNode {
-    val exprs: Vector<ExprNode?> = Vector()
+    val exprs: MutableList<ExprNode?> = mutableListOf()
     for (it in ctx!!.bracketedExpr()) {
-      if (it.expr() != null) {
-        exprs.addElement(visit(it.expr()) as ExprNode)
-      } else {
-        exprs.addElement(null)
-      }
+      exprs.add(if (it.expr() != null) visit(it.expr()) as ExprNode else null)
     }
     return InitExprNode(
       SrcPos(ctx),
       ctx.classType().text,
       ctx.bracketedExpr().size,
-      exprs.elements().toList()
+      exprs
     )
   }
 

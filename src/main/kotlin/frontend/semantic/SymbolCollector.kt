@@ -3,8 +3,8 @@ package frontend.semantic
 import exceptions.SemanticException
 import frontend.ast.controller.AstVisitor
 import frontend.ast.node.*
-import frontend.metadata.FuncMetadata
-import frontend.metadata.TypeMetadata
+import frontend.metadata.FuncMd
+import frontend.metadata.TypeMd
 import frontend.utils.ScopeManager
 import java.util.*
 
@@ -33,9 +33,9 @@ class SymbolCollector : AstVisitor() {
         } else if (globalScope.testFunc(it.className)) {
           throw SemanticException(curr.pos, "Class ${it.className} has the same name with another function")
         }
-        globalScope.setClass(it.className, it.classMetadata)
+        globalScope.setClass(it.className, it.classMd)
         // use this special format to stand for implicit class creator
-        globalScope.setFunc(it.className, FuncMetadata(it.className, listOf(), globalScope.getFuncType("null")))
+        globalScope.setFunc(it.className, FuncMd(it.className, listOf(), globalScope.getFuncType("null")))
       }
     }
 
@@ -66,7 +66,7 @@ class SymbolCollector : AstVisitor() {
   }
 
   override fun visit(curr: ClassDefNode) {
-    scopeManager.addLast(curr.classMetadata)
+    scopeManager.addLast(curr.classMd)
     curr.classBlock?.accept(this)
     scopeManager.removeLast()
   }
@@ -75,8 +75,8 @@ class SymbolCollector : AstVisitor() {
     // omit this duplication for the time being
     val globalScope = scopeManager.first()
     val outerScope = scopeManager.last()
-    val innerScope = curr.funcMetadata.funcScope
-    val paramInput: Vector<TypeMetadata> = Vector()
+    val innerScope = curr.funcMd.funcScope
+    val paramInput: Vector<TypeMd> = Vector()
 
     if (curr.className != scopeManager.getRecentClass()!!.className) {
       throw SemanticException(curr.pos, "Class can't have this constructor")
@@ -93,17 +93,17 @@ class SymbolCollector : AstVisitor() {
       paramInput.addElement(varType)
       innerScope.setVar(it.second, varType)
     }
-    curr.funcMetadata.paramInput = paramInput.elements().toList()
+    curr.funcMd.paramInput = paramInput.elements().toList()
 
-    curr.funcMetadata.returnType = globalScope.getFuncType("void")
-    globalScope.setFunc(curr.className, curr.funcMetadata)
+    curr.funcMd.returnType = globalScope.getFuncType("void")
+    globalScope.setFunc(curr.className, curr.funcMd)
   }
 
   override fun visit(curr: FuncDefNode) {
     // omit this duplication for the time being
     val outerScope = scopeManager.last()
-    val innerScope = curr.funcMetadata.funcScope
-    val paramInput: Vector<TypeMetadata> = Vector()
+    val innerScope = curr.funcMd.funcScope
+    val paramInput: Vector<TypeMd> = Vector()
 
     // need to check here, there is no check above
     if (outerScope.testFunc(curr.funcName)) {
@@ -116,15 +116,15 @@ class SymbolCollector : AstVisitor() {
       paramInput.addElement(varType)
       innerScope.setVar(it.second, varType)
     }
-    curr.funcMetadata.paramInput = paramInput.elements().toList()
+    curr.funcMd.paramInput = paramInput.elements().toList()
 
     // check for its return type
-    curr.funcMetadata.returnType =
+    curr.funcMd.returnType =
       outerScope.getFuncType(curr.returnType) ?: throw SemanticException(curr.pos, "${curr.returnType} is not defined")
 
     // for main only
     if (curr.funcName == "main") {
-      if (!curr.funcMetadata.returnType!!.isInt()) {
+      if (!curr.funcMd.returnType!!.isInt()) {
         throw SemanticException(curr.pos, "Function main has to have a int return ")
       }
       if (curr.params.size != 0) {
@@ -132,7 +132,7 @@ class SymbolCollector : AstVisitor() {
       }
     }
 
-    outerScope.setFunc(curr.funcName, curr.funcMetadata)
+    outerScope.setFunc(curr.funcName, curr.funcMd)
   }
 
   override fun visit(curr: LambdaDefNode) {
