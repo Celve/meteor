@@ -1,13 +1,13 @@
-package frontend.ast.nodes
+package frontend.ast.node
 
 import frontend.ast.controller.AstVisitor
 import frontend.metadata.ClassMetadata
 import frontend.metadata.FuncMetadata
-import frontend.utils.CodePos
+import frontend.utils.SrcPos
 
-abstract class DefNode(pos: CodePos) : BaseNode(pos)
+abstract class DefNode(pos: SrcPos) : BaseNode(pos)
 
-class ClassDefNode(pos: CodePos, val className: String, val classSuite: BaseNode?) : DefNode(pos) {
+class ClassDefNode(pos: SrcPos, val className: String, val classBlock: BaseNode?) : DefNode(pos) {
   val classMetadata = ClassMetadata(className)
   override fun accept(visitor: AstVisitor) {
     visitor.visit(this)
@@ -15,10 +15,10 @@ class ClassDefNode(pos: CodePos, val className: String, val classSuite: BaseNode
 }
 
 class ClassCtorNode(
-  pos: CodePos,
+  pos: SrcPos,
   val className: String,
   val params: List<Pair<String, String>>,
-  val funcSuite: BaseNode?
+  val funcBlock: BaseNode?
 ) : DefNode(pos) {
   var funcMetadata = FuncMetadata(className, listOf(), null)
   override fun accept(visitor: AstVisitor) {
@@ -27,11 +27,11 @@ class ClassCtorNode(
 }
 
 class FuncDefNode(
-  pos: CodePos,
+  pos: SrcPos,
   val funcName: String,
   val params: List<Pair<String, String>>,
   val returnType: String,
-  val funcSuite: BaseNode?
+  val funcBlock: BaseNode?
 ) : DefNode(pos) {
   var funcMetadata = FuncMetadata(funcName, listOf(), null)
 
@@ -41,10 +41,10 @@ class FuncDefNode(
 }
 
 class LambdaDefNode(
-  pos: CodePos,
-  val isRef: Boolean,
+  pos: SrcPos,
+  private val isRef: Boolean,
   val params: List<Pair<String, String>>,
-  val funcSuite: BaseNode?
+  val funcBlock: BaseNode?
 ) :
   DefNode(pos) {
   var funcMetadata = FuncMetadata("lambda", listOf(), null, isRef)

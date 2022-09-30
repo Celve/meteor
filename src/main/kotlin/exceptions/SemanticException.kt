@@ -1,5 +1,5 @@
 package exceptions
 
-import frontend.utils.CodePos
+import frontend.utils.SrcPos
 
-class SemanticException(pos: CodePos, message: String) : Exception("$message ${pos.row}:${pos.column}")
+class SemanticException(pos: SrcPos, message: String) : Exception("$message ${pos.row}:${pos.column}")

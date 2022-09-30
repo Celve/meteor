@@ -1,6 +1,6 @@
 package frontend.ast.controller
 
-import frontend.ast.nodes.*
+import frontend.ast.node.*
 
 abstract class AstVisitor {
   // more

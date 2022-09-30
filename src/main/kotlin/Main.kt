@@ -1,6 +1,6 @@
 import frontend.ast.controller.AntlrErrorListener
 import frontend.ast.controller.AstBuilder
-import frontend.ast.nodes.ProgNode
+import frontend.ast.node.ProgNode
 import frontend.metadata.ClassMetadata
 import frontend.metadata.FuncMetadata
 import frontend.parser.MeteorLexer

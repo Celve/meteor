@@ -2,7 +2,7 @@ package frontend.semantic
 
 import exceptions.SemanticException
 import frontend.ast.controller.AstVisitor
-import frontend.ast.nodes.*
+import frontend.ast.node.*
 import frontend.metadata.FuncMetadata
 import frontend.metadata.TypeMetadata
 import frontend.utils.ClassScope
@@ -13,7 +13,7 @@ class SemanticChecker : AstVisitor() {
   private val scopeManager = ScopeManager()
   override fun visit(curr: ProgNode) {
     scopeManager.addLast(curr.scope)
-    curr.suite.accept(this)
+    curr.block.accept(this)
   }
 
   override fun visit(curr: ProgBlockNode) {
@@ -39,13 +39,13 @@ class SemanticChecker : AstVisitor() {
     val scope = scopeManager.first()
     scope.setClass(curr.className, curr.classMetadata)
     scopeManager.addLast(curr.classMetadata)
-    curr.classSuite?.accept(this)
+    curr.classBlock?.accept(this)
     scopeManager.removeLast()
   }
 
   override fun visit(curr: ClassCtorNode) {
     scopeManager.addLast(curr.funcMetadata)
-    curr.funcSuite?.accept(this)
+    curr.funcBlock?.accept(this)
     scopeManager.removeLast()
   }
 
@@ -53,7 +53,7 @@ class SemanticChecker : AstVisitor() {
   // antlr guarantees it, so here is no check
   override fun visit(curr: FuncDefNode) {
     scopeManager.addLast(curr.funcMetadata)
-    curr.funcSuite?.accept(this)
+    curr.funcBlock?.accept(this)
     scopeManager.removeLast()
   }
 
@@ -72,7 +72,7 @@ class SemanticChecker : AstVisitor() {
     curr.funcMetadata.paramInput = paramInput.elements().toList()
 
     scopeManager.addLast(curr.funcMetadata)
-    curr.funcSuite?.accept(this)
+    curr.funcBlock?.accept(this)
     scopeManager.removeLast()
 
     if (curr.funcMetadata.returnType == null) { // this part is a double check, another check is in "return;" situation
@@ -115,7 +115,7 @@ class SemanticChecker : AstVisitor() {
       }
     }
     curr.step?.accept(this)
-    curr.suite.accept(this)
+    curr.block.accept(this)
     scopeManager.removeLast()
   }
 
@@ -126,7 +126,7 @@ class SemanticChecker : AstVisitor() {
       throw SemanticException(curr.cond.pos, "Conditional expression should be bool")
     }
     scopeManager.addLast(curr.scope)
-    curr.suite.accept(this)
+    curr.block.accept(this)
     scopeManager.removeLast()
   }
 
@@ -148,7 +148,7 @@ class SemanticChecker : AstVisitor() {
 
   override fun visit(curr: FieldSuiteNode) {
     scopeManager.addLast(curr.scope)
-    curr.suite.accept(this)
+    curr.block.accept(this)
     scopeManager.removeLast()
   }
 

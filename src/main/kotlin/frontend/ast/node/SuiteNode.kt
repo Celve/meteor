@@ -1,20 +1,20 @@
-package frontend.ast.nodes
+package frontend.ast.node
 
 import frontend.ast.controller.AstVisitor
-import frontend.utils.CodePos
 import frontend.utils.CondScope
 import frontend.utils.FieldScope
 import frontend.utils.LoopScope
+import frontend.utils.SrcPos
 
-abstract class SuiteNode(pos: CodePos) : BaseNode(pos)
+abstract class SuiteNode(pos: SrcPos) : BaseNode(pos)
 
 // suite is actually extendedBlock, which corresponds to stmt, jump, decl, or block
 class ForSuiteNode(
-  pos: CodePos,
+  pos: SrcPos,
   val init: BaseNode?, // init could be varDecl or expr
   val cond: ExprNode?,
   val step: ExprNode?,
-  val suite: BaseNode
+  val block: BaseNode
 ) :
   SuiteNode(pos) {
   val scope = LoopScope(null)
@@ -23,14 +23,14 @@ class ForSuiteNode(
   }
 }
 
-class WhileSuiteNode(pos: CodePos, val cond: ExprNode, val suite: BaseNode) : SuiteNode(pos) {
+class WhileSuiteNode(pos: SrcPos, val cond: ExprNode, val block: BaseNode) : SuiteNode(pos) {
   val scope = LoopScope(null)
   override fun accept(visitor: AstVisitor) {
     visitor.visit(this)
   }
 }
 
-class CondSuiteNode(pos: CodePos, val cond: ExprNode, val thenDo: BaseNode, val elseDo: BaseNode?) : SuiteNode(pos) {
+class CondSuiteNode(pos: SrcPos, val cond: ExprNode, val thenDo: BaseNode, val elseDo: BaseNode?) : SuiteNode(pos) {
   val thenScope = CondScope(null)
   val elseScope = CondScope(null)
   override fun accept(visitor: AstVisitor) {
@@ -38,7 +38,7 @@ class CondSuiteNode(pos: CodePos, val cond: ExprNode, val thenDo: BaseNode, val 
   }
 }
 
-class FieldSuiteNode(pos: CodePos, val suite: BaseNode) : SuiteNode(pos) {
+class FieldSuiteNode(pos: SrcPos, val block: BaseNode) : SuiteNode(pos) {
   val scope = FieldScope(null)
   override fun accept(visitor: AstVisitor) {
     visitor.visit(this)

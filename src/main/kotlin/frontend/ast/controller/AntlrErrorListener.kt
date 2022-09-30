@@ -1,7 +1,7 @@
 package frontend.ast.controller
 
 import exceptions.SemanticException
-import frontend.utils.CodePos
+import frontend.utils.SrcPos
 import org.antlr.v4.runtime.BaseErrorListener
 import org.antlr.v4.runtime.RecognitionException
 import org.antlr.v4.runtime.Recognizer
@@ -15,6 +15,6 @@ class AntlrErrorListener : BaseErrorListener() {
     msg: String?,
     e: RecognitionException?
   ) {
-    throw SemanticException(CodePos(line, charPositionInLine), "Error occurs when parsing")
+    throw SemanticException(SrcPos(line, charPositionInLine), "Error occurs when parsing")
   }
 }

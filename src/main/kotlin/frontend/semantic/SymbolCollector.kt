@@ -2,7 +2,7 @@ package frontend.semantic
 
 import exceptions.SemanticException
 import frontend.ast.controller.AstVisitor
-import frontend.ast.nodes.*
+import frontend.ast.node.*
 import frontend.metadata.FuncMetadata
 import frontend.metadata.TypeMetadata
 import frontend.utils.ScopeManager
@@ -16,7 +16,7 @@ class SymbolCollector : AstVisitor() {
 
   override fun visit(curr: ProgNode) {
     scopeManager.addLast(curr.scope)
-    curr.suite.accept(this)
+    curr.block.accept(this)
     scopeManager.removeLast()
 
     // and the main has to be int
@@ -67,7 +67,7 @@ class SymbolCollector : AstVisitor() {
 
   override fun visit(curr: ClassDefNode) {
     scopeManager.addLast(curr.classMetadata)
-    curr.classSuite?.accept(this)
+    curr.classBlock?.accept(this)
     scopeManager.removeLast()
   }
 

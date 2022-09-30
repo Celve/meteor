@@ -1,9 +1,9 @@
-package frontend.ast.nodes
+package frontend.ast.node
 
 import frontend.ast.controller.AstVisitor
-import frontend.utils.CodePos
+import frontend.utils.SrcPos
 
 // BaseNode is the base class for all nodes in AST
-abstract class BaseNode(val pos: CodePos) {
+abstract class BaseNode(val pos: SrcPos) {
   abstract fun accept(visitor: AstVisitor)
 }
