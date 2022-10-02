@@ -12,7 +12,7 @@ class ScopeManager {
   private var funcMd: Vector<FuncMd> = Vector()
 
   fun addLast(scope: Scope) {
-    scope.parent = scopes.lastOrNull()
+    scope.parent = scopes.lastOrNull() ?: BuiltinScope
     scopes.addElement(scope)
   }
 

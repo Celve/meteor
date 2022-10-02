@@ -3,6 +3,7 @@ package frontend.ast.node
 import frontend.ast.controller.AstVisitor
 import frontend.metadata.TypeMd
 import frontend.utils.SrcPos
+import middleend.basic.Value
 
 // although but, stmt should be put inside Stmt.kt, however, it's now
 class ShortNode(pos: SrcPos, val expr: ExprNode?) : BaseNode(pos) {
@@ -14,9 +15,7 @@ class ShortNode(pos: SrcPos, val expr: ExprNode?) : BaseNode(pos) {
 // assignable is all determined in builder
 abstract class ExprNode(pos: SrcPos, var assignable: Boolean) : BaseNode(pos) {
   var type: TypeMd? = null
-//  override fun accept(visitor: Visitor) {
-//    visitor.visit(this)
-//  }
+  var value: Value? = null
 }
 
 class PriorExprNode(pos: SrcPos, val expr: ExprNode) : ExprNode(pos, false) {

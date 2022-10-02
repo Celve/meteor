@@ -35,7 +35,10 @@ class SymbolCollector : AstVisitor() {
         }
         globalScope.setClass(it.className, it.classMd)
         // use this special format to stand for implicit class creator
-        globalScope.setFunc(it.className, FuncMd(it.className, listOf(), globalScope.getFuncType("null")))
+        globalScope.setFunc(
+          it.className,
+          FuncMd("${it.className}.${it.className}", listOf(), globalScope.getFuncType("null"))
+        )
       }
     }
 
@@ -95,7 +98,8 @@ class SymbolCollector : AstVisitor() {
     }
     curr.funcMd.paramInput = paramInput.elements().toList()
 
-    curr.funcMd.returnType = globalScope.getFuncType("void")
+//    curr.funcMd.returnType = globalScope.getFuncType(curr.className)
+    curr.funcMd.returnType = globalScope.getFuncType("void") // forbid ctor's parameters
     globalScope.setFunc(curr.className, curr.funcMd)
   }
 
@@ -144,7 +148,7 @@ class SymbolCollector : AstVisitor() {
     val globalScope = scopeManager.first()
     val classScope = scopeManager.last()
     val varType =
-      globalScope.getVarType(curr.varType) ?: throw SemanticException(curr.pos, "${curr.varType} is not defined")
+      globalScope.getVarType(curr.varTypeStr) ?: throw SemanticException(curr.pos, "${curr.varTypeStr} is not defined")
 
     for (it in curr.assigns) {
       if (classScope.getVar(it.first) != null) {

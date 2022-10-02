@@ -3,11 +3,19 @@ package frontend.utils
 import frontend.metadata.ClassMd
 import frontend.metadata.FuncMd
 import frontend.metadata.TypeMd
+import middleend.helper.RenameManager
 
 // scope represents a namespace for any kind of block
 // it could register var, class, or func, determined by the block's property
 // scopes form a tree in scope manager
 open class Scope(var parent: Scope?) {
+  val uniqueNames: HashMap<String, String> = hashMapOf()
+
+  // to get every variable a unique name
+  fun getUniqueName(name: String): String {
+    return uniqueNames[name]!!
+  }
+
   open fun setVar(name: String, type: TypeMd) {
     parent?.setVar(name, type)
   }
@@ -57,12 +65,13 @@ open class Scope(var parent: Scope?) {
 // be able to register var, func, and class
 // generally, it must be the root in the scope tree
 class GlobalScope(parent: Scope?) : Scope(parent) {
-  private val vars: HashMap<String, TypeMd> = HashMap()
-  private val funcs: HashMap<String, FuncMd> = HashMap()
-  private val classes: HashMap<String, ClassMd> = HashMap()
+  val vars: HashMap<String, TypeMd> = HashMap()
+  val funcs: HashMap<String, FuncMd> = HashMap()
+  val classes: HashMap<String, ClassMd> = HashMap()
 
   override fun setVar(name: String, type: TypeMd) {
     vars[name] = type
+    uniqueNames[name] = RenameManager.rename(name)
   }
 
   override fun getVar(name: String): TypeMd? {
@@ -75,6 +84,7 @@ class GlobalScope(parent: Scope?) : Scope(parent) {
 
   override fun setFunc(name: String, type: FuncMd) {
     funcs[name] = type
+    uniqueNames[name] = RenameManager.rename(name)
   }
 
   override fun getFunc(name: String): FuncMd? {
@@ -88,6 +98,7 @@ class GlobalScope(parent: Scope?) : Scope(parent) {
 
   override fun setClass(name: String, type: ClassMd) {
     classes[name] = type
+    uniqueNames[name] = RenameManager.rename(name)
   }
 
   override fun getClass(name: String): ClassMd? {
@@ -134,11 +145,12 @@ class GlobalScope(parent: Scope?) : Scope(parent) {
 // the scope owned by class
 // be able to register var and func, namely member and method
 class ClassScope(parent: Scope?, val className: String) : Scope(parent) {
-  private val members: HashMap<String, TypeMd> = HashMap()
-  private val methods: HashMap<String, FuncMd> = HashMap()
+  val members: HashMap<String, TypeMd> = HashMap()
+  val methods: HashMap<String, FuncMd> = HashMap()
 
   override fun setVar(name: String, type: TypeMd) {
     members[name] = type
+//    setUnique("member", "${className}.${name}")
   }
 
   override fun getVar(name: String): TypeMd? {
@@ -146,10 +158,8 @@ class ClassScope(parent: Scope?, val className: String) : Scope(parent) {
   }
 
   override fun setFunc(name: String, type: FuncMd) {
-    if (methods.containsKey(name)) {
-      throw Exception("redeclaration of $name")
-    }
     methods[name] = type
+    uniqueNames[name] = RenameManager.rename("${className}.${name}")
   }
 
   override fun getFunc(name: String): FuncMd? {
@@ -160,17 +170,19 @@ class ClassScope(parent: Scope?, val className: String) : Scope(parent) {
 // a particular kind of block which could only register var
 // it's the scope type of loop, func, and mere {}
 open class FieldScope(parent: Scope?) : Scope(parent) {
-  protected val vars: HashMap<String, TypeMd> = HashMap()
+  val vars: HashMap<String, TypeMd> = HashMap()
 
   override fun setVar(name: String, type: TypeMd) {
-    if (vars.containsKey(name)) {
-      throw Exception("redeclaration of $name")
-    }
     vars[name] = type
+    uniqueNames[name] = RenameManager.rename(name)
   }
 
   override fun getVar(name: String): TypeMd? {
     return vars[name] ?: parent?.getVar(name)
+  }
+
+  override fun testVar(name: String): Boolean {
+    return vars.containsKey(name)
   }
 }
 
@@ -179,8 +191,9 @@ class LoopScope(parent: Scope?) : FieldScope(parent)
 
 class CondScope(parent: Scope?) : FieldScope(parent)
 
-class FuncScope(parent: Scope?, private val ableOut: Boolean) : FieldScope(parent) {
+class FuncScope(parent: Scope?, val funcName: String, private val ableOut: Boolean) : FieldScope(parent) {
   override fun getVar(name: String): TypeMd? {
     return vars[name] ?: if (ableOut) parent?.getVar(name) else null
   }
 }
+

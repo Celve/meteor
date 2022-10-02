@@ -2,28 +2,36 @@ package frontend.metadata
 
 import frontend.utils.ClassScope
 import frontend.utils.FuncScope
+import middleend.basic.FuncType
+import middleend.basic.StructType
+import middleend.basic.Type
 
-// ClassMetadata is used to identify a particular class, with all info inside
-data class ClassMetadata(val className: String) {
+/// ClassMetadata is used to identify a particular class, with all info inside.
+data class ClassMd(val className: String) {
   val classScope = ClassScope(null, className) // className is only needed for ctor
+  var structIr: StructType? = null
+  val funcIrList: MutableList<FuncType> = mutableListOf()
 }
 
-// the FuncMetadata is the same to ClassMetadata
-data class FuncMetadata(
+/// The FuncMetadata is the same to ClassMetadata.
+data class FuncMd(
   val funcName: String,
-  var paramInput: List<TypeMetadata>,
-  var returnType: TypeMetadata?,
+  var paramInput: List<TypeMd>,
+  var returnType: TypeMd?,
   val ableOut: Boolean = true
 ) {
-  val funcScope = FuncScope(null, ableOut) // ableOut is only for lambda
+  val funcScope = FuncScope(null, funcName, ableOut) // ableOut is only for lambda
+  var funcIr: FuncType? = null
 }
 
-// this is a class extends the ClassMetadata
-// a ClassMetadata could be regarded as an instance type, and TypeMetadata coul be regarded as a general type
-// because it additionally takes dimension into considerations
-data class TypeMetadata(val cl: ClassMetadata, val dim: Int) {
+/// This is a class extends the ClassMetadata.
+/// A ClassMetadata could be regarded as an instance type, and TypeMetadata could be regarded as a general type.
+/// Because it additionally takes dimension into considerations.
+data class TypeMd(val cl: ClassMd, val dim: Int) {
+  val typeIr: Type? = null
+
   // one is concrete and one is null is matched, which is differed from ==
-  fun matchesWith(obj: TypeMetadata): Boolean {
+  fun matchesWith(obj: TypeMd): Boolean {
     if (isNull() || obj.isNull()) {
       return !isPrimitive() && !obj.isPrimitive()
     }

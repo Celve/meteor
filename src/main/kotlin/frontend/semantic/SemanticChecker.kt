@@ -85,22 +85,26 @@ class SemanticChecker : AstVisitor() {
     val innerScope = scopeManager.last()
 
     // only judge for some exceptions
-    val varType =
-      globalScope.getVarType(curr.varType) ?: throw SemanticException(curr.pos, "No type called ${curr.varType}")
+    val varTypeMd =
+      globalScope.getVarType(curr.varTypeStr) ?: throw SemanticException(curr.pos, "No type called ${curr.varTypeStr}")
+    curr.varTypeMd = varTypeMd
     for (it in curr.assigns) {
       if (innerScope !is ClassScope && innerScope.testVar(it.first)) {
         throw SemanticException(curr.pos, "Redeclare ${it.first}")
       } else if (it.second != null) {
         it.second!!.accept(this)
-        if (!varType.matchesWith(it.second!!.type!!)) {
+        if (!varTypeMd.matchesWith(it.second!!.type!!)) {
           throw SemanticException(
             curr.pos,
-            "Wrong type, expected ${varType}, found ${it.second!!.type}"
+            "Wrong type, expected ${varTypeMd}, found ${it.second!!.type}"
           )
         }
       }
       if (innerScope !is ClassScope) {
-        innerScope.setVar(it.first, varType)
+        if (innerScope.testVar(it.first)) {
+          throw SemanticException(curr.pos, "Redeclare ${it.first}")
+        }
+        innerScope.setVar(it.first, varTypeMd)
       }
     }
   }
