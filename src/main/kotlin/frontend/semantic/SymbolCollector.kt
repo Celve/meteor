@@ -6,7 +6,6 @@ import frontend.ast.node.*
 import frontend.metadata.FuncMd
 import frontend.metadata.TypeMd
 import frontend.utils.ScopeManager
-import java.util.*
 
 /**
  * SymbolCollector is used to collect classes and funcs which support forward reference
@@ -79,7 +78,7 @@ class SymbolCollector : AstVisitor() {
     val globalScope = scopeManager.first()
     val outerScope = scopeManager.last()
     val innerScope = curr.funcMd.funcScope
-    val paramInput: Vector<TypeMd> = Vector()
+    val paramInput: MutableList<Pair<String, TypeMd>> = mutableListOf()
 
     if (curr.className != scopeManager.getRecentClass()!!.className) {
       throw SemanticException(curr.pos, "Class can't have this constructor")
@@ -93,10 +92,10 @@ class SymbolCollector : AstVisitor() {
     // init params and add them into local scope
     for (it in curr.params) {
       val varType = outerScope.getVarType(it.first) ?: throw SemanticException(curr.pos, "No type called ${it.first}")
-      paramInput.addElement(varType)
+      paramInput.add(Pair(it.second, varType))
       innerScope.setVar(it.second, varType)
     }
-    curr.funcMd.paramInput = paramInput.elements().toList()
+    curr.funcMd.paramInput = paramInput
 
 //    curr.funcMd.returnType = globalScope.getFuncType(curr.className)
     curr.funcMd.returnType = globalScope.getFuncType("void") // forbid ctor's parameters
@@ -107,7 +106,7 @@ class SymbolCollector : AstVisitor() {
     // omit this duplication for the time being
     val outerScope = scopeManager.last()
     val innerScope = curr.funcMd.funcScope
-    val paramInput: Vector<TypeMd> = Vector()
+    val paramInput: MutableList<Pair<String, TypeMd>> = mutableListOf()
 
     // need to check here, there is no check above
     if (outerScope.testFunc(curr.funcName)) {
@@ -117,10 +116,10 @@ class SymbolCollector : AstVisitor() {
     // init params and add them into local scope
     for (it in curr.params) {
       val varType = outerScope.getVarType(it.first) ?: throw SemanticException(curr.pos, "No type called ${it.first}")
-      paramInput.addElement(varType)
+      paramInput.add(Pair(it.second, varType))
       innerScope.setVar(it.second, varType)
     }
-    curr.funcMd.paramInput = paramInput.elements().toList()
+    curr.funcMd.paramInput = paramInput
 
     // check for its return type
     curr.funcMd.returnType =

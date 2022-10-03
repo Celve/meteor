@@ -7,7 +7,6 @@ import frontend.metadata.FuncMd
 import frontend.metadata.TypeMd
 import frontend.utils.ClassScope
 import frontend.utils.ScopeManager
-import java.util.*
 
 class SemanticChecker : AstVisitor() {
   private val scopeManager = ScopeManager()
@@ -61,15 +60,15 @@ class SemanticChecker : AstVisitor() {
     // omit this duplication for the time being
     val innerScope = curr.funcMd.funcScope
     val globalScope = scopeManager.first()
-    val paramInput: Vector<TypeMd> = Vector()
+    val paramInput: MutableList<Pair<String, TypeMd>> = mutableListOf()
 
     // init params and add them into local scope
     for (it in curr.params) {
       val varType = globalScope.getVarType(it.first) ?: throw SemanticException(curr.pos, "No type called ${it.first}")
-      paramInput.addElement(varType)
+      paramInput.add(Pair(it.second, varType))
       innerScope.setVar(it.second, varType)
     }
-    curr.funcMd.paramInput = paramInput.elements().toList()
+    curr.funcMd.paramInput = paramInput
 
     scopeManager.addLast(curr.funcMd)
     curr.funcBlock?.accept(this)
@@ -230,7 +229,7 @@ class SemanticChecker : AstVisitor() {
       throw SemanticException(curr.pos, "Unequal parameters for ${func.funcName}")
     }
     for (pair in stdInput.zip(usrInput)) {
-      if (!pair.first.matchesWith(pair.second.type!!)) {
+      if (!pair.first.second.matchesWith(pair.second.type!!)) {
         throw SemanticException(pair.second.pos, "Expect ${pair.first}, find ${pair.second.type}")
       }
     }
@@ -266,7 +265,7 @@ class SemanticChecker : AstVisitor() {
 
   override fun visit(curr: FuncCallNode) {
     curr.params.forEach { it.accept(this) }
-    val method = scopeManager.last().getFunc(curr.func) ?: throw SemanticException(curr.pos, "No such function")
+    val method = scopeManager.last().getFunc(curr.funcName) ?: throw SemanticException(curr.pos, "No such function")
     checkParamsForFunc(curr, method, curr.params)
   }
 

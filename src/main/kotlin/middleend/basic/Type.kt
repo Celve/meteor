@@ -174,7 +174,7 @@ data class StructType internal constructor(val structName: String) : Type() {
 data class FuncType internal constructor(val funcName: String, val params: List<Type>, val result: Type) : Type() {
   internal constructor(funcMd: FuncMd) : this(
     funcMd.funcName,
-    funcMd.paramInput.map { TypeFactory.getType(it) },
+    funcMd.paramInput.map { TypeFactory.getType(it.second) },
     TypeFactory.getType(funcMd.returnType!!)
   )
 

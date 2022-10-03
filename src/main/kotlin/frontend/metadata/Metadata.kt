@@ -16,7 +16,7 @@ data class ClassMd(val className: String) {
 /// The FuncMetadata is the same to ClassMetadata.
 data class FuncMd(
   val funcName: String,
-  var paramInput: List<TypeMd>,
+  var paramInput: List<Pair<String, TypeMd>>,
   var returnType: TypeMd?,
   val ableOut: Boolean = true
 ) {

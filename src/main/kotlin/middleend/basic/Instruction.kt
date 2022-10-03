@@ -92,10 +92,11 @@ class BranchInst(val cond: Value?, val trueBlock: BasicBlock, val falseBlock: Ba
   }
 }
 
-class CallInst(val funcType: FuncType, val args: List<Value>) :
-  Instruction(funcType.result) {
+class CallInst(name: String?, val funcType: FuncType, val args: List<Argument>) :
+  Instruction(funcType.result, name) {
   override fun toString(): String {
-    return "call ${funcType.result} @${funcType.funcName}(${args.joinToString(", ") { it.toOperand() }})"
+    val prefix: String = if (name == null) "" else "%$name = "
+    return "${prefix}call ${funcType.result} @${funcType.funcName}(${args.joinToString(", ") { it.toOperand() }})"
   }
 }
 

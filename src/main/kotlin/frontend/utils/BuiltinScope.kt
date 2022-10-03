@@ -22,19 +22,22 @@ object BuiltinScope : Scope(null) {
     val intType = getVarType("int")!!
     val stringType = getVarType("string")!!
 
-    funcs["print"] = FuncMd("print", listOf(stringType), voidType)
-    funcs["println"] = FuncMd("println", listOf(stringType), voidType)
-    funcs["printInt"] = FuncMd("printInt", listOf(intType), voidType)
-    funcs["printlnInt"] = FuncMd("printlnInt", listOf(intType), voidType)
+    funcs["print"] = FuncMd("print", listOf(Pair("", stringType)), voidType)
+    funcs["println"] = FuncMd("println", listOf(Pair("", stringType)), voidType)
+    funcs["printInt"] = FuncMd("printInt", listOf(Pair("", intType)), voidType)
+    funcs["printlnInt"] = FuncMd("printlnInt", listOf(Pair("", intType)), voidType)
     funcs["getString"] = FuncMd("getString", listOf(), stringType)
     funcs["getInt"] = FuncMd("getInt", listOf(), intType)
-    funcs["toString"] = FuncMd("toString", listOf(intType), stringType)
+    funcs["toString"] = FuncMd("toString", listOf(Pair("", intType)), stringType)
 
     val classMeta = getClass("string")!!
     classMeta.classScope.setFunc("length", FuncMd("length", listOf(), intType))
-    classMeta.classScope.setFunc("substring", FuncMd("substring", listOf(intType, intType), stringType))
+    classMeta.classScope.setFunc(
+      "substring",
+      FuncMd("substring", listOf(Pair("", intType), Pair("", intType)), stringType)
+    )
     classMeta.classScope.setFunc("parseInt", FuncMd("parseInt", listOf(), intType))
-    classMeta.classScope.setFunc("ord", FuncMd("ord", listOf(intType), intType))
+    classMeta.classScope.setFunc("ord", FuncMd("ord", listOf(Pair("", intType)), intType))
   }
 
   override fun setFunc(name: String, type: FuncMd) {

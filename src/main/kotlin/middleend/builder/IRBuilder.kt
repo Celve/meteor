@@ -101,8 +101,13 @@ object IRBuilder {
     return brInst
   }
 
-  fun createCallInst(funcType: FuncType, args: List<Value>, atHead: Boolean): CallInst { // TODO: how about call others
-    val callInst = CallInst(funcType, args)
+  fun createCallInst(
+    name: String?,
+    funcType: FuncType,
+    args: List<Argument>,
+    atHead: Boolean = false
+  ): CallInst { // TODO: how about call others
+    val callInst = CallInst(name, funcType, args)
     if (atHead) {
       callInst.insertAtTheHeadOf(block!!)
     } else {

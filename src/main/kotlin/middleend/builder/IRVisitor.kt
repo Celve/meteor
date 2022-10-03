@@ -39,12 +39,19 @@ class IRVisitor : AstVisitor() {
     for ((funcName, funcMd) in globalScope.funcs) {
       funcMd.funcIr = TypeFactory.getFuncType(funcMd)
       println("${funcName} -> ${globalScope.getUniqueName(funcName)}")
-      topModule.setFunc(globalScope.getUniqueName(funcName), Func(funcName, funcMd.funcIr!!))
+      topModule.setFunc(
+        globalScope.getUniqueName(funcName),
+        Func(
+          funcName,
+          funcMd.funcIr!!,
+          funcMd.paramInput.map { Value(TypeFactory.getType(it.second), funcMd.funcScope.getUniqueName(it.first)) }
+        )
+      )
     }
 
     // set up init func
     val initFuncName = "global_variable_init"
-    initFunc = Func(initFuncName, FuncType(initFuncName, listOf(), TypeFactory.getVoidType()))
+    initFunc = Func(initFuncName, FuncType(initFuncName, listOf(), TypeFactory.getVoidType()), listOf())
     val initBlock = BasicBlock("entry")
     initBlock.insertAtTheTailOf(initFunc!!) // it supposes that the initFunc contains only one block
 
@@ -55,13 +62,14 @@ class IRVisitor : AstVisitor() {
       IRBuilder.setInsertPoint(initBlock)
       IRBuilder.createRetVoid()
       topModule.setFunc(initFuncName, initFunc!!)
+
+      // setup main' init
+      val mainFunc = topModule.getFunc("main")
+      val mainEntryBlock = mainFunc.blockList.first()
+      IRBuilder.setInsertPoint(mainEntryBlock)
+      IRBuilder.createCallInst(null, initFunc!!.funcType, listOf(), true)
     }
 
-    // setup main' init
-    val mainFunc = topModule.getFunc("main")
-    val mainEntryBlock = mainFunc.blockList.first()
-    IRBuilder.setInsertPoint(mainEntryBlock)
-    IRBuilder.createCallInst(initFunc!!.funcType, listOf(), true)
   }
 
   override fun visit(curr: FuncBlockNode) {
@@ -75,7 +83,19 @@ class IRVisitor : AstVisitor() {
     entryBlock.insertAtTheTailOf(func!!)
     IRBuilder.setInsertPoint(entryBlock)
 
-    // for the return value
+    // setup for parameters
+    if (func!!.args.isNotEmpty()) {
+      for (arg in func!!.args) {
+        // TODO: it should be the same with passing parameter's name
+        val addrSuffixed = "${arg.name}.addr"
+        val allocaInst = IRBuilder.createAlloca(addrSuffixed, arg.type, arg.type.getAlign())
+        namedValues[arg.name!!] = arg
+        namedValues[addrSuffixed] = allocaInst
+        IRBuilder.createStore(arg.type, namedValues[arg.name]!!, namedValues[addrSuffixed]!!)
+      }
+    }
+
+    // setup for the return value
     if (funcType.result != TypeFactory.getVoidType()) {
       val addrSuffixed = "$funcName.retaddr"
       val allocaInst = IRBuilder.createAlloca(addrSuffixed, funcType.result, funcType.result.getAlign())
@@ -240,7 +260,12 @@ class IRVisitor : AstVisitor() {
   }
 
   override fun visit(curr: FuncCallNode) {
-    TODO("Not yet implemented")
+    val callee = topModule.getFunc(curr.funcName)
+    curr.params.forEach { it.accept(this) }
+    curr.value = IRBuilder.createCallInst(
+      "${RenameManager.rename(callee.name!!)}.ret",
+      callee.funcType,
+      curr.params.map { Argument(it.value!!, callee) }) // TODO: determine its type
   }
 
   override fun visit(curr: MethodAccessNode) {

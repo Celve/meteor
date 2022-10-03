@@ -2,7 +2,7 @@ package middleend.basic
 
 import middleend.helper.ValueSymbolTable
 
-class Func(name: String, val funcType: FuncType) : GlobalValue(name, funcType) {
+class Func(name: String, val funcType: FuncType, val args: List<Value>) : GlobalValue(name, funcType) {
   val blockList: MutableList<BasicBlock> = mutableListOf()
   val vst = ValueSymbolTable()
 
@@ -11,6 +11,10 @@ class Func(name: String, val funcType: FuncType) : GlobalValue(name, funcType) {
   }
 
   override fun toString(): String {
-    return "define ${funcType.result} @$name() { \n${blockList.joinToString("\n")}}\n"
+    return "define ${funcType.result} @$name(${args.joinToString(", ") { "${it.type} %${it.name}" }}) { \n${
+      blockList.joinToString(
+        "\n"
+      )
+    }}\n"
   }
 }
