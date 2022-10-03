@@ -1,7 +1,6 @@
 package middleend.builder
 
 import middleend.basic.*
-import middleend.helper.Suffixed
 import middleend.helper.ValueSymbolTable
 
 object IRBuilder {
@@ -13,7 +12,6 @@ object IRBuilder {
   }
 
   fun setInsertPoint(newBlock: BasicBlock) {
-    println("get changed")
     block = newBlock
   }
 
@@ -21,18 +19,18 @@ object IRBuilder {
     return block
   }
 
-  fun createAlloca(result: Suffixed, type: Type, align: Int): Value {
+  fun createAlloca(result: String, type: Type, align: Int): Value {
     val allocaInst = AllocaInst(vst.defineTwine(result), type, align)
-    allocaInst.insertAtTail(block!!)
+    allocaInst.insertAtTheTailOf(block!!)
     vst.defineValue(allocaInst)
     return allocaInst
   }
 
-  fun createLoad(result: Suffixed, type: Type, ptr: Value): Value {
+  fun createLoad(result: String, type: Type, ptr: Value): Value {
     assert(ptr.type is PointerType)
 
     val loadInst = LoadInst(vst.defineTwine(result), type, ptr)
-    loadInst.insertAtTail(block!!)
+    loadInst.insertAtTheTailOf(block!!)
     vst.defineValue(loadInst)
 
     loadInst.addUsee(ptr)
@@ -40,9 +38,9 @@ object IRBuilder {
     return loadInst
   }
 
-  fun createBinary(result: Suffixed, op: String, type: Type, lhs: Value, rhs: Value): Value {
+  fun createBinary(result: String, op: String, type: Type, lhs: Value, rhs: Value): Value {
     val binaryInst = BinaryInst(vst.defineTwine(result), op, type, lhs, rhs)
-    binaryInst.insertAtTail(block!!)
+    binaryInst.insertAtTheTailOf(block!!)
     vst.defineValue(binaryInst)
 
     binaryInst.addUsee(lhs)
@@ -55,7 +53,7 @@ object IRBuilder {
     assert(ptr.type is PointerType)
 
     val storeInst = StoreInst(type, value, ptr)
-    storeInst.insertAtTail(block!!)
+    storeInst.insertAtTheTailOf(block!!)
 
     storeInst.addUsee(value)
     storeInst.addUsee(ptr)
@@ -63,9 +61,9 @@ object IRBuilder {
     return storeInst
   }
 
-  fun createCmp(result: Suffixed, cond: String, type: Type, lhs: Value, rhs: Value): CmpInst {
+  fun createCmp(result: String, cond: String, type: Type, lhs: Value, rhs: Value): CmpInst {
     val cmpInst = CmpInst(vst.defineTwine(result), CmpInst.Cond.valueOf(cond), type, lhs, rhs)
-    cmpInst.insertAtTail(block!!)
+    cmpInst.insertAtTheTailOf(block!!)
     vst.defineValue(cmpInst)
 
     cmpInst.addUsee(lhs)
@@ -74,9 +72,9 @@ object IRBuilder {
     return cmpInst
   }
 
-  fun createTrunc(result: Suffixed, originalTy: Type, originalVal: Value, toTy: Type): TruncInst {
+  fun createTrunc(result: String, originalTy: Type, originalVal: Value, toTy: Type): TruncInst {
     val truncInst = TruncInst(vst.defineTwine(result), originalTy, originalVal, toTy)
-    truncInst.insertAtTail(block!!)
+    truncInst.insertAtTheTailOf(block!!)
     vst.defineValue(truncInst)
 
     truncInst.addUsee(originalVal)
@@ -84,7 +82,33 @@ object IRBuilder {
     return truncInst
   }
 
-  fun debug() {
-    println(block)
+  fun createRetVoid(): ReturnInst {
+    val retInst = ReturnInst(TypeFactory.getVoidType(), null)
+    retInst.insertAtTheTailOf(block!!)
+    return retInst
+  }
+
+  fun createRet(type: Type, value: Value): ReturnInst {
+    val retInst = ReturnInst(type, value)
+    retInst.insertAtTheTailOf(block!!)
+    retInst.addUsee(value)
+    return retInst
+  }
+
+  fun createBr(trueBlock: BasicBlock): BranchInst {
+    val brInst = BranchInst(null, trueBlock, null)
+    brInst.insertAtTheTailOf(block!!)
+    return brInst
+  }
+
+  fun createCallInst(funcType: FuncType, args: List<Value>, atHead: Boolean): CallInst { // TODO: how about call others
+    val callInst = CallInst(funcType, args)
+    if (atHead) {
+      callInst.insertAtTheHeadOf(block!!)
+    } else {
+      callInst.insertAtTheTailOf(block!!)
+    }
+    args.forEach { it.addUser(callInst) }
+    return callInst
   }
 }

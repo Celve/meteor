@@ -5,8 +5,8 @@ import frontend.parser.MeteorLexer
 import frontend.parser.MeteorParser
 import frontend.semantic.SemanticChecker
 import frontend.semantic.SymbolCollector
-import middleend.builder.IRBuilder
 import middleend.builder.IRVisitor
+import middleend.pass.Emit
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import java.io.FileInputStream
@@ -34,6 +34,7 @@ fun main(args: Array<String>) {
 
   val middleend = IRVisitor()
   middleend.visit(builderRoot)
-  IRBuilder.debug()
 
+  val emit = Emit(middleend.topModule)
+  emit.main()
 }

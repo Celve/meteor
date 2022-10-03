@@ -13,7 +13,7 @@ open class Scope(var parent: Scope?) {
 
   // to get every variable a unique name
   fun getUniqueName(name: String): String {
-    return uniqueNames[name]!!
+    return uniqueNames[name] ?: parent!!.getUniqueName(name)
   }
 
   open fun setVar(name: String, type: TypeMd) {

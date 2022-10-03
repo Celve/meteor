@@ -15,28 +15,32 @@ object TypeFactory {
     return type
   }
 
-  fun createLabel(): LabelType {
-    return screen(LabelType()) as LabelType
+  fun getLabelType(labelName: String): LabelType {
+    return screen(LabelType(labelName)) as LabelType
   }
 
-  fun createInt(numOfBits: Int): IntType {
+  fun getIntType(numOfBits: Int): IntType {
     return screen(IntType(numOfBits)) as IntType
   }
 
-  fun createNull(): PointerType {
-    return createPtr(null)
+  fun getNullType(): PointerType {
+    return getPtrType(null)
   }
 
-  fun createPtr(type: Type?): PointerType {
+  fun getPtrType(type: Type?): PointerType {
     return screen(PointerType(type)) as PointerType
   }
 
-  fun createArray(type: Type, numElements: Int): ArrayType {
+  fun getVoidType(): VoidType {
+    return screen(VoidType()) as VoidType
+  }
+
+  fun getArrayType(type: Type, numElements: Int): ArrayType {
     return screen(ArrayType(type, numElements)) as ArrayType
   }
 
-  fun createPtrToArray(typeMd: TypeMd): PointerType {
-    var ptrToArray = createPtrToType(typeMd)
+  fun getPtrToArrayType(typeMd: TypeMd): PointerType {
+    var ptrToArray = getPtrToType(typeMd)
     for (i in 1..typeMd.dim) {
       ptrToArray = screen(PointerType(ptrToArray)) as PointerType
     }
@@ -46,37 +50,41 @@ object TypeFactory {
   /// For primitive types, this function returns its exact type.
   /// For non-primitive types, like arrays and structs, this function returns a pointer.
   /// There is no exception control inside, make sure that all parameters are right.
-  fun createPtrToType(typeMd: TypeMd): PointerType {
+  fun getPtrToType(typeMd: TypeMd): PointerType {
     return screen(
       when {
-        typeMd.isVoid() -> PointerType(VoidType())
+        typeMd.isVoid() -> PointerType(VoidType()) // FIXME: ???
         typeMd.isInt() -> PointerType(IntType(32))
         typeMd.isBool() -> PointerType(IntType(1))
         typeMd.isString() -> PointerType(IntType(8)) // TODO: make sure that this is ok
-        typeMd.isArray() -> createPtrToArray(typeMd)
+        typeMd.isArray() -> getPtrToArrayType(typeMd)
         else -> PointerType(StructType(typeMd.cl))
       }
     ) as PointerType
   }
 
-  fun createStruct(classMd: ClassMd): StructType {
+  fun getStructType(classMd: ClassMd): StructType {
     return screen(StructType(classMd)) as StructType
   }
 
   /// This function is for func type.
   /// Because there is no function pointer in Mx*, therefore it doesn't need to be distinguished.
-  fun createFunc(funcMd: FuncMd): FuncType {
+  fun getFuncType(funcMd: FuncMd): FuncType {
     return screen(FuncType(funcMd)) as FuncType
   }
 
-  fun createType(typeMd: TypeMd): Type {
+  fun getFuncType(funcName: String, params: List<Type>, result: Type): FuncType {
+    return screen(FuncType(funcName, params, result)) as FuncType
+  }
+
+  fun getType(typeMd: TypeMd): Type {
     return screen(
       when {
         typeMd.isVoid() -> VoidType()
         typeMd.isInt() -> IntType(32)
         typeMd.isBool() -> IntType(8)
         typeMd.isString() -> IntType(8) // TODO: make sure that this is ok
-        typeMd.isArray() -> createPtrToArray(typeMd)
+        typeMd.isArray() -> getPtrToArrayType(typeMd)
         else -> PointerType(StructType(typeMd.cl))
       }
     )
@@ -86,10 +94,14 @@ object TypeFactory {
 /// All constructors inside type and its subclasses are forbidden.
 abstract class Type {
   abstract fun getNumBits(): Int
+
+  fun getAlign(): Int {
+    return getNumBits() / 8
+  }
 }
 
 
-class VoidType : Type() {
+data class VoidType(val uselessName: String = "void") : Type() {
   override fun getNumBits(): Int {
     return 0
   }
@@ -99,7 +111,7 @@ class VoidType : Type() {
   }
 }
 
-class IntType(val numOfBits: Int) : Type() {
+data class IntType(val numOfBits: Int) : Type() {
   override fun getNumBits(): Int {
     return numOfBits
   }
@@ -109,7 +121,7 @@ class IntType(val numOfBits: Int) : Type() {
   }
 }
 
-class PointerType(val pointeeTy: Type?) : Type() {
+data class PointerType(val pointeeTy: Type?) : Type() {
   override fun getNumBits(): Int {
     return 32
   }
@@ -120,10 +132,10 @@ class PointerType(val pointeeTy: Type?) : Type() {
 }
 
 /// In Mx*, all arrays are regarded as references.
-class ArrayType internal constructor(val containedType: Type, val numElements: Int) :
+data class ArrayType internal constructor(val containedType: Type, val numElements: Int) :
   Type() {
   internal constructor(typeMd: TypeMd, len: Int) : this(
-    TypeFactory.createPtrToType(TypeMd(typeMd.cl, typeMd.dim - 1)),
+    TypeFactory.getPtrToType(TypeMd(typeMd.cl, typeMd.dim - 1)),
     len
   )
 
@@ -137,13 +149,13 @@ class ArrayType internal constructor(val containedType: Type, val numElements: I
 /// StructType provides a mapping from name to index, with its type clarified.
 /// This is basically a part of class, because it only contains members.
 /// As for methods, it should be obtained in other ways. The AST will handle this.
-class StructType internal constructor(val structName: String) : Type() {
+data class StructType internal constructor(val structName: String) : Type() {
   private val symbolList: MutableList<Pair<String, Type>> = mutableListOf()
   private var numOfBits = 0
 
   internal constructor(classMd: ClassMd) : this(classMd.className) {
     for ((memberName, memberValue) in classMd.classScope.members) {
-      val memberType = TypeFactory.createPtrToType(memberValue)
+      val memberType = TypeFactory.getPtrToType(memberValue)
       symbolList.add(Pair(memberName, memberType))
       numOfBits += memberType.getNumBits()
     }
@@ -153,20 +165,29 @@ class StructType internal constructor(val structName: String) : Type() {
     return numOfBits
   }
 
-//  fun addSymbol(symbolName: String, symbolType: Type) {
-//    symbolList.add(Pair(symbolName, symbolType))
-//  }
+  override fun toString(): String {
+    return "$structName = type { ${symbolList.joinToString(", ") { it.second.toString() }} }\n"
+  }
 }
 
-class FuncType internal constructor(val funcName: String, val returnType: Type) : Type() {
-  internal constructor(funcMd: FuncMd) : this(funcMd.funcName, TypeFactory.createPtrToType(funcMd.returnType!!))
+/// It would be guaranteed that the funcName is always unchanged.
+data class FuncType internal constructor(val funcName: String, val params: List<Type>, val result: Type) : Type() {
+  internal constructor(funcMd: FuncMd) : this(
+    funcMd.funcName,
+    funcMd.paramInput.map { TypeFactory.getType(it) },
+    TypeFactory.getType(funcMd.returnType!!)
+  )
 
   override fun getNumBits(): Int {
     return 0
   }
+
+  override fun toString(): String {
+    return "(${params.joinToString(",") { it.toString() }}) -> $result"
+  }
 }
 
-class LabelType : Type() {
+data class LabelType(val labelName: String) : Type() {
   override fun getNumBits(): Int {
     return 0
   }

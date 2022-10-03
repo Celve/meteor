@@ -1,10 +1,10 @@
 package middleend.basic
 
-class Module {
-  private val constData: LinkedHashMap<String, ConstantData> = linkedMapOf()
-  private val structType: LinkedHashMap<String, StructType> = linkedMapOf()
-  private val func: LinkedHashMap<String, Func> = linkedMapOf()
-  private val globalVar: LinkedHashMap<String, GlobalVariable> = linkedMapOf()
+class TopModule {
+  val constData: LinkedHashMap<String, ConstantData> = linkedMapOf()
+  val structType: LinkedHashMap<String, StructType> = linkedMapOf()
+  val func: LinkedHashMap<String, Func> = linkedMapOf()
+  val globalVar: LinkedHashMap<String, GlobalVariable> = linkedMapOf()
 
   fun setConst(name: String, value: ConstantData) {
     constData[name] = value
@@ -34,7 +34,7 @@ class Module {
     globalVar[name] = value
   }
 
-  fun geGlobalVar(name: String): GlobalVariable {
+  fun getGlobalVar(name: String): GlobalVariable {
     return globalVar[name]!!
   }
 

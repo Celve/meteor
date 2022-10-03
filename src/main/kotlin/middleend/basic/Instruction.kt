@@ -1,16 +1,18 @@
 package middleend.basic
 
-import middleend.helper.Twine
-
-open class Instruction(type: Type, name: Twine? = null) : User(type, name) {
+open class Instruction(type: Type, name: String? = null) : User(type, name) {
   var parent: BasicBlock? = null
 
-  fun insertAtTail(block: BasicBlock) {
+  open fun isTerminator(): Boolean {
+    return false
+  }
+
+  fun insertAtTheTailOf(block: BasicBlock) {
     block.addInst(block.instList.size, this)
     parent = block
   }
 
-  fun insertAtHead(block: BasicBlock) {
+  fun insertAtTheHeadOf(block: BasicBlock) {
     block.addInst(0, this)
     parent = block
   }
@@ -21,47 +23,79 @@ open class Instruction(type: Type, name: Twine? = null) : User(type, name) {
   }
 }
 
-class BinaryInst(name: Twine, val op: String, type: Type, val lhs: Value, val rhs: Value) :
+class BinaryInst(name: String, val op: String, type: Type, val lhs: Value, val rhs: Value) :
   Instruction(type, name) {
   override fun toString(): String {
-    return "$name = $op $type ${lhs.toOperand()}, ${rhs.toOperand()}"
+    return "%$name = $op $type ${lhs.toOperand()}, ${rhs.toOperand()}"
   }
 }
 
-class AllocaInst(name: Twine, type: Type, val align: Int) : Instruction(type, name) {
+class AllocaInst(name: String, type: Type, val align: Int) : Instruction(type, name) {
   override fun toString(): String {
-    return "$name = alloca $type, align $align"
+    return "%$name = alloca $type, align $align"
   }
 }
 
-class LoadInst(name: Twine, type: Type, val addr: Value) : Instruction(type, name) {
+class LoadInst(name: String, type: Type, val addr: Value) : Instruction(type, name) {
   init {
     addr.addUser(this)
   }
 
   override fun toString(): String {
-    return "$name = load $type, $type* ${addr.toOperand()}"
+    return "%$name = load $type, $type* ${addr.toOperand()}"
   }
 }
 
-class StoreInst(type: Type, val value: Value, val addr: Value) : Instruction(type) {
+class StoreInst(val storedType: Type, val value: Value, val addr: Value) : Instruction(TypeFactory.getVoidType()) {
   override fun toString(): String {
-    return "store $type ${value.toOperand()}, $type* ${addr.toOperand()}"
+    return "store $storedType ${value.toOperand()}, $storedType* ${addr.toOperand()}"
   }
 }
 
 
-class CmpInst(name: Twine, val cond: Cond, type: Type, val lhs: Value, val rhs: Value) :
-  Instruction(TypeFactory.createInt(1), name) {
+class CmpInst(name: String, val cond: Cond, type: Type, val lhs: Value, val rhs: Value) :
+  Instruction(TypeFactory.getIntType(1), name) {
   enum class Cond {
     eq, ne, ugt, uge, ult, ule, sgt, sge, slt, sle,
   }
 }
 
-class TruncInst(name: Twine, val originalTy: Type, val originalVal: Value, val toTy: Type) :
+class TruncInst(name: String, val originalTy: Type, val originalVal: Value, val toTy: Type) :
   Instruction(toTy, name) {
   override fun toString(): String {
-    return "$name = trunc $originalTy ${originalVal.toOperand()} to $toTy"
+    return "%$name = trunc $originalTy ${originalVal.toOperand()} to $toTy"
+  }
+}
+
+class ReturnInst(type: Type, val value: Value?) : Instruction(type) {
+  override fun toString(): String {
+    return if (value == null) {
+      "ret $type"
+    } else {
+      "ret $type ${value.toOperand()}"
+    }
+  }
+}
+
+class BranchInst(val cond: Value?, val trueBlock: BasicBlock, val falseBlock: BasicBlock?) :
+  Instruction(TypeFactory.getVoidType()) {
+  override fun toString(): String {
+    return if (cond == null) {
+      "br label ${trueBlock.toOperand()}"
+    } else {
+      "br i1 ${cond.toOperand()}, label ${trueBlock.toOperand()}, label ${falseBlock!!.toOperand()}"
+    }
+  }
+
+  override fun isTerminator(): Boolean {
+    return true
+  }
+}
+
+class CallInst(val funcType: FuncType, val args: List<Value>) :
+  Instruction(funcType.result) {
+  override fun toString(): String {
+    return "call ${funcType.result} @${funcType.funcName}(${args.joinToString(", ") { it.toOperand() }})"
   }
 }
 
@@ -81,7 +115,6 @@ class TruncInst(name: Twine, val originalTy: Type, val originalVal: Value, val t
 
 //class PhiNode
 
-//class ReturnInst
 
 //class BranchInst
 

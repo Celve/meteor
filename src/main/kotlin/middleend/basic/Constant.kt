@@ -1,5 +1,3 @@
 package middleend.basic
 
-import middleend.helper.Twine
-
-open class Constant(type: Type, name: Twine? = null) : User(type, name)
+open class Constant(type: Type, name: String? = null) : User(type, name)

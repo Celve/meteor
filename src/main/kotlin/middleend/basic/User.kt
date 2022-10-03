@@ -1,8 +1,6 @@
 package middleend.basic
 
-import middleend.helper.Twine
-
-open class User(type: Type, name: Twine? = null) : Value(type, name) {
+open class User(type: Type, name: String? = null) : Value(type, name) {
   val useeList: MutableList<Value> = mutableListOf()
 
   /// This function is bidirectional.

@@ -1,3 +1,7 @@
 package middleend.basic
 
-open class GlobalValue(type: Type) : Constant(type)
+open class GlobalValue(name: String, type: Type) : Constant(type, name) {
+  override fun toOperand(): String {
+    return "@$name"
+  }
+}
