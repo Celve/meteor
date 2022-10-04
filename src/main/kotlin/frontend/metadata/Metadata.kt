@@ -8,6 +8,7 @@ import middleend.basic.Type
 
 /// ClassMetadata is used to identify a particular class, with all info inside.
 data class ClassMd(val className: String) {
+  val memberToIndex: HashMap<String, Int> = hashMapOf()
   val classScope = ClassScope(null, className) // className is only needed for ctor
   var structIr: StructType? = null
   val funcIrList: MutableList<FuncType> = mutableListOf()

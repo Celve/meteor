@@ -92,7 +92,7 @@ class BranchInst(val cond: Value?, val trueBlock: BasicBlock, val falseBlock: Ba
   }
 }
 
-class CallInst(name: String?, val funcType: FuncType, val args: List<Argument>) :
+class CallInst(name: String?, val funcType: FuncType, val args: List<Value>) :
   Instruction(funcType.result, name) {
   override fun toString(): String {
     val prefix: String = if (name == null) "" else "%$name = "

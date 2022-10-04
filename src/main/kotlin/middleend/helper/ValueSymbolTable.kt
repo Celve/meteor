@@ -30,7 +30,7 @@ class ValueSymbolTable {
       "$symbol.${symbolToVersion[symbol]!!}"
     } else {
       symbolToVersion[symbol] = 0
-      "$symbol"
+      symbol
     }
   }
 }

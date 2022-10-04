@@ -104,7 +104,7 @@ object IRBuilder {
   fun createCall(
     name: String?,
     funcType: FuncType,
-    args: List<Argument>,
+    args: List<Value>,
     atHead: Boolean = false
   ): CallInst { // TODO: how about call others
     val callInst = CallInst(name, funcType, args)
