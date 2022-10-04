@@ -5,7 +5,7 @@ import middleend.basic.TopModule
 class Emit(val topModule: TopModule) {
   fun main() {
     for ((_, structType) in topModule.structType) {
-      println(structType)
+      println(structType.toDeclaration())
     }
 
     for ((_, globalVar) in topModule.globalVar) {

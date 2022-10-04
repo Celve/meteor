@@ -4,6 +4,7 @@ object RenameManager {
   val nameToVersion: HashMap<String, Int> = hashMapOf()
 
   fun rename(name: String): String {
+    println(name)
     return if (nameToVersion.containsKey(name)) {
       val newVersion = nameToVersion[name]!! + 1
       nameToVersion[name] = newVersion

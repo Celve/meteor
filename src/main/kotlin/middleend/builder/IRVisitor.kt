@@ -30,21 +30,51 @@ class IRVisitor : AstVisitor() {
 
     // class definitions
     for ((className, classMd) in globalScope.classes) {
+      val localScope = classMd.classScope
+      val uniqueName = globalScope.getUniqueName(className)
       classMd.structIr = TypeFactory.getStructType(classMd) // create the concrete struct, instead of reference
-      println("${className} -> ${globalScope.getUniqueName(className)}")
-      topModule.setStruct(globalScope.getUniqueName(className), classMd.structIr!!)
+      println("${className} -> class.$uniqueName")
+      topModule.setStruct("class.$uniqueName", classMd.structIr!!)
+
+      for ((funcName, funcMd) in localScope.methods) {
+        val args = funcMd.paramInput.map {
+          Value(
+            TypeFactory.getType(it.second),
+            funcMd.funcScope.getUniqueName(it.first)
+          )
+        }.toMutableList()
+        args.add(0, Value(TypeFactory.getPtrToStructType(classMd), "this"))
+
+        val methodName = localScope.getUniqueName(funcName)
+        globalScope.setUniqueName(methodName, methodName) // add method definition to global scope
+
+        topModule.setFunc(
+          methodName,
+          Func(
+            methodName,
+            TypeFactory.getFuncType(funcMd),
+            args
+          )
+        )
+      }
     }
 
     // function definitions
     for ((funcName, funcMd) in globalScope.funcs) {
       funcMd.funcIr = TypeFactory.getFuncType(funcMd)
-      println("${funcName} -> ${globalScope.getUniqueName(funcName)}")
+      val uniqueName = globalScope.getUniqueName(funcName)
+      println("${funcName} -> ${uniqueName}")
       topModule.setFunc(
-        globalScope.getUniqueName(funcName),
+        uniqueName,
         Func(
-          funcName,
+          uniqueName,
           funcMd.funcIr!!,
-          funcMd.paramInput.map { Value(TypeFactory.getType(it.second), funcMd.funcScope.getUniqueName(it.first)) }
+          funcMd.paramInput.map {
+            Value(
+              TypeFactory.getType(it.second),
+              funcMd.funcScope.getUniqueName(it.first)
+            )
+          }
         )
       )
     }
@@ -67,69 +97,13 @@ class IRVisitor : AstVisitor() {
       val mainFunc = topModule.getFunc("main")
       val mainEntryBlock = mainFunc.blockList.first()
       IRBuilder.setInsertPoint(mainEntryBlock)
-      IRBuilder.createCallInst(null, initFunc!!.funcType, listOf(), true)
+      IRBuilder.createCall(null, initFunc!!.funcType, listOf(), true)
     }
 
   }
 
   override fun visit(curr: FuncBlockNode) {
-    val innerScope = scopeManger.last() as FuncScope
-    val globalScope = scopeManger.first()
-    val funcName = globalScope.getUniqueName(innerScope.funcName)
-    func = topModule.getFunc(funcName)
-    val funcType = func!!.type as FuncType
-
-    val entryBlock = BasicBlock(func!!.vst.defineTwine("$funcName.entry"))
-    entryBlock.insertAtTheTailOf(func!!)
-    IRBuilder.setInsertPoint(entryBlock)
-
-    // setup for parameters
-    if (func!!.args.isNotEmpty()) {
-      for (arg in func!!.args) {
-        // TODO: it should be the same with passing parameter's name
-        val addrSuffixed = "${arg.name}.addr"
-        val allocaInst = IRBuilder.createAlloca(addrSuffixed, arg.type, arg.type.getAlign())
-        namedValues[arg.name!!] = arg
-        namedValues[addrSuffixed] = allocaInst
-        IRBuilder.createStore(arg.type, namedValues[arg.name]!!, namedValues[addrSuffixed]!!)
-      }
-    }
-
-    // setup for the return value
-    if (funcType.result != TypeFactory.getVoidType()) {
-      val addrSuffixed = "$funcName.retaddr"
-      val allocaInst = IRBuilder.createAlloca(addrSuffixed, funcType.result, funcType.result.getAlign())
-      namedValues[addrSuffixed] = allocaInst
-      if (funcName == "main") {
-        IRBuilder.createStore(funcType.result, ConstantInt(32, 0), namedValues[addrSuffixed]!!)
-      }
-    }
-
     curr.children.forEach { it.accept(this) }
-
-    if (IRBuilder.getInsertPoint() !== entryBlock) {
-      val exitBlock = BasicBlock(func!!.vst.defineTwine("$funcName.exit"))
-      val branchInst = IRBuilder.createBr(exitBlock)
-
-      for (block in func!!.blockList) {
-        if (!block.hasTerminator()) {
-          branchInst.insertAtTheTailOf(block)
-        }
-      }
-
-      exitBlock.insertAtTheTailOf(func!!)
-      IRBuilder.setInsertPoint(exitBlock)
-    }
-
-    if (funcType.result != TypeFactory.getVoidType()) {
-      val addrSuffixed = "$funcName.retaddr"
-      val valSuffixed = "$funcName.retval"
-      val loadInst = IRBuilder.createLoad(valSuffixed, funcType.result, namedValues[addrSuffixed]!!)
-      namedValues[valSuffixed] = loadInst
-      IRBuilder.createRet(funcType.result, loadInst)
-    } else {
-      IRBuilder.createRetVoid()
-    }
   }
 
   override fun visit(curr: ClassBlockNode) {
@@ -152,7 +126,67 @@ class IRVisitor : AstVisitor() {
 
   override fun visit(curr: FuncDefNode) {
     scopeManger.addLast(curr.funcMd)
+    val innerScope = scopeManger.last() as FuncScope
+    val globalScope = scopeManger.first()
+    val recentClass = scopeManger.getRecentClass()
+
+    val funcName = if (recentClass != null) "${recentClass.className}.${innerScope.funcName}" else innerScope.funcName
+    val uniqueName = globalScope.getUniqueName(funcName)
+    func = topModule.getFunc(uniqueName)
+    val funcType = func!!.type as FuncType
+
+    val entryBlock = BasicBlock(func!!.vst.defineTwine("$uniqueName.entry"))
+    entryBlock.insertAtTheTailOf(func!!)
+    IRBuilder.setInsertPoint(entryBlock)
+
+    // setup for parameters
+    if (func!!.args.isNotEmpty()) {
+      for (arg in func!!.args) {
+        // TODO: it should be the same with passing parameter's name
+        val ptrSuffixed = "${arg.name}.imag"
+        val allocaInst = IRBuilder.createAlloca(ptrSuffixed, arg.type, arg.type.getAlign())
+        namedValues[arg.name!!] = arg
+        namedValues[ptrSuffixed] = allocaInst
+        IRBuilder.createStore(arg.type, namedValues[arg.name]!!, namedValues[ptrSuffixed]!!)
+      }
+    }
+
+    // setup for the return value
+    if (funcType.result != TypeFactory.getVoidType()) {
+      val ptrSuffixed = "$uniqueName.ret.imag"
+      val allocaInst = IRBuilder.createAlloca(ptrSuffixed, funcType.result, funcType.result.getAlign())
+      namedValues[ptrSuffixed] = allocaInst
+      if (uniqueName == "main") {
+        IRBuilder.createStore(funcType.result, ConstantInt(32, 0), namedValues[ptrSuffixed]!!)
+      }
+    }
+
     curr.funcBlock?.accept(this)
+
+    if (IRBuilder.getInsertPoint() !== entryBlock) {
+      val exitBlock = BasicBlock(func!!.vst.defineTwine("$uniqueName.exit"))
+      val branchInst = IRBuilder.createBr(exitBlock)
+
+      for (block in func!!.blockList) {
+        if (!block.hasTerminator()) {
+          branchInst.insertAtTheTailOf(block)
+        }
+      }
+
+      exitBlock.insertAtTheTailOf(func!!)
+      IRBuilder.setInsertPoint(exitBlock)
+    }
+
+    if (funcType.result != TypeFactory.getVoidType()) {
+      val ptrSuffixed = "$uniqueName.ret.imag"
+      val valSuffixed = "$uniqueName.ret.real"
+      val loadInst = IRBuilder.createLoad(valSuffixed, funcType.result, namedValues[ptrSuffixed]!!)
+      namedValues[valSuffixed] = loadInst
+      IRBuilder.createRet(funcType.result, loadInst)
+    } else {
+      IRBuilder.createRetVoid()
+    }
+
     scopeManger.removeLast()
   }
 
@@ -167,25 +201,27 @@ class IRVisitor : AstVisitor() {
     if (innerScope !is GlobalScope) { // if it is a local variable
       for (assign in curr.assigns) {
         val name = innerScope.getUniqueName(assign.first)
-        val suffixed = "$name.addr"
-        val addr = IRBuilder.createAlloca(suffixed, type, type.getAlign())
-        namedValues[suffixed] = addr
+        val ptrSuffixed = "$name.imag"
+        val ptr = IRBuilder.createAlloca(ptrSuffixed, type, type.getAlign())
+        namedValues[ptrSuffixed] = ptr
         if (assign.second != null) {
           assign.second!!.accept(this)
           // TODO: I don't know what to do next, but there must be a step to update namedValues
-          IRBuilder.createStore(type, assign.second!!.value!!, addr)
+          IRBuilder.createStore(type, assign.second!!.value!!, ptr)
+        } else if (type is PointerType) {
+          IRBuilder.createStore(type, ConstantNull(), ptr)
         }
       }
     } else { // if it is a global variable
       IRBuilder.setInsertPoint(initFunc!!.blockList.last())
       for (assign in curr.assigns) {
         val name = innerScope.getUniqueName(assign.first)
-        val suffixed = "$name.addr"
-        val gloVarAddr = GlobalVariable(suffixed, type)
-        topModule.setGlobalVar(suffixed, gloVarAddr)
+        val ptrSuffixed = "$name.imag"
+        val gloVarPtr = GlobalVariable(ptrSuffixed, type)
+        topModule.setGlobalVar(ptrSuffixed, gloVarPtr)
         if (assign.second != null) {
           assign.second!!.accept(this)
-          IRBuilder.createStore(type, assign.second!!.value!!, gloVarAddr)
+          IRBuilder.createStore(type, assign.second!!.value!!, gloVarPtr)
         }
       }
     }
@@ -215,7 +251,7 @@ class IRVisitor : AstVisitor() {
           IRBuilder.createStore(
             (func!!.type as FuncType).result,
             curr.expr.value!!,
-            namedValues["${func!!.name}.retaddr"]!!
+            namedValues["${func!!.name}.ret.imag"]!!
           )
         }
       }
@@ -227,7 +263,8 @@ class IRVisitor : AstVisitor() {
   }
 
   override fun visit(curr: PriorExprNode) {
-    TODO("Not yet implemented")
+    curr.expr.accept(this)
+    curr.value = curr.expr.value
   }
 
   override fun visit(curr: AtomNode) {
@@ -236,15 +273,15 @@ class IRVisitor : AstVisitor() {
       1 -> ConstantStr(curr.literal) // const str
       2 -> {
         val name = scopeManger.last().getUniqueName(curr.literal)
-        val addrSuffixed = "$name.addr"
-        val realSuffixed = "$name.real"
-        val addr = namedValues[addrSuffixed] ?: topModule.getGlobalVar(addrSuffixed)
-        val loadInst = IRBuilder.createLoad(realSuffixed, addr.type, addr)
-        namedValues[realSuffixed] = loadInst
+        val ptrSuffixed = "$name.imag"
+        val valSuffixed = "$name.real"
+        val ptr = namedValues[ptrSuffixed] ?: topModule.getGlobalVar(ptrSuffixed)
+        val loadInst = IRBuilder.createLoad(valSuffixed, ptr.type, ptr)
+        namedValues[valSuffixed] = loadInst
         loadInst
       }
 
-      3 -> TODO("How to declare a class method?")
+      3 -> namedValues["this"]
       4 -> ConstantInt(1, 1) // const bool for true
       5 -> ConstantInt(1, 0) // const bool for false
       else -> ConstantNull() // const null
@@ -262,18 +299,27 @@ class IRVisitor : AstVisitor() {
   override fun visit(curr: FuncCallNode) {
     val callee = topModule.getFunc(curr.funcName)
     curr.params.forEach { it.accept(this) }
-    curr.value = IRBuilder.createCallInst(
+    curr.value = IRBuilder.createCall(
       "${RenameManager.rename(callee.name!!)}.ret",
       callee.funcType,
       curr.params.map { Argument(it.value!!, callee) }) // TODO: determine its type
   }
 
   override fun visit(curr: MethodAccessNode) {
-    TODO("Not yet implemented")
+    val callee = topModule.getFunc("${curr.expr.type!!.cl.className}.${curr.method}")
+    curr.params.forEach { it.accept(this) }
+    curr.value = IRBuilder.createCall(
+      "${RenameManager.rename(callee.name!!)}.ret",
+      callee.funcType,
+      curr.params.map { Argument(it.value!!, callee) }) // TODO: determine its type
   }
 
   override fun visit(curr: MemberAccessNode) {
-    TODO("Not yet implemented")
+    curr.expr.accept(this)
+    val tempSuffixed = "${RenameManager.rename("${curr.expr.type!!.cl.className}.${curr.member}")}.temp"
+    val pointerType = curr.expr.value!!.type as PointerType
+    val structType = pointerType.pointeeTy as StructType
+    curr.value = IRBuilder.createGEP(tempSuffixed, structType, curr.expr.value!!, structType.getIndex(curr.member))
   }
 
   override fun visit(curr: ArrayAccessNode) {
@@ -377,16 +423,17 @@ class IRVisitor : AstVisitor() {
   }
 
   override fun visit(curr: AssignExprNode) {
-    val addr = when {
+    val ptr = when {
       curr.lhs is AtomNode -> {
         val name = scopeManger.last().getUniqueName(curr.lhs.literal)
-        val suffixed = "$name.addr"
+        val suffixed = "$name.imag"
         namedValues[suffixed]
       }
 
       else -> TODO() // I don't know that exact implementation detail of struct
     }
     curr.rhs.accept(this)
-    IRBuilder.createStore(curr.rhs.value!!.type, curr.rhs.value!!, addr!!)
+    IRBuilder.createStore(curr.rhs.value!!.type, curr.rhs.value!!, ptr!!)
   }
 }
+

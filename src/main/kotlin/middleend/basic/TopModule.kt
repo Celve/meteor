@@ -37,5 +37,4 @@ class TopModule {
   fun getGlobalVar(name: String): GlobalVariable {
     return globalVar[name]!!
   }
-
 }

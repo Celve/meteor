@@ -16,6 +16,10 @@ open class Scope(var parent: Scope?) {
     return uniqueNames[name] ?: parent!!.getUniqueName(name)
   }
 
+  fun setUniqueName(name: String, uniqueName: String) {
+    uniqueNames[name] = uniqueName
+  }
+
   open fun setVar(name: String, type: TypeMd) {
     parent?.setVar(name, type)
   }

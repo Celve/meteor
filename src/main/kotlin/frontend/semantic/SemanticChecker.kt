@@ -35,8 +35,7 @@ class SemanticChecker : AstVisitor() {
   // the antlr guarantees it, so here is not check
   // the member and method should be put only inside the local space
   override fun visit(curr: ClassDefNode) {
-    val scope = scopeManager.first()
-    scope.setClass(curr.className, curr.classMd)
+//    scope.setClass(curr.className, curr.classMd)
     scopeManager.addLast(curr.classMd)
     curr.classBlock?.accept(this)
     scopeManager.removeLast()

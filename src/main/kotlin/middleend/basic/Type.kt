@@ -63,6 +63,10 @@ object TypeFactory {
     ) as PointerType
   }
 
+  fun getPtrToStructType(classMd: ClassMd): PointerType {
+    return getPtrType(getStructType(classMd))
+  }
+
   fun getStructType(classMd: ClassMd): StructType {
     return screen(StructType(classMd)) as StructType
   }
@@ -97,6 +101,18 @@ abstract class Type {
 
   fun getAlign(): Int {
     return getNumBits() / 8
+  }
+
+  fun getLevel(): Int {
+    return if (this is PointerType) {
+      if (this.pointeeTy == null) {
+        1
+      } else {
+        this.pointeeTy.getLevel() + 1
+      }
+    } else {
+      0
+    }
   }
 }
 
@@ -150,15 +166,24 @@ data class ArrayType internal constructor(val containedType: Type, val numElemen
 /// This is basically a part of class, because it only contains members.
 /// As for methods, it should be obtained in other ways. The AST will handle this.
 data class StructType internal constructor(val structName: String) : Type() {
-  private val symbolList: MutableList<Pair<String, Type>> = mutableListOf()
+  val symbolList: MutableList<Pair<String, Type>> = mutableListOf()
   private var numOfBits = 0
 
-  internal constructor(classMd: ClassMd) : this(classMd.className) {
+  internal constructor(classMd: ClassMd) : this("class.${classMd.className}") {
     for ((memberName, memberValue) in classMd.classScope.members) {
-      val memberType = TypeFactory.getPtrToType(memberValue)
+      val memberType = TypeFactory.getType(memberValue)
       symbolList.add(Pair(memberName, memberType))
       numOfBits += memberType.getNumBits()
     }
+  }
+
+  fun getIndex(symbol: String): Int {
+    for (index in 0 until symbolList.size) {
+      if (symbolList[index].first == symbol) {
+        return index
+      }
+    }
+    throw Exception("member is not found")
   }
 
   override fun getNumBits(): Int {
@@ -166,7 +191,11 @@ data class StructType internal constructor(val structName: String) : Type() {
   }
 
   override fun toString(): String {
-    return "$structName = type { ${symbolList.joinToString(", ") { it.second.toString() }} }\n"
+    return "%$structName"
+  }
+
+  fun toDeclaration(): String {
+    return "%$structName = type { ${symbolList.joinToString(", ") { it.second.toString() }} }\n"
   }
 }
 

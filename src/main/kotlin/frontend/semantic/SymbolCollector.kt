@@ -34,10 +34,10 @@ class SymbolCollector : AstVisitor() {
         }
         globalScope.setClass(it.className, it.classMd)
         // use this special format to stand for implicit class creator
-        globalScope.setFunc(
-          it.className,
-          FuncMd("${it.className}.${it.className}", listOf(), globalScope.getFuncType("null"))
-        )
+//        globalScope.setFunc(
+//          it.className,
+//          FuncMd("${it.className}.${it.className}", listOf(), globalScope.getFuncType("null"))
+//        )
       }
     }
 
@@ -46,6 +46,12 @@ class SymbolCollector : AstVisitor() {
     for (it in curr.children) {
       if (it is ClassDefNode) {
         it.accept(this)
+
+        // in the case that it doesn't have a initial constructor
+        val scope = it.classMd.classScope
+        if (!scope.testFunc("new")) {
+          scope.setFunc("new", FuncMd("${it.className}.${it.className}", listOf(), globalScope.getFuncType("void")))
+        }
       }
     }
     for (it in curr.children) {
@@ -84,8 +90,8 @@ class SymbolCollector : AstVisitor() {
       throw SemanticException(curr.pos, "Class can't have this constructor")
     }
 
-    val previous = globalScope.getFunc(curr.className)
-    if (previous != null && previous.returnType!!.cl.className != "null") {
+    val previous = outerScope.getFunc("new")
+    if (previous != null) {
       throw SemanticException(curr.pos, "Redeclare class constructor ${curr.className}")
     }
 
@@ -99,7 +105,7 @@ class SymbolCollector : AstVisitor() {
 
 //    curr.funcMd.returnType = globalScope.getFuncType(curr.className)
     curr.funcMd.returnType = globalScope.getFuncType("void") // forbid ctor's parameters
-    globalScope.setFunc(curr.className, curr.funcMd)
+    outerScope.setFunc("new", curr.funcMd) // use new to infer ctor
   }
 
   override fun visit(curr: FuncDefNode) {

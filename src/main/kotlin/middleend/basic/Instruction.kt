@@ -100,45 +100,37 @@ class CallInst(name: String?, val funcType: FuncType, val args: List<Argument>) 
   }
 }
 
-// class FenceInst
+//<result> = getelementptr inbounds [<#elements> x <type>], [<#elements> x <type>]* <variable>, i32 0, i32 <index>
+class GetElementPtrInst(name: String, type: Type, val varType: Type, val value: Value, val index: Int) :
+  Instruction(type, name) {
+  // constructor for structType
+  constructor(name: String, varType: StructType, value: Value, index: Int) : this(
+    name,
+    varType.symbolList[index].second,
+    varType,
+    value,
+    index
+  )
 
-// class AtomicCmpXchgInst
+  // constructor for arrayType
+  constructor(name: String, varType: ArrayType, value: Value, index: Int) : this(
+    name,
+    varType.containedType,
+    varType,
+    value,
+    index
+  )
 
-// class AtomicRMWInst
+  // constructor for arrayType in pointer
+  constructor(name: String, varType: PointerType, value: Value, index: Int) : this(
+    name,
+    varType.pointeeTy!!,
+    varType,
+    value,
+    index
+  )
 
-//class ExtractElementInst
-
-//class InsertElementInst
-
-//class ExtractValueInst
-
-//class InsertValueInst
-
-//class PhiNode
-
-
-//class BranchInst
-
-//class SwitchInst
-
-//class IndirectBrInst
-
-//class InvokeInst
-
-//class CallBrInst
-
-//class CatchReturnInst
-
-//class TruncInst
-
-//class ZExtInst
-
-//class SExtInst
-
-//class IntToPtrInst
-
-//class PtrToIntInst
-
-//class BitCastInst
-
-//class FreezeInst
+  override fun toString(): String {
+    return "%$name = getelementptr inbounds $varType, $varType* ${value.toOperand()}, i32 0, i32 $index"
+  }
+}

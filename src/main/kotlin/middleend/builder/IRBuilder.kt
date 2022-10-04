@@ -101,7 +101,7 @@ object IRBuilder {
     return brInst
   }
 
-  fun createCallInst(
+  fun createCall(
     name: String?,
     funcType: FuncType,
     args: List<Argument>,
@@ -115,5 +115,15 @@ object IRBuilder {
     }
     args.forEach { it.addUser(callInst) }
     return callInst
+  }
+
+  fun createGEP(name: String, varType: StructType, value: Value, index: Int): GetElementPtrInst {
+    val gepInst = GetElementPtrInst(name, varType, value, index)
+    gepInst.insertAtTheTailOf(block!!)
+    vst.defineValue(gepInst)
+
+    gepInst.addUsee(value)
+
+    return gepInst
   }
 }
