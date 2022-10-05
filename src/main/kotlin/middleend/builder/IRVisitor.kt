@@ -128,9 +128,8 @@ class IRVisitor : AstVisitor() {
       for (arg in func!!.args) {
         // "this" should be inserted into method's value symbol table and scope, in order to retrieve
         func!!.vst.reinsertValue(arg)
-        if (arg.name == "this") {
+        if (arg.name == "this") { // we should not jump the allocation of this.ptr, because it might get modified
           innerScope.setValue(arg.name!!, arg)
-          continue // TODO: decide whether to jump around the store and load instruction of variable "this"
         }
         val ptrSuffixed = "${arg.name}.ptr"
         val allocaInst = IRBuilder.createAlloca(ptrSuffixed, arg.type, arg.type.getAlign())
@@ -194,7 +193,6 @@ class IRVisitor : AstVisitor() {
         innerScope.setValue(ptrSuffixed, ptr)
         if (assign.second != null) {
           assign.second!!.accept(this)
-          // TODO: I don't know what to do next, but there must be a step to update namedValues
           IRBuilder.createStore(type, assign.second!!.value!!, ptr)
         } else if (type is PointerType) {
           IRBuilder.createStore(type, ConstantNull(), ptr)
@@ -325,7 +323,11 @@ class IRVisitor : AstVisitor() {
   }
 
   override fun visit(curr: ArrayAccessNode) {
-    TODO("Not yet implemented")
+    curr.array.accept(this)
+    curr.index.accept(this)
+    val pointerType = curr.array.value!!.type as PointerType
+    val ptr = IRBuilder.createGEP("elem.ptr", pointerType, curr.array.value!!, curr.index.value!!)
+    curr.value = IRBuilder.createLoad("elem", pointerType.pointeeTy!!, ptr)
   }
 
   override fun visit(curr: SuffixExprNode) {
@@ -423,9 +425,25 @@ class IRVisitor : AstVisitor() {
 
   override fun visit(curr: AssignExprNode) {
     val ptr = when {
-      curr.lhs is AtomNode -> {
-        val suffixed = "${curr.lhs.literal}.ptr"
-        scopeManger.last().getValue(suffixed)!!
+      curr.lhs is AtomNode -> scopeManger.last().getValue("${curr.lhs.literal}.ptr")!!
+
+      curr.lhs is ArrayAccessNode -> {
+        curr.lhs.array.accept(this)
+        curr.lhs.index.accept(this)
+        IRBuilder.createGEP(
+          "elem.ptr",
+          curr.lhs.array.value!!.type as PointerType,
+          curr.lhs.array.value!!,
+          curr.lhs.index.value!!
+        )
+      }
+
+      curr.lhs is MemberAccessNode -> {
+        curr.lhs.expr.accept(this)
+        val className = curr.lhs.expr.type!!.cl.className
+        val memberName = "$className.${curr.lhs.member}"
+        val structType = topModule.getStruct("class.$className")
+        IRBuilder.createGEP(memberName, structType, curr.lhs.expr.value!!, structType.getIndex(curr.lhs.member))
       }
 
       else -> TODO() // I don't know that exact implementation detail of struct

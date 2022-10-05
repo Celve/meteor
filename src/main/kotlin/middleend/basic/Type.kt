@@ -40,8 +40,8 @@ object TypeFactory {
   }
 
   fun getPtrToArrayType(typeMd: TypeMd): PointerType {
-    var ptrToArray = getPtrToType(typeMd)
-    for (i in 1..typeMd.dim) {
+    var ptrToArray = getPtrToType(TypeMd(typeMd.cl, 0))
+    for (i in 1 until typeMd.dim) {
       ptrToArray = screen(PointerType(ptrToArray)) as PointerType
     }
     return ptrToArray
@@ -57,7 +57,7 @@ object TypeFactory {
         typeMd.isInt() -> PointerType(IntType(32))
         typeMd.isBool() -> PointerType(IntType(1))
         typeMd.isString() -> PointerType(IntType(8)) // TODO: make sure that this is ok
-        typeMd.isArray() -> getPtrToArrayType(typeMd)
+        typeMd.isArray() -> PointerType(getPtrToType(TypeMd(typeMd.cl, typeMd.dim - 1)))
         else -> PointerType(StructType(typeMd.cl))
       }
     ) as PointerType
@@ -82,6 +82,7 @@ object TypeFactory {
   }
 
   fun getType(typeMd: TypeMd): Type {
+    println(typeMd)
     return screen(
       when {
         typeMd.isVoid() -> VoidType()

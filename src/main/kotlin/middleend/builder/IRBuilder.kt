@@ -118,7 +118,17 @@ object IRBuilder {
   }
 
   fun createGEP(name: String, varType: StructType, value: Value, index: Int): GetElementPtrInst {
-    val gepInst = GetElementPtrInst(name, varType, value, index)
+    val gepInst = GetElementPtrInst(vst.defineName(name), varType, value, index)
+    gepInst.insertAtTheTailOf(block!!)
+    vst.reinsertValue(gepInst)
+
+    gepInst.addUsee(value)
+
+    return gepInst
+  }
+
+  fun createGEP(name: String, varType: PointerType, value: Value, index: Value): GetElementPtrInst {
+    val gepInst = GetElementPtrInst(vst.defineName(name), varType, value, index)
     gepInst.insertAtTheTailOf(block!!)
     vst.reinsertValue(gepInst)
 

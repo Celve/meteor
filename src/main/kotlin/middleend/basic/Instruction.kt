@@ -101,7 +101,7 @@ class CallInst(name: String?, val funcType: FuncType, val args: List<Value>) :
 }
 
 //<result> = getelementptr inbounds [<#elements> x <type>], [<#elements> x <type>]* <variable>, i32 0, i32 <index>
-class GetElementPtrInst(name: String, type: Type, val varType: Type, val value: Value, val index: Int) :
+class GetElementPtrInst(name: String, type: Type, val varType: Type, val value: Value, val index: Value) :
   Instruction(type, name) {
   // constructor for structType
   constructor(name: String, varType: StructType, value: Value, index: Int) : this(
@@ -109,11 +109,11 @@ class GetElementPtrInst(name: String, type: Type, val varType: Type, val value: 
     varType.symbolList[index].second,
     varType,
     value,
-    index
+    ConstantInt(32, index)
   )
 
   // constructor for arrayType
-  constructor(name: String, varType: ArrayType, value: Value, index: Int) : this(
+  constructor(name: String, varType: ArrayType, value: Value, index: Value) : this(
     name,
     varType.containedType,
     varType,
@@ -122,7 +122,7 @@ class GetElementPtrInst(name: String, type: Type, val varType: Type, val value: 
   )
 
   // constructor for arrayType in pointer
-  constructor(name: String, varType: PointerType, value: Value, index: Int) : this(
+  constructor(name: String, varType: PointerType, value: Value, index: Value) : this(
     name,
     varType.pointeeTy!!,
     varType,
