@@ -3,7 +3,6 @@ package frontend.utils
 import frontend.metadata.ClassMd
 import frontend.metadata.FuncMd
 import frontend.metadata.TypeMd
-import middleend.helper.RenameManager
 
 // it would never be included in scopeManager
 // however, the first scope's pointer is always pointing to it
@@ -42,7 +41,6 @@ object BuiltinScope : Scope(null) {
 
   override fun setFunc(name: String, type: FuncMd) {
     funcs[name] = type
-    uniqueNames[name] = RenameManager.rename(name)
   }
 
   override fun getFunc(name: String): FuncMd? {
@@ -56,7 +54,6 @@ object BuiltinScope : Scope(null) {
 
   override fun setClass(name: String, type: ClassMd) {
     classes[name] = type
-    uniqueNames[name] = RenameManager.rename(name)
   }
 
   override fun getClass(name: String): ClassMd? {

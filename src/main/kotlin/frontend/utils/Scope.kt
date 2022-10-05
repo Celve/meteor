@@ -3,21 +3,21 @@ package frontend.utils
 import frontend.metadata.ClassMd
 import frontend.metadata.FuncMd
 import frontend.metadata.TypeMd
-import middleend.helper.RenameManager
+import middleend.basic.Value
 
 // scope represents a namespace for any kind of block
 // it could register var, class, or func, determined by the block's property
 // scopes form a tree in scope manager
 open class Scope(var parent: Scope?) {
-  val uniqueNames: HashMap<String, String> = hashMapOf()
+  val namedValues: HashMap<String, Value> = hashMapOf()
 
   // to get every variable a unique name
-  fun getUniqueName(name: String): String {
-    return uniqueNames[name] ?: parent!!.getUniqueName(name)
+  fun getValue(name: String): Value? {
+    return namedValues[name] ?: parent?.getValue(name)
   }
 
-  fun setUniqueName(name: String, uniqueName: String) {
-    uniqueNames[name] = uniqueName
+  fun setValue(name: String, value: Value) {
+    namedValues[name] = value
   }
 
   open fun setVar(name: String, type: TypeMd) {
@@ -75,7 +75,6 @@ class GlobalScope(parent: Scope?) : Scope(parent) {
 
   override fun setVar(name: String, type: TypeMd) {
     vars[name] = type
-    uniqueNames[name] = RenameManager.rename(name)
   }
 
   override fun getVar(name: String): TypeMd? {
@@ -88,7 +87,6 @@ class GlobalScope(parent: Scope?) : Scope(parent) {
 
   override fun setFunc(name: String, type: FuncMd) {
     funcs[name] = type
-    uniqueNames[name] = RenameManager.rename(name)
   }
 
   override fun getFunc(name: String): FuncMd? {
@@ -102,7 +100,6 @@ class GlobalScope(parent: Scope?) : Scope(parent) {
 
   override fun setClass(name: String, type: ClassMd) {
     classes[name] = type
-    uniqueNames[name] = RenameManager.rename(name)
   }
 
   override fun getClass(name: String): ClassMd? {
@@ -154,7 +151,6 @@ class ClassScope(parent: Scope?, val className: String) : Scope(parent) {
 
   override fun setVar(name: String, type: TypeMd) {
     members[name] = type
-//    setUnique("member", "${className}.${name}")
   }
 
   override fun getVar(name: String): TypeMd? {
@@ -163,7 +159,6 @@ class ClassScope(parent: Scope?, val className: String) : Scope(parent) {
 
   override fun setFunc(name: String, type: FuncMd) {
     methods[name] = type
-    uniqueNames[name] = RenameManager.rename("${className}.${name}")
   }
 
   override fun getFunc(name: String): FuncMd? {
@@ -178,7 +173,6 @@ open class FieldScope(parent: Scope?) : Scope(parent) {
 
   override fun setVar(name: String, type: TypeMd) {
     vars[name] = type
-    uniqueNames[name] = RenameManager.rename(name)
   }
 
   override fun getVar(name: String): TypeMd? {

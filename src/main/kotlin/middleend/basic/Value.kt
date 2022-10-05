@@ -7,7 +7,7 @@ package middleend.basic
 /// Because valueName is unique, valueName.suffix must be unique.
 /// Everytime a valueName is added into symbolTable, it must have a suffix, which is different forms of symbol.
 /// If we want to find the original symbol, we remove the suffix to get it.
-open class Value(val type: Type, val name: String? = null) {
+open class Value(val type: Type, var name: String? = null) {
   val userList: MutableList<User> = mutableListOf()
 
   open fun toOperand(): String {

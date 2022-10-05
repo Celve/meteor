@@ -20,18 +20,18 @@ object IRBuilder {
   }
 
   fun createAlloca(result: String, type: Type, align: Int): Value {
-    val allocaInst = AllocaInst(vst.defineTwine(result), type, align)
+    val allocaInst = AllocaInst(vst.defineName(result), type, align)
     allocaInst.insertAtTheTailOf(block!!)
-    vst.defineValue(allocaInst)
+    vst.reinsertValue(allocaInst)
     return allocaInst
   }
 
   fun createLoad(result: String, type: Type, ptr: Value): Value {
     assert(ptr.type is PointerType)
 
-    val loadInst = LoadInst(vst.defineTwine(result), type, ptr)
+    val loadInst = LoadInst(vst.defineName(result), type, ptr)
     loadInst.insertAtTheTailOf(block!!)
-    vst.defineValue(loadInst)
+    vst.reinsertValue(loadInst)
 
     loadInst.addUsee(ptr)
 
@@ -39,9 +39,9 @@ object IRBuilder {
   }
 
   fun createBinary(result: String, op: String, type: Type, lhs: Value, rhs: Value): Value {
-    val binaryInst = BinaryInst(vst.defineTwine(result), op, type, lhs, rhs)
+    val binaryInst = BinaryInst(vst.defineName(result), op, type, lhs, rhs)
     binaryInst.insertAtTheTailOf(block!!)
-    vst.defineValue(binaryInst)
+    vst.reinsertValue(binaryInst)
 
     binaryInst.addUsee(lhs)
     binaryInst.addUsee(rhs)
@@ -62,9 +62,9 @@ object IRBuilder {
   }
 
   fun createCmp(result: String, cond: String, type: Type, lhs: Value, rhs: Value): CmpInst {
-    val cmpInst = CmpInst(vst.defineTwine(result), CmpInst.Cond.valueOf(cond), type, lhs, rhs)
+    val cmpInst = CmpInst(vst.defineName(result), CmpInst.Cond.valueOf(cond), type, lhs, rhs)
     cmpInst.insertAtTheTailOf(block!!)
-    vst.defineValue(cmpInst)
+    vst.reinsertValue(cmpInst)
 
     cmpInst.addUsee(lhs)
     cmpInst.addUsee(rhs)
@@ -73,9 +73,9 @@ object IRBuilder {
   }
 
   fun createTrunc(result: String, originalTy: Type, originalVal: Value, toTy: Type): TruncInst {
-    val truncInst = TruncInst(vst.defineTwine(result), originalTy, originalVal, toTy)
+    val truncInst = TruncInst(vst.defineName(result), originalTy, originalVal, toTy)
     truncInst.insertAtTheTailOf(block!!)
-    vst.defineValue(truncInst)
+    vst.reinsertValue(truncInst)
 
     truncInst.addUsee(originalVal)
 
@@ -120,7 +120,7 @@ object IRBuilder {
   fun createGEP(name: String, varType: StructType, value: Value, index: Int): GetElementPtrInst {
     val gepInst = GetElementPtrInst(name, varType, value, index)
     gepInst.insertAtTheTailOf(block!!)
-    vst.defineValue(gepInst)
+    vst.reinsertValue(gepInst)
 
     gepInst.addUsee(value)
 

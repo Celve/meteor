@@ -152,6 +152,7 @@ class SymbolCollector : AstVisitor() {
   override fun visit(curr: VarDeclNode) {
     val globalScope = scopeManager.first()
     val classScope = scopeManager.last()
+    val classMd = scopeManager.getRecentClass()!!
     val varType =
       globalScope.getVarType(curr.varTypeStr) ?: throw SemanticException(curr.pos, "${curr.varTypeStr} is not defined")
 
@@ -161,6 +162,7 @@ class SymbolCollector : AstVisitor() {
       }
       // TODO: can the member's type to be the class itself?
       classScope.setVar(it.first, varType)
+      classMd.memberToIndex[it.first] = classMd.memberToIndex.size
     }
   }
 
