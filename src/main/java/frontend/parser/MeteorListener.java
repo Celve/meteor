@@ -218,15 +218,15 @@ public interface MeteorListener extends ParseTreeListener {
 	 */
 	void exitLambdaDef(MeteorParser.LambdaDefContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link MeteorParser#basicExpr}.
+	 * Enter a parse tree produced by {@link MeteorParser#atom}.
 	 * @param ctx the parse tree
 	 */
-	void enterBasicExpr(MeteorParser.BasicExprContext ctx);
+	void enterAtom(MeteorParser.AtomContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link MeteorParser#basicExpr}.
+	 * Exit a parse tree produced by {@link MeteorParser#atom}.
 	 * @param ctx the parse tree
 	 */
-	void exitBasicExpr(MeteorParser.BasicExprContext ctx);
+	void exitAtom(MeteorParser.AtomContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link MeteorParser#short}.
 	 * @param ctx the parse tree
@@ -238,16 +238,6 @@ public interface MeteorListener extends ParseTreeListener {
 	 */
 	void exitShort(MeteorParser.ShortContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link MeteorParser#prefixOps}.
-	 * @param ctx the parse tree
-	 */
-	void enterPrefixOps(MeteorParser.PrefixOpsContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link MeteorParser#prefixOps}.
-	 * @param ctx the parse tree
-	 */
-	void exitPrefixOps(MeteorParser.PrefixOpsContext ctx);
-	/**
 	 * Enter a parse tree produced by {@link MeteorParser#bracketedExpr}.
 	 * @param ctx the parse tree
 	 */
@@ -258,149 +248,261 @@ public interface MeteorListener extends ParseTreeListener {
 	 */
 	void exitBracketedExpr(MeteorParser.BracketedExprContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code prefixExpr}
-	 * labeled alternative in {@link MeteorParser#expr}.
+	 * Enter a parse tree produced by {@link MeteorParser#lambdaCall}.
 	 * @param ctx the parse tree
 	 */
-	void enterPrefixExpr(MeteorParser.PrefixExprContext ctx);
+	void enterLambdaCall(MeteorParser.LambdaCallContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code prefixExpr}
-	 * labeled alternative in {@link MeteorParser#expr}.
+	 * Exit a parse tree produced by {@link MeteorParser#lambdaCall}.
 	 * @param ctx the parse tree
 	 */
-	void exitPrefixExpr(MeteorParser.PrefixExprContext ctx);
+	void exitLambdaCall(MeteorParser.LambdaCallContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MeteorParser#funcCall}.
+	 * @param ctx the parse tree
+	 */
+	void enterFuncCall(MeteorParser.FuncCallContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#funcCall}.
+	 * @param ctx the parse tree
+	 */
+	void exitFuncCall(MeteorParser.FuncCallContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MeteorParser#priorExpr}.
+	 * @param ctx the parse tree
+	 */
+	void enterPriorExpr(MeteorParser.PriorExprContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#priorExpr}.
+	 * @param ctx the parse tree
+	 */
+	void exitPriorExpr(MeteorParser.PriorExprContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MeteorParser#primaryExpr}.
+	 * @param ctx the parse tree
+	 */
+	void enterPrimaryExpr(MeteorParser.PrimaryExprContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#primaryExpr}.
+	 * @param ctx the parse tree
+	 */
+	void exitPrimaryExpr(MeteorParser.PrimaryExprContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code memberAccess}
-	 * labeled alternative in {@link MeteorParser#expr}.
+	 * labeled alternative in {@link MeteorParser#suffixExpr}.
 	 * @param ctx the parse tree
 	 */
 	void enterMemberAccess(MeteorParser.MemberAccessContext ctx);
 	/**
 	 * Exit a parse tree produced by the {@code memberAccess}
-	 * labeled alternative in {@link MeteorParser#expr}.
+	 * labeled alternative in {@link MeteorParser#suffixExpr}.
 	 * @param ctx the parse tree
 	 */
 	void exitMemberAccess(MeteorParser.MemberAccessContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code methodAccess}
-	 * labeled alternative in {@link MeteorParser#expr}.
+	 * Enter a parse tree produced by the {@code primaryExprRelay}
+	 * labeled alternative in {@link MeteorParser#suffixExpr}.
 	 * @param ctx the parse tree
 	 */
-	void enterMethodAccess(MeteorParser.MethodAccessContext ctx);
+	void enterPrimaryExprRelay(MeteorParser.PrimaryExprRelayContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code methodAccess}
-	 * labeled alternative in {@link MeteorParser#expr}.
+	 * Exit a parse tree produced by the {@code primaryExprRelay}
+	 * labeled alternative in {@link MeteorParser#suffixExpr}.
 	 * @param ctx the parse tree
 	 */
-	void exitMethodAccess(MeteorParser.MethodAccessContext ctx);
+	void exitPrimaryExprRelay(MeteorParser.PrimaryExprRelayContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code suffixExpr}
-	 * labeled alternative in {@link MeteorParser#expr}.
+	 * Enter a parse tree produced by the {@code suffixIncrement}
+	 * labeled alternative in {@link MeteorParser#suffixExpr}.
 	 * @param ctx the parse tree
 	 */
-	void enterSuffixExpr(MeteorParser.SuffixExprContext ctx);
+	void enterSuffixIncrement(MeteorParser.SuffixIncrementContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code suffixExpr}
-	 * labeled alternative in {@link MeteorParser#expr}.
+	 * Exit a parse tree produced by the {@code suffixIncrement}
+	 * labeled alternative in {@link MeteorParser#suffixExpr}.
 	 * @param ctx the parse tree
 	 */
-	void exitSuffixExpr(MeteorParser.SuffixExprContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code priorExpr}
-	 * labeled alternative in {@link MeteorParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void enterPriorExpr(MeteorParser.PriorExprContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code priorExpr}
-	 * labeled alternative in {@link MeteorParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void exitPriorExpr(MeteorParser.PriorExprContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code binaryExpr}
-	 * labeled alternative in {@link MeteorParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void enterBinaryExpr(MeteorParser.BinaryExprContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code binaryExpr}
-	 * labeled alternative in {@link MeteorParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void exitBinaryExpr(MeteorParser.BinaryExprContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code funcCall}
-	 * labeled alternative in {@link MeteorParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void enterFuncCall(MeteorParser.FuncCallContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code funcCall}
-	 * labeled alternative in {@link MeteorParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void exitFuncCall(MeteorParser.FuncCallContext ctx);
+	void exitSuffixIncrement(MeteorParser.SuffixIncrementContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code arrayAccess}
-	 * labeled alternative in {@link MeteorParser#expr}.
+	 * labeled alternative in {@link MeteorParser#suffixExpr}.
 	 * @param ctx the parse tree
 	 */
 	void enterArrayAccess(MeteorParser.ArrayAccessContext ctx);
 	/**
 	 * Exit a parse tree produced by the {@code arrayAccess}
-	 * labeled alternative in {@link MeteorParser#expr}.
+	 * labeled alternative in {@link MeteorParser#suffixExpr}.
 	 * @param ctx the parse tree
 	 */
 	void exitArrayAccess(MeteorParser.ArrayAccessContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code atom}
-	 * labeled alternative in {@link MeteorParser#expr}.
+	 * Enter a parse tree produced by the {@code methodCall}
+	 * labeled alternative in {@link MeteorParser#suffixExpr}.
 	 * @param ctx the parse tree
 	 */
-	void enterAtom(MeteorParser.AtomContext ctx);
+	void enterMethodCall(MeteorParser.MethodCallContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code atom}
-	 * labeled alternative in {@link MeteorParser#expr}.
+	 * Exit a parse tree produced by the {@code methodCall}
+	 * labeled alternative in {@link MeteorParser#suffixExpr}.
 	 * @param ctx the parse tree
 	 */
-	void exitAtom(MeteorParser.AtomContext ctx);
+	void exitMethodCall(MeteorParser.MethodCallContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code prefixIncrement}
+	 * labeled alternative in {@link MeteorParser#prefixExpr}.
+	 * @param ctx the parse tree
+	 */
+	void enterPrefixIncrement(MeteorParser.PrefixIncrementContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code prefixIncrement}
+	 * labeled alternative in {@link MeteorParser#prefixExpr}.
+	 * @param ctx the parse tree
+	 */
+	void exitPrefixIncrement(MeteorParser.PrefixIncrementContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code initExpr}
-	 * labeled alternative in {@link MeteorParser#expr}.
+	 * labeled alternative in {@link MeteorParser#prefixExpr}.
 	 * @param ctx the parse tree
 	 */
 	void enterInitExpr(MeteorParser.InitExprContext ctx);
 	/**
 	 * Exit a parse tree produced by the {@code initExpr}
-	 * labeled alternative in {@link MeteorParser#expr}.
+	 * labeled alternative in {@link MeteorParser#prefixExpr}.
 	 * @param ctx the parse tree
 	 */
 	void exitInitExpr(MeteorParser.InitExprContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code lambdaCall}
-	 * labeled alternative in {@link MeteorParser#expr}.
+	 * Enter a parse tree produced by the {@code suffixExprRelay}
+	 * labeled alternative in {@link MeteorParser#prefixExpr}.
 	 * @param ctx the parse tree
 	 */
-	void enterLambdaCall(MeteorParser.LambdaCallContext ctx);
+	void enterSuffixExprRelay(MeteorParser.SuffixExprRelayContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code lambdaCall}
-	 * labeled alternative in {@link MeteorParser#expr}.
+	 * Exit a parse tree produced by the {@code suffixExprRelay}
+	 * labeled alternative in {@link MeteorParser#prefixExpr}.
 	 * @param ctx the parse tree
 	 */
-	void exitLambdaCall(MeteorParser.LambdaCallContext ctx);
+	void exitSuffixExprRelay(MeteorParser.SuffixExprRelayContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code assignExpr}
-	 * labeled alternative in {@link MeteorParser#expr}.
+	 * Enter a parse tree produced by {@link MeteorParser#mulExpr}.
+	 * @param ctx the parse tree
+	 */
+	void enterMulExpr(MeteorParser.MulExprContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#mulExpr}.
+	 * @param ctx the parse tree
+	 */
+	void exitMulExpr(MeteorParser.MulExprContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MeteorParser#addExpr}.
+	 * @param ctx the parse tree
+	 */
+	void enterAddExpr(MeteorParser.AddExprContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#addExpr}.
+	 * @param ctx the parse tree
+	 */
+	void exitAddExpr(MeteorParser.AddExprContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MeteorParser#shiftExpr}.
+	 * @param ctx the parse tree
+	 */
+	void enterShiftExpr(MeteorParser.ShiftExprContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#shiftExpr}.
+	 * @param ctx the parse tree
+	 */
+	void exitShiftExpr(MeteorParser.ShiftExprContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MeteorParser#cmpExpr}.
+	 * @param ctx the parse tree
+	 */
+	void enterCmpExpr(MeteorParser.CmpExprContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#cmpExpr}.
+	 * @param ctx the parse tree
+	 */
+	void exitCmpExpr(MeteorParser.CmpExprContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MeteorParser#equalExpr}.
+	 * @param ctx the parse tree
+	 */
+	void enterEqualExpr(MeteorParser.EqualExprContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#equalExpr}.
+	 * @param ctx the parse tree
+	 */
+	void exitEqualExpr(MeteorParser.EqualExprContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MeteorParser#bitwiseAndExpr}.
+	 * @param ctx the parse tree
+	 */
+	void enterBitwiseAndExpr(MeteorParser.BitwiseAndExprContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#bitwiseAndExpr}.
+	 * @param ctx the parse tree
+	 */
+	void exitBitwiseAndExpr(MeteorParser.BitwiseAndExprContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MeteorParser#bitwiseXorExpr}.
+	 * @param ctx the parse tree
+	 */
+	void enterBitwiseXorExpr(MeteorParser.BitwiseXorExprContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#bitwiseXorExpr}.
+	 * @param ctx the parse tree
+	 */
+	void exitBitwiseXorExpr(MeteorParser.BitwiseXorExprContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MeteorParser#bitwiseOrExpr}.
+	 * @param ctx the parse tree
+	 */
+	void enterBitwiseOrExpr(MeteorParser.BitwiseOrExprContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#bitwiseOrExpr}.
+	 * @param ctx the parse tree
+	 */
+	void exitBitwiseOrExpr(MeteorParser.BitwiseOrExprContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MeteorParser#logicalAndExpr}.
+	 * @param ctx the parse tree
+	 */
+	void enterLogicalAndExpr(MeteorParser.LogicalAndExprContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#logicalAndExpr}.
+	 * @param ctx the parse tree
+	 */
+	void exitLogicalAndExpr(MeteorParser.LogicalAndExprContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MeteorParser#logicalOrExpr}.
+	 * @param ctx the parse tree
+	 */
+	void enterLogicalOrExpr(MeteorParser.LogicalOrExprContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#logicalOrExpr}.
+	 * @param ctx the parse tree
+	 */
+	void exitLogicalOrExpr(MeteorParser.LogicalOrExprContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MeteorParser#assignExpr}.
 	 * @param ctx the parse tree
 	 */
 	void enterAssignExpr(MeteorParser.AssignExprContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code assignExpr}
-	 * labeled alternative in {@link MeteorParser#expr}.
+	 * Exit a parse tree produced by {@link MeteorParser#assignExpr}.
 	 * @param ctx the parse tree
 	 */
 	void exitAssignExpr(MeteorParser.AssignExprContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MeteorParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterExpr(MeteorParser.ExprContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitExpr(MeteorParser.ExprContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link MeteorParser#assignUnit}.
 	 * @param ctx the parse tree

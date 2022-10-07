@@ -137,11 +137,11 @@ public interface MeteorVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitLambdaDef(MeteorParser.LambdaDefContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link MeteorParser#basicExpr}.
+	 * Visit a parse tree produced by {@link MeteorParser#atom}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitBasicExpr(MeteorParser.BasicExprContext ctx);
+	T visitAtom(MeteorParser.AtomContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MeteorParser#short}.
 	 * @param ctx the parse tree
@@ -149,101 +149,163 @@ public interface MeteorVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitShort(MeteorParser.ShortContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link MeteorParser#prefixOps}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitPrefixOps(MeteorParser.PrefixOpsContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link MeteorParser#bracketedExpr}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitBracketedExpr(MeteorParser.BracketedExprContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code prefixExpr}
-	 * labeled alternative in {@link MeteorParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitPrefixExpr(MeteorParser.PrefixExprContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code memberAccess}
-	 * labeled alternative in {@link MeteorParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitMemberAccess(MeteorParser.MemberAccessContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code methodAccess}
-	 * labeled alternative in {@link MeteorParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitMethodAccess(MeteorParser.MethodAccessContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code suffixExpr}
-	 * labeled alternative in {@link MeteorParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitSuffixExpr(MeteorParser.SuffixExprContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code priorExpr}
-	 * labeled alternative in {@link MeteorParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitPriorExpr(MeteorParser.PriorExprContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code binaryExpr}
-	 * labeled alternative in {@link MeteorParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitBinaryExpr(MeteorParser.BinaryExprContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code funcCall}
-	 * labeled alternative in {@link MeteorParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitFuncCall(MeteorParser.FuncCallContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code arrayAccess}
-	 * labeled alternative in {@link MeteorParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitArrayAccess(MeteorParser.ArrayAccessContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code atom}
-	 * labeled alternative in {@link MeteorParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitAtom(MeteorParser.AtomContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code initExpr}
-	 * labeled alternative in {@link MeteorParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitInitExpr(MeteorParser.InitExprContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code lambdaCall}
-	 * labeled alternative in {@link MeteorParser#expr}.
+	 * Visit a parse tree produced by {@link MeteorParser#lambdaCall}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitLambdaCall(MeteorParser.LambdaCallContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code assignExpr}
-	 * labeled alternative in {@link MeteorParser#expr}.
+	 * Visit a parse tree produced by {@link MeteorParser#funcCall}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFuncCall(MeteorParser.FuncCallContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MeteorParser#priorExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPriorExpr(MeteorParser.PriorExprContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MeteorParser#primaryExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPrimaryExpr(MeteorParser.PrimaryExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code memberAccess}
+	 * labeled alternative in {@link MeteorParser#suffixExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitMemberAccess(MeteorParser.MemberAccessContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code primaryExprRelay}
+	 * labeled alternative in {@link MeteorParser#suffixExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPrimaryExprRelay(MeteorParser.PrimaryExprRelayContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code suffixIncrement}
+	 * labeled alternative in {@link MeteorParser#suffixExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSuffixIncrement(MeteorParser.SuffixIncrementContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code arrayAccess}
+	 * labeled alternative in {@link MeteorParser#suffixExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitArrayAccess(MeteorParser.ArrayAccessContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code methodCall}
+	 * labeled alternative in {@link MeteorParser#suffixExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitMethodCall(MeteorParser.MethodCallContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code prefixIncrement}
+	 * labeled alternative in {@link MeteorParser#prefixExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPrefixIncrement(MeteorParser.PrefixIncrementContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code initExpr}
+	 * labeled alternative in {@link MeteorParser#prefixExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitInitExpr(MeteorParser.InitExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code suffixExprRelay}
+	 * labeled alternative in {@link MeteorParser#prefixExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSuffixExprRelay(MeteorParser.SuffixExprRelayContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MeteorParser#mulExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitMulExpr(MeteorParser.MulExprContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MeteorParser#addExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAddExpr(MeteorParser.AddExprContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MeteorParser#shiftExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitShiftExpr(MeteorParser.ShiftExprContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MeteorParser#cmpExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitCmpExpr(MeteorParser.CmpExprContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MeteorParser#equalExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitEqualExpr(MeteorParser.EqualExprContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MeteorParser#bitwiseAndExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBitwiseAndExpr(MeteorParser.BitwiseAndExprContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MeteorParser#bitwiseXorExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBitwiseXorExpr(MeteorParser.BitwiseXorExprContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MeteorParser#bitwiseOrExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBitwiseOrExpr(MeteorParser.BitwiseOrExprContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MeteorParser#logicalAndExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLogicalAndExpr(MeteorParser.LogicalAndExprContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MeteorParser#logicalOrExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLogicalOrExpr(MeteorParser.LogicalOrExprContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MeteorParser#assignExpr}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitAssignExpr(MeteorParser.AssignExprContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MeteorParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExpr(MeteorParser.ExprContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MeteorParser#assignUnit}.
 	 * @param ctx the parse tree

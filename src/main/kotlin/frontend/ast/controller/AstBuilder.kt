@@ -122,29 +122,16 @@ class AstBuilder : MeteorBaseVisitor<BaseNode>() {
 
   override fun visitAtom(ctx: MeteorParser.AtomContext?): BaseNode {
     val id = when {
-      ctx!!.basicExpr().IntegerLiteral() != null -> 0
-      ctx.basicExpr().StringLiteral() != null -> 1
-      ctx.basicExpr().Id() != null -> 2
-      ctx.basicExpr().This() != null -> 3
-      ctx.basicExpr().True() != null -> 4
-      ctx.basicExpr().False() != null -> 5
-      ctx.basicExpr().Null() != null -> 6
+      ctx!!.IntegerLiteral() != null -> 0
+      ctx.StringLiteral() != null -> 1
+      ctx.Id() != null -> 2
+      ctx.This() != null -> 3
+      ctx.True() != null -> 4
+      ctx.False() != null -> 5
+      ctx.Null() != null -> 6
       else -> throw Exception("invalid atom expression")
     }
-    return AtomNode(SrcPos(ctx), id, ctx.basicExpr().text)
-  }
-
-  override fun visitInitExpr(ctx: MeteorParser.InitExprContext?): BaseNode {
-    val exprs: MutableList<ExprNode?> = mutableListOf()
-    for (it in ctx!!.bracketedExpr()) {
-      exprs.add(if (it.expr() != null) visit(it.expr()) as ExprNode else null)
-    }
-    return InitExprNode(
-      SrcPos(ctx),
-      ctx.classType().text,
-      ctx.bracketedExpr().size,
-      exprs
-    )
+    return AtomNode(SrcPos(ctx), id, ctx.text)
   }
 
   override fun visitLambdaCall(ctx: MeteorParser.LambdaCallContext?): BaseNode {
@@ -163,35 +150,141 @@ class AstBuilder : MeteorBaseVisitor<BaseNode>() {
     )
   }
 
-  override fun visitMethodAccess(ctx: MeteorParser.MethodAccessContext?): BaseNode {
+  override fun visitMethodCall(ctx: MeteorParser.MethodCallContext?): BaseNode {
     return MethodAccessNode(
       SrcPos(ctx!!),
-      visit(ctx.expr()) as ExprNode,
+      visit(ctx.suffixExpr()) as ExprNode,
       ctx.methodName.text,
       ctx.paramInputList().expr().map { visit(it) as ExprNode })
   }
 
+
   override fun visitMemberAccess(ctx: MeteorParser.MemberAccessContext?): BaseNode {
-    return MemberAccessNode(SrcPos(ctx!!), visit(ctx.expr()) as ExprNode, ctx.classMember.text)
+    return MemberAccessNode(SrcPos(ctx!!), visit(ctx.suffixExpr()) as ExprNode, ctx.memberName.text)
   }
 
   override fun visitArrayAccess(ctx: MeteorParser.ArrayAccessContext?): BaseNode {
-    return ArrayAccessNode(SrcPos(ctx!!), visit(ctx.expr(0)) as ExprNode, visit(ctx.expr(1)) as ExprNode)
+    return ArrayAccessNode(SrcPos(ctx!!), visit(ctx.suffixExpr()) as ExprNode, visit(ctx.expr()) as ExprNode)
   }
 
-  override fun visitSuffixExpr(ctx: MeteorParser.SuffixExprContext?): BaseNode {
-    return SuffixExprNode(SrcPos(ctx!!), visit(ctx.expr()) as ExprNode, ctx.op.text)
+  override fun visitSuffixIncrement(ctx: MeteorParser.SuffixIncrementContext?): BaseNode {
+    return SuffixExprNode(SrcPos(ctx!!), visit(ctx.suffixExpr()) as ExprNode, ctx.op.text)
   }
 
-  override fun visitPrefixExpr(ctx: MeteorParser.PrefixExprContext?): BaseNode {
-    return PrefixExprNode(SrcPos(ctx!!), ctx.prefixOps().text, visit(ctx.expr()) as ExprNode)
+  override fun visitPrefixIncrement(ctx: MeteorParser.PrefixIncrementContext?): BaseNode {
+    return PrefixExprNode(SrcPos(ctx!!), ctx.op.text, visit(ctx.prefixExpr()) as ExprNode)
   }
 
-  override fun visitBinaryExpr(ctx: MeteorParser.BinaryExprContext?): BaseNode {
-    return BinaryExprNode(SrcPos(ctx!!), ctx.op.text, visit(ctx.expr(0)) as ExprNode, visit(ctx.expr(1)) as ExprNode)
+  override fun visitInitExpr(ctx: MeteorParser.InitExprContext?): BaseNode {
+    val exprs: MutableList<ExprNode?> = mutableListOf()
+    for (it in ctx!!.bracketedExpr()) {
+      exprs.add(if (it.expr() != null) visit(it.expr()) as ExprNode else null)
+    }
+    return InitExprNode(
+      SrcPos(ctx),
+      ctx.classType().text,
+      ctx.bracketedExpr().size,
+      exprs
+    )
+  }
+
+  override fun visitMulExpr(ctx: MeteorParser.MulExprContext?): BaseNode {
+    return if (ctx!!.op != null) {
+      BinaryExprNode(
+        SrcPos(ctx),
+        ctx.op.text,
+        ctx.prefixExpr().map { visit(it) as ExprNode })
+    } else {
+      visit(ctx.prefixExpr(0))
+    }
+  }
+
+  override fun visitAddExpr(ctx: MeteorParser.AddExprContext?): BaseNode {
+    return if (ctx!!.op != null) {
+      BinaryExprNode(
+        SrcPos(ctx),
+        ctx.op.text,
+        ctx.mulExpr().map { visit(it) as ExprNode })
+    } else {
+      visit(ctx.mulExpr(0))
+    }
+  }
+
+  override fun visitShiftExpr(ctx: MeteorParser.ShiftExprContext?): BaseNode {
+    return if (ctx!!.op != null) {
+      BinaryExprNode(
+        SrcPos(ctx),
+        ctx.op.text,
+        ctx.addExpr().map { visit(it) as ExprNode })
+    } else {
+      visit(ctx.addExpr(0))
+    }
+  }
+
+  override fun visitCmpExpr(ctx: MeteorParser.CmpExprContext?): BaseNode {
+    return if (ctx!!.op != null) {
+      BinaryExprNode(
+        SrcPos(ctx),
+        ctx.op.text,
+        ctx.shiftExpr().map { visit(it) as ExprNode })
+    } else {
+      visit(ctx.shiftExpr(0))
+    }
+  }
+
+  override fun visitEqualExpr(ctx: MeteorParser.EqualExprContext?): BaseNode {
+    return if (ctx!!.op != null) {
+      BinaryExprNode(SrcPos(ctx), ctx.op.text, ctx.cmpExpr().map { visit(it) as ExprNode })
+    } else {
+      visit(ctx.cmpExpr(0))
+    }
+  }
+
+  override fun visitBitwiseAndExpr(ctx: MeteorParser.BitwiseAndExprContext?): BaseNode {
+    return if (ctx!!.op != null) {
+      BinaryExprNode(SrcPos(ctx), "&", ctx.equalExpr().map { visit(it) as ExprNode })
+    } else {
+      visit(ctx.equalExpr(0))
+    }
+  }
+
+  override fun visitBitwiseXorExpr(ctx: MeteorParser.BitwiseXorExprContext?): BaseNode {
+    return if (ctx!!.op != null) {
+      BinaryExprNode(SrcPos(ctx), "^", ctx.bitwiseAndExpr().map { visit(it) as ExprNode })
+    } else {
+      visit(ctx.bitwiseAndExpr(0))
+    }
+  }
+
+  override fun visitBitwiseOrExpr(ctx: MeteorParser.BitwiseOrExprContext?): BaseNode {
+    return if (ctx!!.op != null) {
+      BinaryExprNode(SrcPos(ctx), "|", ctx.bitwiseXorExpr().map { visit(it) as ExprNode })
+    } else {
+      visit(ctx.bitwiseXorExpr(0))
+    }
+  }
+
+  override fun visitLogicalAndExpr(ctx: MeteorParser.LogicalAndExprContext?): BaseNode {
+    return if (ctx!!.op != null) {
+      BinaryExprNode(SrcPos(ctx), "&&", ctx.bitwiseOrExpr().map { visit(it) as ExprNode })
+    } else {
+      visit(ctx.bitwiseOrExpr(0))
+    }
+  }
+
+  override fun visitLogicalOrExpr(ctx: MeteorParser.LogicalOrExprContext?): BaseNode {
+    return if (ctx!!.op != null) {
+      BinaryExprNode(SrcPos(ctx), "||", ctx.logicalAndExpr().map { visit(it) as ExprNode })
+    } else {
+      visit(ctx.logicalAndExpr(0))
+    }
   }
 
   override fun visitAssignExpr(ctx: MeteorParser.AssignExprContext?): BaseNode {
-    return AssignExprNode(SrcPos(ctx!!), visit(ctx.expr(0)) as ExprNode, visit(ctx.expr(1)) as ExprNode)
+    return if (ctx!!.op != null) {
+      AssignExprNode(SrcPos(ctx), visit(ctx.logicalOrExpr()) as ExprNode, visit(ctx.assignExpr()) as ExprNode)
+    } else {
+      visit(ctx.logicalOrExpr())
+    }
   }
 }

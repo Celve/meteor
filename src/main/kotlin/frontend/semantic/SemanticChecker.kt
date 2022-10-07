@@ -348,57 +348,59 @@ class SemanticChecker : AstVisitor() {
   }
 
   override fun visit(curr: BinaryExprNode) {
-    curr.lhs.accept(this)
-    curr.rhs.accept(this)
-    val lhs = curr.lhs.type!!
-    val rhs = curr.rhs.type!!
-
-    when (curr.op) {
-      "+", "<", "<=", ">", ">=" -> {
-        // all binary operators require the opposite to be the same for int and bool
-        if (!lhs.matchesWith(rhs)) {
-          throw SemanticException(curr.pos, "Type don't match")
-        }
-        if (!lhs.isInt() && !lhs.isString()) {
-          throw SemanticException(curr.pos, "Invalid binary operator ${curr.op} for ${lhs.cl}")
-        }
-        if (curr.op == "+") {
-          curr.type = lhs
-        } else {
-          curr.type = scopeManager.first().getVarType("bool")
-        }
+    curr.exprs.forEach { it.accept(this) }
+    var lhs: TypeMd? = null
+    for (rhs in curr.exprs.map { it.type }) {
+      if (lhs == null) {
+        lhs = rhs
+        continue
       }
-
-      "*", "/", "%", "-", "<<", ">>", "&", "^", "|" -> {
-        if (!lhs.isInt() || !rhs.isInt()) { // those operators are only for int
-          throw SemanticException(curr.pos, "Invalid binary operator ${curr.op} for ${lhs.cl}")
-        }
-        curr.type = lhs
-      }
-
-      "==", "!=" -> {
-        if (lhs.isArray() || rhs.isArray()) { // for arrays
-          if (!lhs.isNull() && !rhs.isNull()) {
-            throw SemanticException(
-              curr.pos,
-              "Invalid binary operator ${curr.op} for ${lhs.cl} and ${rhs.cl}"
-            )
+      when (curr.op) {
+        "+", "<", "<=", ">", ">=" -> {
+          // all binary operators require the opposite to be the same for int and bool
+          if (!lhs.matchesWith(rhs!!)) {
+            throw SemanticException(curr.pos, "Type don't match")
+          }
+          if (!lhs.isInt() && !lhs.isString()) {
+            throw SemanticException(curr.pos, "Invalid binary operator ${curr.op} for ${lhs.cl}")
+          }
+          if (curr.op != "+") {
+            lhs = scopeManager.first().getVarType("bool")
           }
         }
-        // all binary operators require the opposite to be the same for int and bool
-        if (!lhs.matchesWith(rhs)) {
-          throw SemanticException(curr.pos, "Type don't match")
-        }
-        curr.type = TypeMd(scopeManager.first().getClass("bool")!!, 0)
-      }
 
-      "&&", "||" -> {
-        if (!lhs.isBool() || !rhs.isBool()) {
-          throw SemanticException(curr.pos, "Invalid binary operator ${curr.op} for ${lhs.cl}")
+        "*", "/", "%", "-", "<<", ">>", "&", "^", "|" -> {
+          if (!lhs.isInt() || !rhs!!.isInt()) { // those operators are only for int
+            throw SemanticException(curr.pos, "Invalid binary operator ${curr.op} for ${lhs.cl}")
+          }
         }
-        curr.type = lhs
+
+        "==", "!=" -> {
+          if (lhs.isArray() || rhs!!.isArray()) { // for arrays
+            if (!lhs.isNull() && !rhs!!.isNull()) {
+              throw SemanticException(
+                curr.pos,
+                "Invalid binary operator ${curr.op} for ${lhs.cl} and ${rhs.cl}"
+              )
+            }
+          }
+          // all binary operators require the opposite to be the same for int and bool
+          if (!lhs.matchesWith(rhs!!)) {
+            println(lhs)
+            println(rhs)
+            throw SemanticException(curr.pos, "Type don't match")
+          }
+          lhs = TypeMd(scopeManager.first().getClass("bool")!!, 0)
+        }
+
+        "&&", "||" -> {
+          if (!lhs.isBool() || !rhs!!.isBool()) {
+            throw SemanticException(curr.pos, "Invalid binary operator ${curr.op} for ${lhs.cl}")
+          }
+        }
       }
     }
+    curr.type = lhs
   }
 
   override fun visit(curr: AssignExprNode) {

@@ -81,7 +81,7 @@ class PrefixExprNode(pos: SrcPos, val op: String, val expr: ExprNode) : ExprNode
   }
 }
 
-class BinaryExprNode(pos: SrcPos, val op: String, val lhs: ExprNode, val rhs: ExprNode) : ExprNode(pos, false) {
+class BinaryExprNode(pos: SrcPos, val op: String, val exprs: List<ExprNode>) : ExprNode(pos, false) {
   override fun accept(visitor: AstVisitor) {
     visitor.visit(this)
   }
