@@ -37,6 +37,6 @@ class BasicBlock(name: String) : Value(TypeFactory.getLabelType(name), name) {
   }
 
   override fun toOperand(): String {
-    return name!!
+    return "%$name"
   }
 }

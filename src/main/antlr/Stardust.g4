@@ -83,6 +83,7 @@ NewLine: ('\r\n' | '\r' | '\n') -> skip;
 
 // extra
 Access: '.';
+Comma: ',';
 
 // identities TODO: length that is greater than 64 is undefined
 Id: [a-zA-Z] [_0-9a-zA-Z]*; // Id should be put as low as it could, because it's the final choice

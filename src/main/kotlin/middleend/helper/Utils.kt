@@ -19,6 +19,8 @@ object Utils {
       "&" -> "and"
       "|" -> "or"
       "^" -> "xor"
+      "&&" -> "land"
+      "||" -> "lor"
       else -> throw Exception("unexpected operator")
     }
   }

@@ -56,7 +56,7 @@ paramInputList: '(' (expr (',' expr)*)? ')';
 lambdaDef: '[' (op = '&')? ']' paramDeclList '->' '{' funcBlock '}';
 
 // 10.1. basic expressions
-basicExpr:
+atom:
 	IntegerLiteral
 	| StringLiteral
 	| Id
@@ -67,37 +67,58 @@ basicExpr:
 
 // 10.2. arithmetic expressions and assign expressions leftValue: Id | memberAccess | arrayAccess;
 short: expr? ';';
-prefixOps:
-	Increment
-	| Decrement
-	| Add
-	| Sub
-	| LogicalNot
-	| BitwiseNot;
 bracketedExpr: '[' expr? ']';
-expr:
-	'(' expr ')' #priorExpr
-	| basicExpr #atom
-	| New classType bracketedExpr* ('(' ')')? #initExpr // constructor with parameters is undefined behavior
-	| lambdaDef paramInputList #lambdaCall
-  | (funcName = Id) paramInputList #funcCall
-	| expr '.' (methodName = Id) paramInputList #methodAccess
-	| expr '.' (classMember = Id) #memberAccess
-	| expr '[' expr ']' #arrayAccess
-	| expr op = (Increment | Decrement) #suffixExpr
-	| <assoc=right> prefixOps expr #prefixExpr
-	| expr op = (Mul | Div | Mod) expr #binaryExpr
-	| expr op = (Add | Sub) expr #binaryExpr
-	| expr op = (LeftShift | RightShift) expr #binaryExpr
-	| expr op = (Less | LessEqual | Greater | GreaterEqual) expr #binaryExpr
-	| expr op = (Equal | NotEqual) expr #binaryExpr
-	| expr op = BitwiseAnd expr #binaryExpr
-	| expr op = BitwiseXor expr #binaryExpr
-	| expr op = BitwiseOr expr #binaryExpr
-	| expr op = LogicalAnd expr #binaryExpr
-	| expr op = LogicalOr expr #binaryExpr
-	| <assoc=right> expr Assign expr #assignExpr // left value cannot be judged here, due to indirect left recursion
-	;
+lambdaCall: lambdaDef paramInputList;
+funcCall: (funcName = Id) paramInputList;
+priorExpr: '(' expr ')';
+primaryExpr: priorExpr | atom | funcCall | lambdaCall;
+suffixExpr: suffixExpr '.' (methodName = Id) paramInputList #methodCall
+  | suffixExpr '.' (memberName = Id) #memberAccess
+  | suffixExpr '[' expr ']' #arrayAccess
+  | suffixExpr op = (Increment | Decrement) #suffixIncrement
+  | primaryExpr #primaryExprRelay
+  ;
+prefixExpr: op = (Increment | Decrement | Add | Sub | LogicalNot | BitwiseNot) prefixExpr #prefixIncrement
+  | New classType bracketedExpr* ('(' ')')? #initExpr
+  | suffixExpr #suffixExprRelay
+  ;
+mulExpr: prefixExpr (op = (Mul | Div | Mod) prefixExpr)*;
+addExpr: mulExpr (op = (Add | Sub) mulExpr)*;
+shiftExpr: addExpr (op = (LeftShift | RightShift) addExpr)*;
+cmpExpr: shiftExpr (op = (Less | LessEqual | Greater | GreaterEqual) shiftExpr)*;
+equalExpr: cmpExpr (op = (Equal | NotEqual) cmpExpr)*;
+bitwiseAndExpr: equalExpr (op = BitwiseAnd equalExpr)*;
+bitwiseXorExpr: bitwiseAndExpr (op = BitwiseXor bitwiseAndExpr)*;
+bitwiseOrExpr: bitwiseXorExpr (op = BitwiseOr bitwiseXorExpr)*;
+logicalAndExpr:  bitwiseOrExpr (op = LogicalAnd bitwiseOrExpr)*;
+logicalOrExpr: logicalAndExpr (op = LogicalOr logicalAndExpr)*;
+assignExpr: logicalOrExpr (op = Assign assignExpr)?;
+expr: assignExpr;
+
+//
+//expr:
+//	'(' expr ')' #priorExpr
+//	| basicExpr #atom
+//	| New classType bracketedExpr* ('(' ')')? #initExpr // constructor with parameters is undefined behavior
+//	| lambdaDef paramInputList #lambdaCall
+//  | (funcName = Id) paramInputList #funcCall
+//	| expr '.' (methodName = Id) paramInputList #methodAccess
+//	| expr '.' (classMember = Id) #memberAccess
+//	| expr '[' expr ']' #arrayAccess
+//	| expr op = (Increment | Decrement) #suffixExpr
+//	| <assoc=right> prefixOps expr #prefixExpr
+//	| expr op = (Mul | Div | Mod) expr #binaryExpr
+//	| expr op = (Add | Sub) expr #binaryExpr
+//	| expr op = (LeftShift | RightShift) expr #binaryExpr
+//	| expr op = (Less | LessEqual | Greater | GreaterEqual) expr #binaryExpr
+//	| expr op = (Equal | NotEqual) expr #binaryExpr
+//	| expr op = BitwiseAnd expr #binaryExpr
+//	| expr op = BitwiseXor expr #binaryExpr
+//	| expr op = BitwiseOr expr #binaryExpr
+//	| expr op = LogicalAnd expr #binaryExpr
+//	| expr op = LogicalOr expr #binaryExpr
+//	| <assoc=right> expr Assign expr #assignExpr // left value cannot be judged here, due to indirect left recursion
+//	;
 
 // 11.1. variable declarations
 assignUnit: Id (Assign expr)?;

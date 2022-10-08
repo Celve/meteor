@@ -30,9 +30,9 @@ class BinaryInst(name: String, val op: String, type: Type, val lhs: Value, val r
   }
 }
 
-class AllocaInst(name: String, type: Type, val align: Int) : Instruction(type, name) {
+class AllocaInst(name: String, type: Type) : Instruction(type, name) {
   override fun toString(): String {
-    return "%$name = alloca $type, align $align"
+    return "%$name = alloca $type, align ${type.getAlign()}"
   }
 }
 
@@ -42,7 +42,7 @@ class LoadInst(name: String, type: Type, val addr: Value) : Instruction(type, na
   }
 
   override fun toString(): String {
-    return "%$name = load $type, $type* ${addr.toOperand()}"
+    return "%$name = load $type, $type* ${addr.toOperand()}, align ${type.getAlign()}"
   }
 }
 
@@ -53,10 +53,14 @@ class StoreInst(val storedType: Type, val value: Value, val addr: Value) : Instr
 }
 
 
-class CmpInst(name: String, val cond: Cond, type: Type, val lhs: Value, val rhs: Value) :
+class CmpInst(name: String, val cond: Cond, val varType: Type, val lhs: Value, val rhs: Value) :
   Instruction(TypeFactory.getIntType(1), name) {
   enum class Cond {
     eq, ne, ugt, uge, ult, ule, sgt, sge, slt, sle,
+  }
+
+  override fun toString(): String {
+    return "%$name = icmp $cond $varType ${lhs.toOperand()}, ${rhs.toOperand()}"
   }
 }
 
@@ -132,5 +136,11 @@ class GetElementPtrInst(name: String, type: Type, val varType: Type, val value: 
 
   override fun toString(): String {
     return "%$name = getelementptr inbounds $varType, $varType* ${value.toOperand()}, i32 0, i32 $index"
+  }
+}
+
+class PhiInst(name: String, type: Type, val candidates: List<Pair<Value, BasicBlock>>) : Instruction(type, name) {
+  override fun toString(): String {
+    return "%$name = phi $type ".plus(candidates.joinToString(", ") { "[ ${it.first.toOperand()}, ${it.second.toOperand()} ]" })
   }
 }

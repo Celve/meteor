@@ -17,12 +17,14 @@ class ValueSymbolTable {
     return nameToValue[symbol]!!
   }
 
+  fun insertValue(value: Value) {
+    value.name = defineName(value.name!!)
+    nameToValue[value.name!!] = value
+  }
+
   // when the value's name is set up, use this function
   // make sure that its name hasn't been defined by value table
   fun reinsertValue(value: Value) {
-    if (nameToValue.containsKey(value.name!!)) {
-      value.name = defineName(value.name!!)
-    }
     nameToValue[value.name!!] = value
   }
 

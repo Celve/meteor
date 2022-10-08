@@ -4,23 +4,38 @@ import middleend.basic.*
 import middleend.helper.ValueSymbolTable
 
 object IRBuilder {
+  private var func: Func? = null
   private var block: BasicBlock? = null
   private var vst = ValueSymbolTable()
+
+  fun setCurrentFunc(newFunc: Func) {
+    func = newFunc
+  }
+
+  fun getCurrentFunc(): Func? {
+    return func
+  }
+
+  fun getCurrentFuncReturnType(): Type {
+    return func!!.funcType.result
+  }
 
   fun setValueSymbolTable(newVst: ValueSymbolTable) {
     vst = newVst
   }
 
-  fun setInsertPoint(newBlock: BasicBlock) {
+  fun setInsertBlock(newBlock: BasicBlock) {
+    vst.insertValue(newBlock)
     block = newBlock
+    block!!.insertAtTheTailOf(func!!)
   }
 
-  fun getInsertPoint(): BasicBlock? {
+  fun getInsertBlock(): BasicBlock? {
     return block
   }
 
-  fun createAlloca(result: String, type: Type, align: Int): Value {
-    val allocaInst = AllocaInst(vst.defineName(result), type, align)
+  fun createAlloca(result: String, type: Type): Value {
+    val allocaInst = AllocaInst(vst.defineName(result), type)
     allocaInst.insertAtTheTailOf(block!!)
     vst.reinsertValue(allocaInst)
     return allocaInst
@@ -62,6 +77,7 @@ object IRBuilder {
   }
 
   fun createCmp(result: String, cond: String, type: Type, lhs: Value, rhs: Value): CmpInst {
+    println(type)
     val cmpInst = CmpInst(vst.defineName(result), CmpInst.Cond.valueOf(cond), type, lhs, rhs)
     cmpInst.insertAtTheTailOf(block!!)
     vst.reinsertValue(cmpInst)
@@ -135,5 +151,27 @@ object IRBuilder {
     gepInst.addUsee(value)
 
     return gepInst
+  }
+
+  fun createBr(cond: Value, trueBlock: BasicBlock, falseBlock: BasicBlock): BranchInst {
+    val brInst = BranchInst(cond, trueBlock, falseBlock)
+    brInst.insertAtTheTailOf(block!!)
+
+    brInst.addUsee(cond)
+    brInst.addUsee(trueBlock)
+    brInst.addUsee(falseBlock)
+
+    return brInst
+  }
+
+  fun createPhi(name: String, type: Type, candidates: List<Pair<Value, BasicBlock>>): PhiInst {
+    val phiInst = PhiInst(vst.defineName(name), type, candidates)
+    phiInst.insertAtTheTailOf(block!!)
+    vst.reinsertValue(phiInst)
+
+    candidates.forEach { phiInst.addUsee(it.first) }
+    candidates.forEach { phiInst.addUsee(it.second) }
+
+    return phiInst
   }
 }
