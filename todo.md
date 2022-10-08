@@ -4,3 +4,6 @@
 - [ ] deal with new int[][4]
 - [ ] new with ctor
 - [ ] optimization of AST structures
+- [ ] value could have name, and I wonder whether the inst's result should be stored in value's name
+- [ ] module should have a symbol table to refer
+- [ ] scope's renaming and module's renaming might overlap 
