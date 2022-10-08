@@ -13,8 +13,8 @@ class ForSuiteNode(
   pos: SrcPos,
   val init: BaseNode?, // init could be varDecl or expr
   val cond: ExprNode?,
-  val step: ExprNode?,
-  val block: BaseNode
+  val inc: ExprNode?,
+  val body: BaseNode
 ) :
   SuiteNode(pos) {
   val scope = LoopScope(null)
@@ -23,7 +23,7 @@ class ForSuiteNode(
   }
 }
 
-class WhileSuiteNode(pos: SrcPos, val cond: ExprNode, val block: BaseNode) : SuiteNode(pos) {
+class WhileSuiteNode(pos: SrcPos, val cond: ExprNode, val body: BaseNode) : SuiteNode(pos) {
   val scope = LoopScope(null)
   override fun accept(visitor: AstVisitor) {
     visitor.visit(this)

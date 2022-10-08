@@ -116,8 +116,8 @@ class SemanticChecker : AstVisitor() {
         throw SemanticException(curr.pos, "Conditional expression should be bool")
       }
     }
-    curr.step?.accept(this)
-    curr.block.accept(this)
+    curr.inc?.accept(this)
+    curr.body.accept(this)
     scopeManager.removeLast()
   }
 
@@ -128,7 +128,7 @@ class SemanticChecker : AstVisitor() {
       throw SemanticException(curr.cond.pos, "Conditional expression should be bool")
     }
     scopeManager.addLast(curr.scope)
-    curr.block.accept(this)
+    curr.body.accept(this)
     scopeManager.removeLast()
   }
 

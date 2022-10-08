@@ -30,9 +30,9 @@ class BinaryInst(name: String, val op: String, type: Type, val lhs: Value, val r
   }
 }
 
-class AllocaInst(name: String, type: Type) : Instruction(type, name) {
+class AllocaInst(name: String, val varType: Type) : Instruction(TypeFactory.getPtrType(varType), name) {
   override fun toString(): String {
-    return "%$name = alloca $type, align ${type.getAlign()}"
+    return "%$name = alloca $varType, align ${varType.getAlign()}"
   }
 }
 
@@ -110,7 +110,7 @@ class GetElementPtrInst(name: String, type: Type, val varType: Type, val value: 
   // constructor for structType
   constructor(name: String, varType: StructType, value: Value, index: Int) : this(
     name,
-    varType.symbolList[index].second,
+    TypeFactory.getPtrType(varType.symbolList[index].second),
     varType,
     value,
     ConstantInt(32, index)

@@ -27,8 +27,8 @@ object Utils {
 
   fun unaryOpToStr(op: String): String {
     return when (op) {
-      "++" -> "add"
-      "--" -> "sub"
+      "++" -> "inc"
+      "--" -> "dec"
       "+" -> "pos"
       "-" -> "neg"
       "~" -> "bnot"

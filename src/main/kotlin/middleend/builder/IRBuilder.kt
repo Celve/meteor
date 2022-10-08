@@ -36,13 +36,14 @@ object IRBuilder {
 
   fun createAlloca(result: String, type: Type): Value {
     val allocaInst = AllocaInst(vst.defineName(result), type)
-    allocaInst.insertAtTheTailOf(block!!)
+    allocaInst.insertAtIndex(block!!, block!!.getLastAllocaInstIndex() + 1)
     vst.reinsertValue(allocaInst)
     return allocaInst
   }
 
-  fun createLoad(result: String, type: Type, ptr: Value): Value {
+  fun createLoad(result: String, ptr: Value): Value {
     assert(ptr.type is PointerType)
+    val type = (ptr.type as PointerType).pointeeTy!!
 
     val loadInst = LoadInst(vst.defineName(result), type, ptr)
     loadInst.insertAtTheTailOf(block!!)

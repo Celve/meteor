@@ -16,6 +16,15 @@ class BasicBlock(name: String) : Value(TypeFactory.getLabelType(name), name) {
     }
   }
 
+  fun getLastAllocaInstIndex(): Int {
+    for ((index, inst) in instList.withIndex()) {
+      if (inst !is AllocaInst) {
+        return index - 1
+      }
+    }
+    return instList.size - 1
+  }
+
   fun insertAtTheTailOf(func: Func) {
     func.addBasicBlock(func.blockList.size, this)
     parent = func

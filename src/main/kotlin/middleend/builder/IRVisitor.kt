@@ -127,12 +127,12 @@ class IRVisitor : AstVisitor() {
       for (arg in func.args) {
         // "this" should be inserted into method's value symbol table and scope, in order to retrieve
         func.vst.reinsertValue(arg)
-        if (arg.name == "this") { // we should not jump the allocation of this.ptr, because it might get modified
-          innerScope.setValue(arg.name!!, arg)
+        if (arg.name == "this") {
+          innerScope.setValue("this", arg)
+          continue
         }
         val ptrSuffixed = "${arg.name}.addr"
         val allocaInst = IRBuilder.createAlloca(ptrSuffixed, arg.type)
-        innerScope.setValue(arg.name!!, arg)
         innerScope.setValue(ptrSuffixed, allocaInst)
         IRBuilder.createStore(arg.type, arg, allocaInst)
       }
@@ -140,9 +140,9 @@ class IRVisitor : AstVisitor() {
 
     // setup for the return value
     if (funcType.result != TypeFactory.getVoidType()) {
-      val ptrSuffixed = "retaddr"
-      val allocaInst = IRBuilder.createAlloca(ptrSuffixed, funcType.result)
-      innerScope.setValue(ptrSuffixed, allocaInst)
+      val addrSuffixed = "retaddr"
+      val allocaInst = IRBuilder.createAlloca(addrSuffixed, funcType.result)
+      innerScope.setValue(addrSuffixed, allocaInst)
       if (funcName == "main") {
         IRBuilder.createStore(funcType.result, ConstantInt(32, 0), allocaInst)
       }
@@ -164,10 +164,9 @@ class IRVisitor : AstVisitor() {
     }
 
     if (funcType.result != TypeFactory.getVoidType()) {
-      val ptrSuffixed = "retaddr"
+      val addrSuffixed = "retaddr"
       val valSuffixed = "retval"
-      val loadInst = IRBuilder.createLoad(valSuffixed, funcType.result, innerScope.getValue(ptrSuffixed)!!)
-      innerScope.setValue(valSuffixed, loadInst)
+      val loadInst = IRBuilder.createLoad(valSuffixed, innerScope.getValue(addrSuffixed)!!)
       IRBuilder.createRet(funcType.result, loadInst)
     } else {
       IRBuilder.createRetVoid()
@@ -211,19 +210,73 @@ class IRVisitor : AstVisitor() {
   }
 
   override fun visit(curr: ForSuiteNode) {
-    TODO("Not yet implemented")
+    val condBlock = BasicBlock("for.cond")
+    val incBlock = BasicBlock("for.inc")
+    val bodyBlock = BasicBlock("for.body")
+    val endBlock = BasicBlock("for.end")
+
+    curr.init?.accept(this)
+    IRBuilder.createBr(condBlock)
+
+    IRBuilder.setInsertBlock(condBlock)
+    if (curr.cond == null) {
+      IRBuilder.createBr(bodyBlock)
+    } else {
+      curr.cond.accept(this)
+      IRBuilder.createBr(curr.cond.value!!, bodyBlock, endBlock)
+    }
+
+    IRBuilder.setInsertBlock(bodyBlock)
+    curr.body.accept(this)
+    IRBuilder.createBr(incBlock)
+
+    IRBuilder.setInsertBlock(incBlock)
+    curr.inc?.accept(this)
+    IRBuilder.createBr(condBlock)
+
+    IRBuilder.setInsertBlock(endBlock)
   }
 
   override fun visit(curr: WhileSuiteNode) {
-    TODO("Not yet implemented")
+    val condBlock = BasicBlock("while.cond")
+    val bodyBlock = BasicBlock("while.body")
+    val endBlock = BasicBlock("while.end")
+
+    IRBuilder.createBr(condBlock)
+
+    IRBuilder.setInsertBlock(condBlock)
+    curr.cond.accept(this)
+    IRBuilder.createBr(curr.cond.value!!, bodyBlock, endBlock)
+
+    IRBuilder.setInsertBlock(bodyBlock)
+    curr.body.accept(this)
+    IRBuilder.createBr(condBlock)
+
+    IRBuilder.setInsertBlock(endBlock)
   }
 
   override fun visit(curr: CondSuiteNode) {
-    TODO("Not yet implemented")
+    curr.cond.accept(this)
+
+    val endBlock = BasicBlock("if.end")
+
+    val thenBlock = BasicBlock("if.then")
+    IRBuilder.setInsertBlock(thenBlock)
+    curr.thenDo.accept(this)
+    IRBuilder.createBr(endBlock)
+
+    if (curr.elseDo != null) {
+      val elseBlock = BasicBlock("if.else")
+      IRBuilder.setInsertBlock(elseBlock)
+      curr.elseDo.accept(this)
+      IRBuilder.createBr(endBlock)
+    }
+
+    IRBuilder.setInsertBlock(endBlock)
   }
 
   override fun visit(curr: FieldSuiteNode) {
-    TODO("Not yet implemented")
+    curr.block.accept(this)
   }
 
   override fun visit(curr: JumpNode) {
@@ -256,27 +309,8 @@ class IRVisitor : AstVisitor() {
       0 -> ConstantInt(32, curr.literal.toInt()) // const int
       1 -> ConstantStr(curr.literal) // const str
       2 -> {
-        val id = curr.literal
-        val ptrSuffixed = "$id.addr"
-        val ptr = innerScope.getValue(ptrSuffixed)
-        if (ptr == null) {
-          val recentClass = scopeManger.getRecentClass()
-          if (recentClass != null && recentClass.memberToIndex.containsKey(id)) {
-            // now we could know that this is a class member
-            val memberName = "${recentClass.className}.$id"
-            val structType = topModule.getStruct("class.${recentClass.className}")
-            IRBuilder.createGEP(memberName, structType, innerScope.getValue("this")!!, structType.getIndex(id))
-          } else {
-            val globalPtr = topModule.getGlobalVar(id)
-            val loadInst = IRBuilder.createLoad(curr.literal, globalPtr.type, globalPtr)
-            innerScope.setValue(curr.literal, loadInst)
-            loadInst
-          }
-        } else {
-          val loadInst = IRBuilder.createLoad(curr.literal, ptr.type, ptr)
-          innerScope.setValue(curr.literal, loadInst)
-          loadInst
-        }
+        val (varName, varAddr) = getIdsNameAndItsPtr(curr)
+        IRBuilder.createLoad(varName, varAddr)
       }
 
       3 -> innerScope.getValue("this")
@@ -325,35 +359,110 @@ class IRVisitor : AstVisitor() {
     curr.index.accept(this)
     val pointerType = curr.array.value!!.type as PointerType
     val ptr = IRBuilder.createGEP("elem.addr", pointerType, curr.array.value!!, curr.index.value!!)
-    curr.value = IRBuilder.createLoad("elem", pointerType.pointeeTy!!, ptr)
+    curr.value = IRBuilder.createLoad("elem", ptr)
   }
 
-  override fun visit(curr: SuffixExprNode) {
-    curr.expr.accept(this)
-    val op = Utils.unaryOpToStr(curr.op)
-    curr.value = curr.expr.value
-    IRBuilder.createBinary(op, op, TypeFactory.getType(curr.type!!), curr.expr.value!!, ConstantInt(32, 1))
+  private fun getIdsNameAndItsPtr(curr: AtomNode): Pair<String, Value> {
+    val innerScope = scopeManger.last()
+    val id = curr.literal
+    val ptrSuffixed = "$id.addr"
+    val ptr = innerScope.getValue(ptrSuffixed)
+    return if (ptr == null) {
+      val recentClass = scopeManger.getRecentClass()
+      if (recentClass != null && recentClass.memberToIndex.containsKey(id)) {
+        // now we could know that this is a class member
+        val memberName = "${recentClass.className}.$id"
+        val structType = topModule.getStruct("class.${recentClass.className}")
+        Pair(
+          memberName,
+          IRBuilder.createGEP("${memberName}.addr", structType, innerScope.getValue("this")!!, structType.getIndex(id))
+        )
+      } else {
+        Pair(id, topModule.getGlobalVar(id))
+      }
+    } else {
+      Pair(id, ptr)
+    }
   }
 
-  override fun visit(curr: PrefixExprNode) {
-    curr.expr.accept(this)
-    val op = Utils.unaryOpToStr(curr.op)
-    curr.value = when (curr.op) {
-      "++", "--" -> {
-        IRBuilder.createBinary(
-          op,
-          op,
-          TypeFactory.getType(curr.type!!),
-          curr.expr.value!!,
-          ConstantInt(32, 1)
+  private fun getVarsNameAndItsPtr(curr: ExprNode): Pair<String, Value> {
+    return when (curr) {
+      is AtomNode -> getIdsNameAndItsPtr(curr)
+
+      is ArrayAccessNode -> {
+        curr.array.accept(this)
+        curr.index.accept(this)
+        Pair(
+          "elem", IRBuilder.createGEP(
+            "elem.addr",
+            curr.array.value!!.type as PointerType,
+            curr.array.value!!,
+            curr.index.value!!
+          )
         )
       }
 
+      is MemberAccessNode -> {
+        curr.expr.accept(this)
+        val className = curr.expr.type!!.cl.className
+        val memberName = "$className.${curr.member}"
+        val structType = topModule.getStruct("class.$className")
+        Pair(
+          memberName,
+          IRBuilder.createGEP(memberName, structType, curr.expr.value!!, structType.getIndex(curr.member))
+        )
+      }
+
+      else -> TODO() // I don't know that exact implementation detail of struct
+    }
+  }
+
+//  private fun getVarPtrAndLoad(curr: ExprNode): Value {
+//    val varPtr = getVarPtr(curr)
+//    IRBuilder.createLoad()
+//  }
+
+  override fun visit(curr: SuffixExprNode) {
+    val op = Utils.unaryOpToStr(curr.op)
+    val (varName, varPtr) = getVarsNameAndItsPtr(curr.expr)
+    curr.expr.value = IRBuilder.createLoad(varName, varPtr)
+    val varType = TypeFactory.getType(curr.type!!)
+    val binaryInst = IRBuilder.createBinary(
+      op,
+      if (op == "inc") "add" else "sub",
+      varType,
+      curr.expr.value!!,
+      ConstantInt(32, 1)
+    )
+    IRBuilder.createStore(varType, binaryInst, varPtr)
+    curr.value = curr.expr.value
+  }
+
+  override fun visit(curr: PrefixExprNode) {
+    val op = Utils.unaryOpToStr(curr.op)
+    curr.value = when (curr.op) {
+      "++", "--" -> {
+        val (varName, varPtr) = getVarsNameAndItsPtr(curr.expr)
+        curr.expr.value = IRBuilder.createLoad(varName, varPtr)
+        val varType = TypeFactory.getType(curr.type!!)
+        val binaryInst = IRBuilder.createBinary(
+          op,
+          if (op == "inc") "add" else "sub",
+          varType,
+          curr.expr.value!!,
+          ConstantInt(32, 1)
+        )
+        IRBuilder.createStore(varType, binaryInst, varPtr)
+        binaryInst
+      }
+
       "+" -> {
+        curr.expr.accept(this)
         curr.expr.value
       }
 
       "-" -> {
+        curr.expr.accept(this)
         IRBuilder.createBinary(
           op,
           "sub",
@@ -364,6 +473,7 @@ class IRVisitor : AstVisitor() {
       }
 
       "~" -> {
+        curr.expr.accept(this)
         IRBuilder.createBinary(
           op,
           "xor",
@@ -374,6 +484,7 @@ class IRVisitor : AstVisitor() {
       }
 
       else -> { // !
+        curr.expr.accept(this)
         val truncInst = IRBuilder.createTrunc(
           op,
           curr.expr.value!!.type,
@@ -470,30 +581,7 @@ class IRVisitor : AstVisitor() {
   }
 
   override fun visit(curr: AssignExprNode) {
-    val ptr = when {
-      curr.lhs is AtomNode -> scopeManger.last().getValue("${curr.lhs.literal}.addr")!!
-
-      curr.lhs is ArrayAccessNode -> {
-        curr.lhs.array.accept(this)
-        curr.lhs.index.accept(this)
-        IRBuilder.createGEP(
-          "elem.addr",
-          curr.lhs.array.value!!.type as PointerType,
-          curr.lhs.array.value!!,
-          curr.lhs.index.value!!
-        )
-      }
-
-      curr.lhs is MemberAccessNode -> {
-        curr.lhs.expr.accept(this)
-        val className = curr.lhs.expr.type!!.cl.className
-        val memberName = "$className.${curr.lhs.member}"
-        val structType = topModule.getStruct("class.$className")
-        IRBuilder.createGEP(memberName, structType, curr.lhs.expr.value!!, structType.getIndex(curr.lhs.member))
-      }
-
-      else -> TODO() // I don't know that exact implementation detail of struct
-    }
+    val (_, ptr) = getVarsNameAndItsPtr(curr.lhs)
     curr.rhs.accept(this)
     IRBuilder.createStore(curr.rhs.value!!.type, curr.rhs.value!!, ptr)
   }
