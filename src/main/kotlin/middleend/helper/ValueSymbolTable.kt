@@ -17,6 +17,7 @@ class ValueSymbolTable {
     return nameToValue[symbol]!!
   }
 
+  // when the value's name is not set up, which means that it might be duplicate, use this function
   fun insertValue(value: Value) {
     value.name = defineName(value.name!!)
     nameToValue[value.name!!] = value

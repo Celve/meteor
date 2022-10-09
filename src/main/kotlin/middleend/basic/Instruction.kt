@@ -8,8 +8,10 @@ open class Instruction(type: Type, name: String? = null) : User(type, name) {
   }
 
   fun insertAtTheTailOf(block: BasicBlock) {
-    block.addInst(block.instList.size, this)
-    parent = block
+    if (!block.hasTerminator()) {
+      block.addInst(block.instList.size, this)
+      parent = block
+    }
   }
 
   fun insertAtTheHeadOf(block: BasicBlock) {
@@ -20,6 +22,15 @@ open class Instruction(type: Type, name: String? = null) : User(type, name) {
   fun insertAtIndex(block: BasicBlock, index: Int) {
     block.addInst(index, this)
     parent = block
+  }
+
+  fun getIndexAtBlock(): Int {
+    for ((index, inst) in parent!!.instList.withIndex()) {
+      if (inst === this) {
+        return index
+      }
+    }
+    throw Exception("cannot find instruction in its parent basic block")
   }
 }
 
@@ -135,12 +146,23 @@ class GetElementPtrInst(name: String, type: Type, val varType: Type, val value: 
   )
 
   override fun toString(): String {
-    return "%$name = getelementptr inbounds $varType, $varType* ${value.toOperand()}, i32 0, i32 $index"
+    return "%$name = getelementptr inbounds $type, $type* ${value.toOperand()}, i32 0, i32 $index"
   }
 }
 
-class PhiInst(name: String, type: Type, val candidates: List<Pair<Value, BasicBlock>>) : Instruction(type, name) {
+/**
+ * @param candidates: it might come from latter blocks, therefore it's allowed to be modified later
+ */
+class PhiInst(name: String, type: Type, val candidates: MutableList<Pair<Value, BasicBlock>>) :
+  Instruction(type, name) {
   override fun toString(): String {
     return "%$name = phi $type ".plus(candidates.joinToString(", ") { "[ ${it.first.toOperand()}, ${it.second.toOperand()} ]" })
+  }
+}
+
+class BitCastInst(name: String, val castee: Value, toTy: Type) : Instruction(toTy, name) {
+  private val fromTy = castee.type
+  override fun toString(): String {
+    return "%$name = bitcast $fromTy ${castee.toOperand()} to $type"
   }
 }

@@ -4,6 +4,7 @@ import middleend.helper.ValueSymbolTable
 
 class Func(name: String, val funcType: FuncType, val args: List<Value>) : GlobalValue(name, funcType) {
   val blockList: MutableList<BasicBlock> = mutableListOf()
+  var returnBlock: BasicBlock? = null
   val vst = ValueSymbolTable()
 
   fun addBasicBlock(index: Int, basicBlock: BasicBlock) {
@@ -14,7 +15,7 @@ class Func(name: String, val funcType: FuncType, val args: List<Value>) : Global
     return "define ${funcType.result} @$name(${args.joinToString(", ") { "${it.type} %${it.name}" }}) { \n${
       blockList.joinToString(
         "\n"
-      )
+      ).plus("\n$returnBlock")
     }}\n"
   }
 }

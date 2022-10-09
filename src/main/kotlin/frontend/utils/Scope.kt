@@ -185,7 +185,7 @@ open class FieldScope(parent: Scope?) : Scope(parent) {
 }
 
 // it is used to distinguish loop and func in favor of jump
-class LoopScope(parent: Scope?) : FieldScope(parent)
+class LoopScope(parent: Scope?, val name: String) : FieldScope(parent)
 
 class CondScope(parent: Scope?) : FieldScope(parent)
 

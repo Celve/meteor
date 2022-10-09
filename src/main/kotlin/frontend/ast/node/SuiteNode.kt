@@ -17,14 +17,14 @@ class ForSuiteNode(
   val body: BaseNode
 ) :
   SuiteNode(pos) {
-  val scope = LoopScope(null)
+  val scope = LoopScope(null, "for")
   override fun accept(visitor: AstVisitor) {
     visitor.visit(this)
   }
 }
 
 class WhileSuiteNode(pos: SrcPos, val cond: ExprNode, val body: BaseNode) : SuiteNode(pos) {
-  val scope = LoopScope(null)
+  val scope = LoopScope(null, "while")
   override fun accept(visitor: AstVisitor) {
     visitor.visit(this)
   }

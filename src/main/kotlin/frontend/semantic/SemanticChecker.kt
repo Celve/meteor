@@ -240,7 +240,7 @@ class SemanticChecker : AstVisitor() {
     val type =
       globalScope.getClass(curr.typeDef) ?: throw SemanticException(curr.pos, "Type ${curr.typeDef} not found")
     var isNull = false
-    for (it in curr.arraySizeList) {
+    for (it in curr.arraySizeExprList) {
       if (it == null) {
         isNull = true
         continue

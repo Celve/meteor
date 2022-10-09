@@ -21,6 +21,7 @@ object BuiltinScope : Scope(null) {
     val intType = getVarType("int")!!
     val stringType = getVarType("string")!!
 
+    funcs["_malloc"] = FuncMd("_malloc", listOf(Pair("", intType)), stringType)
     funcs["print"] = FuncMd("print", listOf(Pair("", stringType)), voidType)
     funcs["println"] = FuncMd("println", listOf(Pair("", stringType)), voidType)
     funcs["printInt"] = FuncMd("printInt", listOf(Pair("", intType)), voidType)

@@ -101,7 +101,7 @@ abstract class Type {
   abstract fun getNumBits(): Int
 
   fun getAlign(): Int {
-    return getNumBits() / 8
+    return if (getNumBits() == 1) 1 else getNumBits() / 8
   }
 
   fun getLevel(): Int {

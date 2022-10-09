@@ -30,7 +30,10 @@ class AtomNode(pos: SrcPos, val id: Int, val literal: String) : ExprNode(pos, id
   }
 }
 
-class InitExprNode(pos: SrcPos, val typeDef: String, val dim: Int, val arraySizeList: List<ExprNode?>) :
+/**
+ * For arraySizeExprList, the first half would be non-null, and the second half would be null.
+ */
+class InitExprNode(pos: SrcPos, val typeDef: String, val dim: Int, val arraySizeExprList: List<ExprNode?>) :
   ExprNode(pos, false) {
   override fun accept(visitor: AstVisitor) {
     visitor.visit(this)

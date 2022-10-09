@@ -4,6 +4,7 @@ class TopModule {
   val constData: LinkedHashMap<String, ConstantData> = linkedMapOf()
   val structType: LinkedHashMap<String, StructType> = linkedMapOf()
   val func: LinkedHashMap<String, Func> = linkedMapOf()
+  val builtinFunc: LinkedHashMap<String, Func> = linkedMapOf()
   val globalVar: LinkedHashMap<String, GlobalVariable> = linkedMapOf()
 
   fun setConst(name: String, value: ConstantData) {
@@ -26,8 +27,16 @@ class TopModule {
     func[name] = value
   }
 
-  fun getFunc(name: String): Func {
-    return func[name]!!
+  fun getFunc(name: String): Func? {
+    return func[name]
+  }
+
+  fun setBuiltinFunc(name: String, value: Func) {
+    builtinFunc[name] = value
+  }
+
+  fun getBuiltinFunc(name: String): Func? {
+    return builtinFunc[name]
   }
 
   fun setGlobalVar(name: String, value: GlobalVariable) {

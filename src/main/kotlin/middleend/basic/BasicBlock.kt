@@ -10,10 +10,22 @@ class BasicBlock(name: String) : Value(TypeFactory.getLabelType(name), name) {
   }
 
   fun addInst(index: Int, inst: Instruction) {
+    if (terminated && index >= instList.size - 1) {
+      return
+    }
     instList.add(index, inst)
     if (inst.isTerminator()) {
       terminated = true
     }
+  }
+
+  fun getIndexInFunc(): Int {
+    for ((index, block) in parent!!.blockList.withIndex()) {
+      if (block === this) {
+        return index
+      }
+    }
+    throw Exception("basic block cannot find itself in its parent function")
   }
 
   fun getLastAllocaInstIndex(): Int {
