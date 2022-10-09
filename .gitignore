@@ -46,3 +46,6 @@ utilities/
 
 ### Log Files ###
 *.log
+
+### Others ###
+debug/
