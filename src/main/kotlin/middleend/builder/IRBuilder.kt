@@ -78,7 +78,6 @@ object IRBuilder {
   }
 
   fun createLoad(result: String, ptr: Value): Value {
-    assert(ptr.type is PointerType)
     val type = (ptr.type as PointerType).pointeeTy!!
 
     val loadInst = LoadInst(vst.defineName(result), type, ptr)
@@ -117,7 +116,6 @@ object IRBuilder {
   }
 
   fun createCmp(result: String, cond: String, type: Type, lhs: Value, rhs: Value): CmpInst {
-    println(type)
     val cmpInst = CmpInst(vst.defineName(result), CmpInst.Cond.valueOf(cond), type, lhs, rhs)
 //    cmpInst.insertAtTheTailOf(block!!)
     addInstAtPoint(cmpInst)
@@ -163,12 +161,17 @@ object IRBuilder {
   }
 
   fun createCall(
-    name: String?,
     funcType: FuncType,
     args: List<Value>,
     atHead: Boolean = false
   ): CallInst { // TODO: how about call others
-    val callInst = CallInst(name, funcType, args)
+    val callInst = if (funcType.result is VoidType) {
+      CallInst(null, funcType, args)
+    } else {
+      val tempInst = CallInst(vst.defineName("call"), funcType, args)
+      vst.reinsertValue(tempInst)
+      tempInst
+    }
     if (atHead) {
       callInst.insertAtTheHeadOf(block!!)
     } else {
@@ -192,6 +195,17 @@ object IRBuilder {
   fun createGEP(name: String, varType: PointerType, value: Value, index: Value): GetElementPtrInst {
     val gepInst = GetElementPtrInst(vst.defineName(name), varType, value, index)
 //    gepInst.insertAtTheTailOf(block!!)
+    addInstAtPoint(gepInst)
+    vst.reinsertValue(gepInst)
+
+    gepInst.addUsee(value)
+
+    return gepInst
+  }
+
+  fun createGEP(name: String, varType: ArrayType, value: Value, index: Value): GetElementPtrInst {
+    val gepInst = GetElementPtrInst(vst.defineName(name), varType, value, index)
+
     addInstAtPoint(gepInst)
     vst.reinsertValue(gepInst)
 

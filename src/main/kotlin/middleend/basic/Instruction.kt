@@ -111,18 +111,18 @@ class CallInst(name: String?, val funcType: FuncType, val args: List<Value>) :
   Instruction(funcType.result, name) {
   override fun toString(): String {
     val prefix: String = if (name == null) "" else "%$name = "
-    return "${prefix}call ${funcType.result} @${funcType.funcName}(${args.joinToString(", ") { it.toOperand() }})"
+    return "${prefix}call ${funcType.result} @${funcType.funcName}(${args.joinToString(", ") { it.toArg() }})"
   }
 }
 
 //<result> = getelementptr inbounds [<#elements> x <type>], [<#elements> x <type>]* <variable>, i32 0, i32 <index>
-class GetElementPtrInst(name: String, type: Type, val varType: Type, val value: Value, val index: Value) :
+class GetElementPtrInst(name: String, type: Type, val assignType: Type, val value: Value, val index: Value) :
   Instruction(type, name) {
   // constructor for structType
   constructor(name: String, varType: StructType, value: Value, index: Int) : this(
     name,
     TypeFactory.getPtrType(varType.symbolList[index].second),
-    varType,
+    TypeFactory.getPtrType(varType.symbolList[index].second),
     value,
     ConstantInt(32, index)
   )
@@ -130,7 +130,7 @@ class GetElementPtrInst(name: String, type: Type, val varType: Type, val value: 
   // constructor for arrayType
   constructor(name: String, varType: ArrayType, value: Value, index: Value) : this(
     name,
-    varType.containedType,
+    TypeFactory.getPtrType(varType.containedType),
     varType,
     value,
     index
@@ -139,14 +139,14 @@ class GetElementPtrInst(name: String, type: Type, val varType: Type, val value: 
   // constructor for arrayType in pointer
   constructor(name: String, varType: PointerType, value: Value, index: Value) : this(
     name,
-    varType.pointeeTy!!,
     varType,
+    varType.pointeeTy!!,
     value,
     index
   )
 
   override fun toString(): String {
-    return "%$name = getelementptr inbounds $type, $type* ${value.toOperand()}, i32 0, i32 $index"
+    return "%$name = getelementptr inbounds $assignType, $assignType* ${value.toOperand()}, i32 0, i32 $index"
   }
 }
 

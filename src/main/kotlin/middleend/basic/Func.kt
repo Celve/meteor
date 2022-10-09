@@ -18,4 +18,8 @@ class Func(name: String, val funcType: FuncType, val args: List<Value>) : Global
       ).plus("\n$returnBlock")
     }}\n"
   }
+
+  fun toDeclaration(): String {
+    return "declare ${funcType.result} @$name(${args.joinToString(", ") { it.type.toString() }})\n"
+  }
 }

@@ -4,13 +4,31 @@ import middleend.basic.TopModule
 
 class Emit(val topModule: TopModule) {
   fun main() {
+    println(
+      "; ModuleID = 'test'\n" +
+          "source_filename = \"test\"\n" +
+          "target datalayout = \"e-m:o-i64:64-i128:128-n32:64-S128\"\n" +
+          "target triple = \"arm64-apple-macosx12.0.0\"\n"
+    )
+
+    for ((_, func) in topModule.builtinFunc) {
+      print(func.toDeclaration())
+    }
+    println()
+
     for ((_, structType) in topModule.structType) {
       println(structType.toDeclaration())
     }
 
     for ((_, globalVar) in topModule.globalVar) {
-      println(globalVar)
+      print(globalVar)
     }
+    println()
+
+    for ((_, const) in topModule.constData) {
+      print(const)
+    }
+    println()
 
     for ((funcName, func) in topModule.func) {
       println(func)

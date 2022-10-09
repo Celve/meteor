@@ -53,10 +53,10 @@ object TypeFactory {
   fun getPtrToType(typeMd: TypeMd): PointerType {
     return screen(
       when {
-        typeMd.isVoid() -> PointerType(VoidType()) // FIXME: ???
-        typeMd.isInt() -> PointerType(IntType(32))
-        typeMd.isBool() -> PointerType(IntType(1))
-        typeMd.isString() -> PointerType(IntType(8)) // TODO: make sure that this is ok
+        typeMd.isVoid() -> PointerType(screen(VoidType())) // FIXME: ???
+        typeMd.isInt() -> PointerType(screen(IntType(32)))
+        typeMd.isBool() -> PointerType(screen(IntType(1)))
+        typeMd.isString() -> PointerType(screen(IntType(8))) // TODO: make sure that this is ok
         typeMd.isArray() -> PointerType(getPtrToType(TypeMd(typeMd.cl, typeMd.dim - 1)))
         else -> PointerType(StructType(typeMd.cl))
       }
@@ -82,13 +82,12 @@ object TypeFactory {
   }
 
   fun getType(typeMd: TypeMd): Type {
-    println(typeMd)
     return screen(
       when {
         typeMd.isVoid() -> VoidType()
         typeMd.isInt() -> IntType(32)
         typeMd.isBool() -> IntType(8)
-        typeMd.isString() -> IntType(8) // TODO: make sure that this is ok
+        typeMd.isString() -> PointerType(screen(IntType(8))) // TODO: make sure that this is ok
         typeMd.isArray() -> getPtrToArrayType(typeMd)
         else -> PointerType(StructType(typeMd.cl))
       }
@@ -158,6 +157,10 @@ data class ArrayType internal constructor(val containedType: Type, val numElemen
 
   override fun getNumBits(): Int {
     return numElements * containedType.getNumBits()
+  }
+
+  override fun toString(): String {
+    return "[$numElements x $containedType]"
   }
 }
 

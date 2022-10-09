@@ -14,6 +14,10 @@ open class Value(val type: Type, var name: String? = null) {
     return "%$name"
   }
 
+  open fun toArg(): String {
+    return "$type %$name"
+  }
+
   /// This function is bidirectional.
   fun addUser(user: User) {
     userList.add(user)

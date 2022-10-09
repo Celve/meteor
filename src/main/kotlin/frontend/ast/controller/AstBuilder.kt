@@ -69,11 +69,12 @@ class AstBuilder : MeteorBaseVisitor<BaseNode>() {
   }
 
   override fun visitForSuite(ctx: MeteorParser.ForSuiteContext?): BaseNode {
-    val init = if (ctx!!.forInitUnit().varDecl() == null) {
-      null
+    val init = if (ctx!!.forInitUnit().varDecl() != null) {
+      visit(ctx.forInitUnit().varDecl())
+    } else if (ctx.forInitUnit().expr() != null) {
+      visit(ctx.forInitUnit().expr())
     } else {
-      // TODO: deal with expression situation
-      visit(ctx.forInitUnit().varDecl()) as? VarDeclNode
+      null
     }
     val cond = if (ctx.forCondUnit().expr() == null) null else visit(ctx.forCondUnit().expr()) as ExprNode
     val step = if (ctx.forStepUnit().expr() == null) null else visit(ctx.forStepUnit().expr()) as ExprNode
