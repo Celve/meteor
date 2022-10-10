@@ -1,0 +1,27 @@
+/*
+Test Package: Codegen
+Author: 10' Huan Yang
+Time: 2020-01-24
+Input:
+=== input ===
+102
+=== end ===
+Output:
+=== output ===
+68
+=== end ===
+ExitCode: 0
+InstLimit: -1
+Origin Package: Codegen Pretest-523
+*/
+
+bool check(int a, int N) {
+    return ((a < N) && (a >= 0));
+}
+
+int main() {
+  int N = 68;
+  if (check(0, N) && check(4, N)) {
+    printInt(1);
+  }
+}
