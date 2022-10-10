@@ -210,7 +210,7 @@ class SymbolCollector : AstVisitor() {
     TODO("Not yet implemented")
   }
 
-  override fun visit(curr: MethodAccessNode) {
+  override fun visit(curr: MethodCallNode) {
     TODO("Not yet implemented")
   }
 
@@ -231,6 +231,14 @@ class SymbolCollector : AstVisitor() {
   }
 
   override fun visit(curr: BinaryExprNode) {
+    TODO("Not yet implemented")
+  }
+
+  override fun visit(curr: LogicalAndExprNode) {
+    TODO("Not yet implemented")
+  }
+
+  override fun visit(curr: LogicalOrExprNode) {
     TODO("Not yet implemented")
   }
 

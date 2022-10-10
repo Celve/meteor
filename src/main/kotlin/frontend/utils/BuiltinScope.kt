@@ -21,23 +21,32 @@ object BuiltinScope : Scope(null) {
     val intType = getVarType("int")!!
     val stringType = getVarType("string")!!
 
-    funcs["_malloc"] = FuncMd("_malloc", listOf(Pair("", intType)), stringType)
-    funcs["print"] = FuncMd("print", listOf(Pair("", stringType)), voidType)
-    funcs["println"] = FuncMd("println", listOf(Pair("", stringType)), voidType)
-    funcs["printInt"] = FuncMd("printInt", listOf(Pair("", intType)), voidType)
-    funcs["printlnInt"] = FuncMd("printlnInt", listOf(Pair("", intType)), voidType)
+    val genPair = fun(type: TypeMd): Pair<String, TypeMd> { return Pair("", type) }
+
+    funcs["_string_substring"] =
+      FuncMd("_string_substring", listOf(genPair(stringType), genPair(intType), genPair(intType)), stringType)
+    funcs["_string_length"] = FuncMd("_string_length", listOf(genPair(stringType)), intType)
+    funcs["_string_parseInt"] = FuncMd("_string_parseInt", listOf(genPair(stringType)), intType)
+    funcs["_string_ord"] = FuncMd("_string_ord", listOf(genPair(stringType), genPair(intType)), intType)
+    funcs["_string_concat"] = FuncMd("_string_concat", listOf(genPair(stringType), genPair(stringType)), stringType)
+
+    funcs["_malloc"] = FuncMd("_malloc", listOf(genPair(intType)), stringType)
+    funcs["print"] = FuncMd("print", listOf(genPair(stringType)), voidType)
+    funcs["println"] = FuncMd("println", listOf(genPair(stringType)), voidType)
+    funcs["printInt"] = FuncMd("printInt", listOf(genPair(intType)), voidType)
+    funcs["printlnInt"] = FuncMd("printlnInt", listOf(genPair(intType)), voidType)
     funcs["getString"] = FuncMd("getString", listOf(), stringType)
     funcs["getInt"] = FuncMd("getInt", listOf(), intType)
-    funcs["toString"] = FuncMd("toString", listOf(Pair("", intType)), stringType)
+    funcs["toString"] = FuncMd("toString", listOf(genPair(intType)), stringType)
 
     val classMeta = getClass("string")!!
     classMeta.classScope.setFunc("length", FuncMd("length", listOf(), intType))
     classMeta.classScope.setFunc(
       "substring",
-      FuncMd("substring", listOf(Pair("", intType), Pair("", intType)), stringType)
+      FuncMd("substring", listOf(genPair(intType), genPair(intType)), stringType)
     )
     classMeta.classScope.setFunc("parseInt", FuncMd("parseInt", listOf(), intType))
-    classMeta.classScope.setFunc("ord", FuncMd("ord", listOf(Pair("", intType)), intType))
+    classMeta.classScope.setFunc("ord", FuncMd("ord", listOf(genPair(intType)), intType))
   }
 
   override fun setFunc(name: String, type: FuncMd) {

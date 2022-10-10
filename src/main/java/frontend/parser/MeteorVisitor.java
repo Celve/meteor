@@ -214,6 +214,12 @@ public interface MeteorVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitMethodCall(MeteorParser.MethodCallContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link MeteorParser#prefixOps}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPrefixOps(MeteorParser.PrefixOpsContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code prefixIncrement}
 	 * labeled alternative in {@link MeteorParser#prefixExpr}.
 	 * @param ctx the parse tree
@@ -235,11 +241,23 @@ public interface MeteorVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitSuffixExprRelay(MeteorParser.SuffixExprRelayContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link MeteorParser#mulOps}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitMulOps(MeteorParser.MulOpsContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link MeteorParser#mulExpr}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitMulExpr(MeteorParser.MulExprContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MeteorParser#addOps}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAddOps(MeteorParser.AddOpsContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MeteorParser#addExpr}.
 	 * @param ctx the parse tree
@@ -247,17 +265,35 @@ public interface MeteorVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitAddExpr(MeteorParser.AddExprContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link MeteorParser#shiftOps}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitShiftOps(MeteorParser.ShiftOpsContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link MeteorParser#shiftExpr}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitShiftExpr(MeteorParser.ShiftExprContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link MeteorParser#cmpOps}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitCmpOps(MeteorParser.CmpOpsContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link MeteorParser#cmpExpr}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitCmpExpr(MeteorParser.CmpExprContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MeteorParser#equalOps}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitEqualOps(MeteorParser.EqualOpsContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MeteorParser#equalExpr}.
 	 * @param ctx the parse tree

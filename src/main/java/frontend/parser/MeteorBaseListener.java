@@ -413,6 +413,18 @@ public class MeteorBaseListener implements MeteorListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterPrefixOps(MeteorParser.PrefixOpsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitPrefixOps(MeteorParser.PrefixOpsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterPrefixIncrement(MeteorParser.PrefixIncrementContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -449,6 +461,18 @@ public class MeteorBaseListener implements MeteorListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterMulOps(MeteorParser.MulOpsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitMulOps(MeteorParser.MulOpsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterMulExpr(MeteorParser.MulExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -456,6 +480,18 @@ public class MeteorBaseListener implements MeteorListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitMulExpr(MeteorParser.MulExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterAddOps(MeteorParser.AddOpsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitAddOps(MeteorParser.AddOpsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -473,6 +509,18 @@ public class MeteorBaseListener implements MeteorListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterShiftOps(MeteorParser.ShiftOpsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitShiftOps(MeteorParser.ShiftOpsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterShiftExpr(MeteorParser.ShiftExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -485,6 +533,18 @@ public class MeteorBaseListener implements MeteorListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterCmpOps(MeteorParser.CmpOpsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitCmpOps(MeteorParser.CmpOpsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterCmpExpr(MeteorParser.CmpExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -492,6 +552,18 @@ public class MeteorBaseListener implements MeteorListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitCmpExpr(MeteorParser.CmpExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterEqualOps(MeteorParser.EqualOpsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitEqualOps(MeteorParser.EqualOpsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

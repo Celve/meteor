@@ -33,7 +33,7 @@ class AtomNode(pos: SrcPos, val id: Int, val literal: String) : ExprNode(pos, id
 /**
  * For arraySizeExprList, the first half would be non-null, and the second half would be null.
  */
-class InitExprNode(pos: SrcPos, val typeDef: String, val dim: Int, val arraySizeExprList: List<ExprNode?>) :
+class InitExprNode(pos: SrcPos, val typeDef: String, val dim: Int, var arraySizeExprList: List<ExprNode?>) :
   ExprNode(pos, false) {
   override fun accept(visitor: AstVisitor) {
     visitor.visit(this)
@@ -53,7 +53,7 @@ class FuncCallNode(pos: SrcPos, val funcName: String, val params: List<ExprNode>
   }
 }
 
-class MethodAccessNode(pos: SrcPos, val expr: ExprNode, val method: String, val params: List<ExprNode>) :
+class MethodCallNode(pos: SrcPos, val expr: ExprNode, val method: String, val params: List<ExprNode>) :
   ExprNode(pos, false) {
   override fun accept(visitor: AstVisitor) {
     visitor.visit(this)
@@ -84,11 +84,25 @@ class PrefixExprNode(pos: SrcPos, val op: String, val expr: ExprNode) : ExprNode
   }
 }
 
-class BinaryExprNode(pos: SrcPos, val op: String, val exprs: List<ExprNode>) : ExprNode(pos, false) {
+class BinaryExprNode(pos: SrcPos, val ops: List<String>, val exprs: List<ExprNode>) : ExprNode(pos, false) {
   override fun accept(visitor: AstVisitor) {
     visitor.visit(this)
   }
 }
+
+
+class LogicalAndExprNode(pos: SrcPos, val exprs: List<ExprNode>) : ExprNode(pos, false) {
+  override fun accept(visitor: AstVisitor) {
+    visitor.visit(this)
+  }
+}
+
+class LogicalOrExprNode(pos: SrcPos, val exprs: List<ExprNode>) : ExprNode(pos, false) {
+  override fun accept(visitor: AstVisitor) {
+    visitor.visit(this)
+  }
+}
+
 
 class AssignExprNode(pos: SrcPos, val lhs: ExprNode, val rhs: ExprNode) : ExprNode(pos, true) {
   override fun accept(visitor: AstVisitor) {

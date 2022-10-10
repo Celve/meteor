@@ -23,14 +23,18 @@ class Emit(val topModule: TopModule) {
     for ((_, globalVar) in topModule.globalVar) {
       print(globalVar)
     }
-    println()
+    if (topModule.globalVar.size >= 1) {
+      println()
+    }
 
     for ((_, const) in topModule.constData) {
       print(const)
     }
-    println()
+    if (topModule.constData.size >= 1) {
+      println()
+    }
 
-    for ((funcName, func) in topModule.func) {
+    for ((_, func) in topModule.func) {
       println(func)
     }
   }

@@ -252,6 +252,7 @@ class SemanticChecker : AstVisitor() {
         throw SemanticException(curr.pos, "Invalid expression for array declaration")
       }
     }
+    curr.arraySizeExprList = curr.arraySizeExprList.filterNotNull()
     curr.type = TypeMd(type, curr.dim)
   }
 
@@ -268,7 +269,7 @@ class SemanticChecker : AstVisitor() {
     checkParamsForFunc(curr, method, curr.params)
   }
 
-  override fun visit(curr: MethodAccessNode) {
+  override fun visit(curr: MethodCallNode) {
     curr.expr.accept(this)
     curr.params.forEach { it.accept(this) }
 
@@ -350,28 +351,29 @@ class SemanticChecker : AstVisitor() {
   override fun visit(curr: BinaryExprNode) {
     curr.exprs.forEach { it.accept(this) }
     var lhs: TypeMd? = null
-    for (rhs in curr.exprs.map { it.type }) {
+    for (index in curr.exprs.indices) {
+      val rhs = curr.exprs[index].type
       if (lhs == null) {
         lhs = rhs
         continue
       }
-      when (curr.op) {
+      when (val op = curr.ops[index - 1]) {
         "+", "<", "<=", ">", ">=" -> {
           // all binary operators require the opposite to be the same for int and bool
           if (!lhs.matchesWith(rhs!!)) {
             throw SemanticException(curr.pos, "Type don't match")
           }
           if (!lhs.isInt() && !lhs.isString()) {
-            throw SemanticException(curr.pos, "Invalid binary operator ${curr.op} for ${lhs.cl}")
+            throw SemanticException(curr.pos, "Invalid binary operator ${op} for ${lhs.cl}")
           }
-          if (curr.op != "+") {
+          if (op != "+") {
             lhs = scopeManager.first().getVarType("bool")
           }
         }
 
         "*", "/", "%", "-", "<<", ">>", "&", "^", "|" -> {
           if (!lhs.isInt() || !rhs!!.isInt()) { // those operators are only for int
-            throw SemanticException(curr.pos, "Invalid binary operator ${curr.op} for ${lhs.cl}")
+            throw SemanticException(curr.pos, "Invalid binary operator ${op} for ${lhs.cl}")
           }
         }
 
@@ -380,7 +382,7 @@ class SemanticChecker : AstVisitor() {
             if (!lhs.isNull() && !rhs!!.isNull()) {
               throw SemanticException(
                 curr.pos,
-                "Invalid binary operator ${curr.op} for ${lhs.cl} and ${rhs.cl}"
+                "Invalid binary operator ${op} for ${lhs.cl} and ${rhs.cl}"
               )
             }
           }
@@ -395,9 +397,41 @@ class SemanticChecker : AstVisitor() {
 
         "&&", "||" -> {
           if (!lhs.isBool() || !rhs!!.isBool()) {
-            throw SemanticException(curr.pos, "Invalid binary operator ${curr.op} for ${lhs.cl}")
+            throw SemanticException(curr.pos, "Invalid binary operator ${op} for ${lhs.cl}")
           }
         }
+      }
+    }
+    curr.type = lhs
+  }
+
+  override fun visit(curr: LogicalAndExprNode) {
+    curr.exprs.forEach { it.accept(this) }
+    var lhs: TypeMd? = null
+    for (index in curr.exprs.indices) {
+      val rhs = curr.exprs[index].type
+      if (lhs == null) {
+        lhs = rhs
+        continue
+      }
+      if (!lhs.isBool() || !rhs!!.isBool()) {
+        throw SemanticException(curr.pos, "Invalid binary operator && for ${lhs.cl}")
+      }
+    }
+    curr.type = lhs
+  }
+
+  override fun visit(curr: LogicalOrExprNode) {
+    curr.exprs.forEach { it.accept(this) }
+    var lhs: TypeMd? = null
+    for (index in curr.exprs.indices) {
+      val rhs = curr.exprs[index].type
+      if (lhs == null) {
+        lhs = rhs
+        continue
+      }
+      if (!lhs.isBool() || !rhs!!.isBool()) {
+        throw SemanticException(curr.pos, "Invalid binary operator || for ${lhs.cl}")
       }
     }
     curr.type = lhs

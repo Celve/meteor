@@ -37,12 +37,14 @@ abstract class AstVisitor {
   abstract fun visit(curr: InitExprNode)
   abstract fun visit(curr: LambdaCallNode)
   abstract fun visit(curr: FuncCallNode)
-  abstract fun visit(curr: MethodAccessNode)
+  abstract fun visit(curr: MethodCallNode)
   abstract fun visit(curr: MemberAccessNode)
   abstract fun visit(curr: ArrayAccessNode)
   abstract fun visit(curr: SuffixExprNode)
   abstract fun visit(curr: PrefixExprNode)
   abstract fun visit(curr: BinaryExprNode)
+  abstract fun visit(curr: LogicalAndExprNode)
+  abstract fun visit(curr: LogicalOrExprNode)
   abstract fun visit(curr: AssignExprNode)
 
 

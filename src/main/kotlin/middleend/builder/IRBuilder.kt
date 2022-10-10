@@ -35,6 +35,7 @@ object IRBuilder {
    * This function is used for a registered block, whose name would be unique in LLVM representation.
    */
   fun resetInsertBlock(newBlock: BasicBlock) {
+    func = newBlock.parent
     block = newBlock
     point = null
   }
@@ -70,6 +71,22 @@ object IRBuilder {
     }
   }
 
+  private fun checki8Toi1(value: Value): Value {
+    return if (value.type != TypeFactory.getIntType(1)) {
+      createTrunc("trunc", value, TypeFactory.getIntType(1))
+    } else {
+      value
+    }
+  }
+
+  private fun checki1Toi8(value: Value): Value {
+    return if (value.type == TypeFactory.getIntType(1)) {
+      createZExt("zext", value, TypeFactory.getIntType(8))
+    } else {
+      value
+    }
+  }
+
   fun createAlloca(result: String, type: Type): Value {
     val allocaInst = AllocaInst(vst.defineName(result), type)
     allocaInst.insertAtIndex(block!!, block!!.getLastAllocaInstIndex() + 1)
@@ -102,10 +119,8 @@ object IRBuilder {
     return binaryInst
   }
 
-  fun createStore(type: Type, value: Value, ptr: Value): Value {
-    assert(ptr.type is PointerType)
-
-    val storeInst = StoreInst(type, value, ptr)
+  fun createStore(value: Value, ptr: Value): Value {
+    val storeInst = StoreInst(checki1Toi8(value), ptr)
 //    storeInst.insertAtTheTailOf(block!!)
     addInstAtPoint(storeInst)
 
@@ -127,8 +142,8 @@ object IRBuilder {
     return cmpInst
   }
 
-  fun createTrunc(result: String, originalTy: Type, originalVal: Value, toTy: Type): TruncInst {
-    val truncInst = TruncInst(vst.defineName(result), originalTy, originalVal, toTy)
+  fun createTrunc(result: String, originalVal: Value, toTy: Type): TruncInst {
+    val truncInst = TruncInst(vst.defineName(result), originalVal, toTy)
 //    truncInst.insertAtTheTailOf(block!!)
     addInstAtPoint(truncInst)
     vst.reinsertValue(truncInst)
@@ -181,31 +196,9 @@ object IRBuilder {
     return callInst
   }
 
-  fun createGEP(name: String, varType: StructType, value: Value, index: Int): GetElementPtrInst {
-    val gepInst = GetElementPtrInst(vst.defineName(name), varType, value, index)
+  fun createGEP(op: String, name: String, value: Value, index: Value): GetElementPtrInst {
+    val gepInst = GetElementPtrInst(op, vst.defineName(name), value, index)
 //    gepInst.insertAtTheTailOf(block!!)
-    addInstAtPoint(gepInst)
-    vst.reinsertValue(gepInst)
-
-    gepInst.addUsee(value)
-
-    return gepInst
-  }
-
-  fun createGEP(name: String, varType: PointerType, value: Value, index: Value): GetElementPtrInst {
-    val gepInst = GetElementPtrInst(vst.defineName(name), varType, value, index)
-//    gepInst.insertAtTheTailOf(block!!)
-    addInstAtPoint(gepInst)
-    vst.reinsertValue(gepInst)
-
-    gepInst.addUsee(value)
-
-    return gepInst
-  }
-
-  fun createGEP(name: String, varType: ArrayType, value: Value, index: Value): GetElementPtrInst {
-    val gepInst = GetElementPtrInst(vst.defineName(name), varType, value, index)
-
     addInstAtPoint(gepInst)
     vst.reinsertValue(gepInst)
 
@@ -215,7 +208,7 @@ object IRBuilder {
   }
 
   fun createBr(cond: Value, trueBlock: BasicBlock, falseBlock: BasicBlock): BranchInst {
-    val brInst = BranchInst(cond, trueBlock, falseBlock)
+    val brInst = BranchInst(checki8Toi1(cond), trueBlock, falseBlock)
 //    brInst.insertAtTheTailOf(block!!)
     addInstAtPoint(brInst)
 
@@ -247,5 +240,15 @@ object IRBuilder {
     bitCallInst.addUsee(castee)
 
     return bitCallInst
+  }
+
+  fun createZExt(name: String, castee: Value, toTy: Type): ZExtInst {
+    val zextInst = ZExtInst(vst.defineName(name), castee, toTy)
+    addInstAtPoint(zextInst)
+    vst.reinsertValue(zextInst)
+
+    zextInst.addUsee(castee)
+
+    return zextInst
   }
 }

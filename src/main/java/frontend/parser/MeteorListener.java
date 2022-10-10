@@ -348,6 +348,16 @@ public interface MeteorListener extends ParseTreeListener {
 	 */
 	void exitMethodCall(MeteorParser.MethodCallContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link MeteorParser#prefixOps}.
+	 * @param ctx the parse tree
+	 */
+	void enterPrefixOps(MeteorParser.PrefixOpsContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#prefixOps}.
+	 * @param ctx the parse tree
+	 */
+	void exitPrefixOps(MeteorParser.PrefixOpsContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code prefixIncrement}
 	 * labeled alternative in {@link MeteorParser#prefixExpr}.
 	 * @param ctx the parse tree
@@ -384,6 +394,16 @@ public interface MeteorListener extends ParseTreeListener {
 	 */
 	void exitSuffixExprRelay(MeteorParser.SuffixExprRelayContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link MeteorParser#mulOps}.
+	 * @param ctx the parse tree
+	 */
+	void enterMulOps(MeteorParser.MulOpsContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#mulOps}.
+	 * @param ctx the parse tree
+	 */
+	void exitMulOps(MeteorParser.MulOpsContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link MeteorParser#mulExpr}.
 	 * @param ctx the parse tree
 	 */
@@ -393,6 +413,16 @@ public interface MeteorListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitMulExpr(MeteorParser.MulExprContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MeteorParser#addOps}.
+	 * @param ctx the parse tree
+	 */
+	void enterAddOps(MeteorParser.AddOpsContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#addOps}.
+	 * @param ctx the parse tree
+	 */
+	void exitAddOps(MeteorParser.AddOpsContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link MeteorParser#addExpr}.
 	 * @param ctx the parse tree
@@ -404,6 +434,16 @@ public interface MeteorListener extends ParseTreeListener {
 	 */
 	void exitAddExpr(MeteorParser.AddExprContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link MeteorParser#shiftOps}.
+	 * @param ctx the parse tree
+	 */
+	void enterShiftOps(MeteorParser.ShiftOpsContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#shiftOps}.
+	 * @param ctx the parse tree
+	 */
+	void exitShiftOps(MeteorParser.ShiftOpsContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link MeteorParser#shiftExpr}.
 	 * @param ctx the parse tree
 	 */
@@ -414,6 +454,16 @@ public interface MeteorListener extends ParseTreeListener {
 	 */
 	void exitShiftExpr(MeteorParser.ShiftExprContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link MeteorParser#cmpOps}.
+	 * @param ctx the parse tree
+	 */
+	void enterCmpOps(MeteorParser.CmpOpsContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#cmpOps}.
+	 * @param ctx the parse tree
+	 */
+	void exitCmpOps(MeteorParser.CmpOpsContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link MeteorParser#cmpExpr}.
 	 * @param ctx the parse tree
 	 */
@@ -423,6 +473,16 @@ public interface MeteorListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitCmpExpr(MeteorParser.CmpExprContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MeteorParser#equalOps}.
+	 * @param ctx the parse tree
+	 */
+	void enterEqualOps(MeteorParser.EqualOpsContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MeteorParser#equalOps}.
+	 * @param ctx the parse tree
+	 */
+	void exitEqualOps(MeteorParser.EqualOpsContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link MeteorParser#equalExpr}.
 	 * @param ctx the parse tree

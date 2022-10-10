@@ -78,21 +78,27 @@ suffixExpr: suffixExpr '.' (methodName = Id) paramInputList #methodCall
   | suffixExpr op = (Increment | Decrement) #suffixIncrement
   | primaryExpr #primaryExprRelay
   ;
-prefixExpr: op = (Increment | Decrement | Add | Sub | LogicalNot | BitwiseNot) prefixExpr #prefixIncrement
+prefixOps: Increment | Decrement | Add | Sub | LogicalNot | BitwiseNot;
+prefixExpr: prefixOps prefixExpr #prefixIncrement
   | New classType bracketedExpr* ('(' ')')? #initExpr
   | suffixExpr #suffixExprRelay
   ;
-mulExpr: prefixExpr (op = (Mul | Div | Mod) prefixExpr)*;
-addExpr: mulExpr (op = (Add | Sub) mulExpr)*;
-shiftExpr: addExpr (op = (LeftShift | RightShift) addExpr)*;
-cmpExpr: shiftExpr (op = (Less | LessEqual | Greater | GreaterEqual) shiftExpr)*;
-equalExpr: cmpExpr (op = (Equal | NotEqual) cmpExpr)*;
-bitwiseAndExpr: equalExpr (op = BitwiseAnd equalExpr)*;
-bitwiseXorExpr: bitwiseAndExpr (op = BitwiseXor bitwiseAndExpr)*;
-bitwiseOrExpr: bitwiseXorExpr (op = BitwiseOr bitwiseXorExpr)*;
-logicalAndExpr:  bitwiseOrExpr (op = LogicalAnd bitwiseOrExpr)*;
-logicalOrExpr: logicalAndExpr (op = LogicalOr logicalAndExpr)*;
-assignExpr: logicalOrExpr (op = Assign assignExpr)?;
+mulOps: Mul | Div | Mod;
+mulExpr: prefixExpr (mulOps prefixExpr)*;
+addOps: Add | Sub;
+addExpr: mulExpr (addOps mulExpr)*;
+shiftOps: LeftShift | RightShift;
+shiftExpr: addExpr (shiftOps addExpr)*;
+cmpOps: Less | LessEqual | Greater | GreaterEqual;
+cmpExpr: shiftExpr (cmpOps shiftExpr)*;
+equalOps: Equal | NotEqual;
+equalExpr: cmpExpr (equalOps cmpExpr)*;
+bitwiseAndExpr: equalExpr (BitwiseAnd equalExpr)*;
+bitwiseXorExpr: bitwiseAndExpr (BitwiseXor bitwiseAndExpr)*;
+bitwiseOrExpr: bitwiseXorExpr (BitwiseOr bitwiseXorExpr)*;
+logicalAndExpr:  bitwiseOrExpr (LogicalAnd bitwiseOrExpr)*;
+logicalOrExpr: logicalAndExpr (LogicalOr logicalAndExpr)*;
+assignExpr: logicalOrExpr (Assign assignExpr)?;
 expr: assignExpr;
 
 //

@@ -1,5 +1,7 @@
 package middleend.basic
 
+import middleend.helper.Utils
+
 open class Instruction(type: Type, name: String? = null) : User(type, name) {
   var parent: BasicBlock? = null
 
@@ -57,9 +59,14 @@ class LoadInst(name: String, type: Type, val addr: Value) : Instruction(type, na
   }
 }
 
-class StoreInst(val storedType: Type, val value: Value, val addr: Value) : Instruction(TypeFactory.getVoidType()) {
+class StoreInst(val value: Value, val addr: Value) : Instruction(TypeFactory.getVoidType()) {
   override fun toString(): String {
-    return "store $storedType ${value.toOperand()}, $storedType* ${addr.toOperand()}"
+    val lhsTy = if (value.type is PointerType && value.type.pointeeTy == null) {
+      (addr.type as PointerType).pointeeTy
+    } else {
+      value.type
+    }
+    return "store ${lhsTy} ${value.toOperand()}, ${addr.type} ${addr.toOperand()}"
   }
 }
 
@@ -75,10 +82,10 @@ class CmpInst(name: String, val cond: Cond, val varType: Type, val lhs: Value, v
   }
 }
 
-class TruncInst(name: String, val originalTy: Type, val originalVal: Value, val toTy: Type) :
+class TruncInst(name: String, val originalVal: Value, val toTy: Type) :
   Instruction(toTy, name) {
   override fun toString(): String {
-    return "%$name = trunc $originalTy ${originalVal.toOperand()} to $toTy"
+    return "%$name = trunc ${originalVal.type} ${originalVal.toOperand()} to $toTy"
   }
 }
 
@@ -116,37 +123,18 @@ class CallInst(name: String?, val funcType: FuncType, val args: List<Value>) :
 }
 
 //<result> = getelementptr inbounds [<#elements> x <type>], [<#elements> x <type>]* <variable>, i32 0, i32 <index>
-class GetElementPtrInst(name: String, type: Type, val assignType: Type, val value: Value, val index: Value) :
-  Instruction(type, name) {
-  // constructor for structType
-  constructor(name: String, varType: StructType, value: Value, index: Int) : this(
-    name,
-    TypeFactory.getPtrType(varType.symbolList[index].second),
-    TypeFactory.getPtrType(varType.symbolList[index].second),
-    value,
-    ConstantInt(32, index)
-  )
-
-  // constructor for arrayType
-  constructor(name: String, varType: ArrayType, value: Value, index: Value) : this(
-    name,
-    TypeFactory.getPtrType(varType.containedType),
-    varType,
-    value,
-    index
-  )
-
-  // constructor for arrayType in pointer
-  constructor(name: String, varType: PointerType, value: Value, index: Value) : this(
-    name,
-    varType,
-    varType.pointeeTy!!,
-    value,
-    index
-  )
+class GetElementPtrInst(val op: String, name: String, val value: Value, val index: Value) : Instruction(
+  when (op) {
+    "struct" -> TypeFactory.getPtrType((Utils.getPointee(value.type) as StructType).symbolList[(index as ConstantInt).intValue].second)
+    "array" -> TypeFactory.getPtrType((Utils.getPointee(value.type) as ArrayType).containedType)
+    "ptr" -> value.type
+    else -> throw Exception("the operation is forbidden")
+  }, name
+) {
 
   override fun toString(): String {
-    return "%$name = getelementptr inbounds $assignType, $assignType* ${value.toOperand()}, i32 0, i32 $index"
+    val extra = if (op != "ptr") "i32 0, " else ""
+    return "%$name = getelementptr inbounds ${Utils.getPointee(value.type)}, ${value.type} ${value.toOperand()}, ${extra}i32 ${index.toOperand()}"
   }
 }
 
@@ -164,5 +152,11 @@ class BitCastInst(name: String, val castee: Value, toTy: Type) : Instruction(toT
   private val fromTy = castee.type
   override fun toString(): String {
     return "%$name = bitcast $fromTy ${castee.toOperand()} to $type"
+  }
+}
+
+class ZExtInst(name: String, val originalVal: Value, toTy: Type) : Instruction(toTy, name) {
+  override fun toString(): String {
+    return "%$name = zext ${originalVal.type} ${originalVal.toOperand()} to $type"
   }
 }

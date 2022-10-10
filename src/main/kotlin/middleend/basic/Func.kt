@@ -12,10 +12,10 @@ class Func(name: String, val funcType: FuncType, val args: List<Value>) : Global
   }
 
   override fun toString(): String {
-    return "define ${funcType.result} @$name(${args.joinToString(", ") { "${it.type} %${it.name}" }}) { \n${
+    return "define ${funcType.result} @$name(${args.joinToString(", ") { "${it.type} %${it.name}" }}) {\n${
       blockList.joinToString(
         "\n"
-      ).plus("\n$returnBlock")
+      ).plus(if (returnBlock == null) "" else "\n$returnBlock")
     }}\n"
   }
 

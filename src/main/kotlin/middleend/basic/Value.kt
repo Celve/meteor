@@ -15,7 +15,7 @@ open class Value(val type: Type, var name: String? = null) {
   }
 
   open fun toArg(): String {
-    return "$type %$name"
+    return "$type ${this.toOperand()}"
   }
 
   /// This function is bidirectional.

@@ -88,8 +88,20 @@ object TypeFactory {
         typeMd.isInt() -> IntType(32)
         typeMd.isBool() -> IntType(8)
         typeMd.isString() -> PointerType(screen(IntType(8))) // TODO: make sure that this is ok
-        typeMd.isArray() -> getPtrToArrayType(typeMd)
+        typeMd.isArray() -> getPtrType(getType(TypeMd(typeMd.cl, typeMd.dim - 1)))
         else -> PointerType(StructType(typeMd.cl))
+      }
+    )
+  }
+
+  // please don't give it string and array
+  fun getBasicType(typeMd: TypeMd): Type {
+    return screen(
+      when {
+        typeMd.isVoid() -> VoidType()
+        typeMd.isInt() -> IntType(32)
+        typeMd.isBool() -> IntType(8)
+        else -> StructType(typeMd.cl)
       }
     )
   }
