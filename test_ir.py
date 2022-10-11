@@ -2,7 +2,7 @@ import os
 import sys
 
 
-class bcolors:
+class Colors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
     OKCYAN = '\033[96m'
@@ -14,13 +14,17 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
-def getInputAndOutput(fd):
+def get_io_and_ec(fd):
     content = fd.readlines()
     input_content = ""
     output_content = ""
     mode = 0
+    exit_code = 0
 
     for line in content:
+        if line.startswith("ExitCode: "):
+            exit_code = int(line.split(": ").pop())
+
         if line == "=== end ===\n":
             mode = 0
 
@@ -40,8 +44,10 @@ def getInputAndOutput(fd):
     output_fd = open("debug/output.txt", "w")
     output_fd.write(output_content)
 
+    return exit_code
 
-def enumerateCount(filename):
+
+def enumerate_count(filename):
     count = 0
     with open(filename) as f:
         for count, _ in enumerate(f, 1):
@@ -49,49 +55,80 @@ def enumerateCount(filename):
     return count
 
 
+def test_single_file(filename):
+    fd = open(filename)
+
+    right_exit_code = get_io_and_ec(fd)
+
+    os.system(
+        "java -jar build/libs/meteor-all.jar < {} > debug/test.ll".format(filename))
+    os.system(
+        "clang src/main/resources/builtin/builtin.ll debug/test.ll -o debug/code 2> debug/compile.log")
+    exit_code = (os.system("./debug/code < debug/input.txt > debug/answer.txt")) >> 8
+
+    if exit_code:
+        if exit_code == right_exit_code:
+            print(Colors.BOLD + Colors.OKGREEN + "Accepted with exit code: {} (right)".format(exit_code) + Colors.ENDC)
+            return 1
+        else:
+            print(Colors.BOLD + Colors.FAIL + "Runtime Error {}".format(exit_code) + Colors.ENDC)
+            return 0
+    elif os.system("diff -B --strip-trailing-cr --ignore-all-space debug/answer.txt debug/output.txt > debug/diff.txt"):
+        print(Colors.BOLD + Colors.FAIL + "Wrong Answer" + Colors.ENDC)
+        if enumerate_count("debug/output.txt") > 50:
+            print(Colors.BOLD + Colors.FAIL + "Output too long" + Colors.ENDC)
+        else:
+            print(Colors.BOLD + Colors.FAIL + "Expected: " + Colors.ENDC)
+            os.system("cat debug/output.txt")
+            print(Colors.BOLD + Colors.FAIL + "Got: " + Colors.ENDC)
+            os.system("cat debug/answer.txt")
+        return 0
+    else:
+        print(Colors.BOLD + Colors.OKGREEN + "Accepted" + Colors.ENDC)
+        return 1
+
+
+def test_all_files(dirname):
+    sum, accepted = 0, 0
+    for filename in os.listdir(dirname):
+        filepath = dirname + filename
+        if os.path.isdir(filepath):
+            sub_sum, sub_accepted = test_all_files(filepath + "/")
+            sum += sub_sum
+            accepted += sub_accepted
+        elif filename.endswith(".mx"):
+            print(Colors.BOLD + "Testing {}...".format(filename) + Colors.ENDC)
+            accepted += test_single_file(filepath)
+            sum += 1
+    return sum, accepted
+
+
 if __name__ == "__main__":
-    file = "debug/program"
+    file = ""
+    testcases_dir = "src/main/resources/testcases/"
+    subdir = "codegen/"
+    modified = False
     for argv in sys.argv:
         if argv.startswith("--compile"):
             os.system("gradle shadowJar")
         elif argv.startswith("--file"):
             _, file = argv.split("=")
-            file = "src/main/resources/testcases/codegen/{}".format(file)
+            if not file.endswith(".mx") and file.find(".") == -1:
+                file += ".mx"
+        elif argv.startswith("--dir"):
+            _, subdir = argv.split("=")
+            modified = True
+            if not subdir.endswith("/"):
+                subdir += "/"
 
-    os.system(
-        "cp {}.mx debug/program.mx".format(file))
+    if not modified:
+        print("In default, testcases in codegen/ will be tested.")
 
-    fd = open(file + ".mx")
+    if file == "":  # test all files
+        sum, accepted = test_all_files(testcases_dir + subdir)
+        print(Colors.BOLD + "Test Score: {}/{}".format(accepted, sum) + Colors.ENDC)
+    else:  # test single file
+        filename = testcases_dir + subdir + file
+        print(Colors.BOLD + "Testing {}...".format(filename) + Colors.ENDC)
+        test_single_file(filename)
 
-    if (file == "debug/program"):
-        os.system(
-            "java -jar build/libs/meteor-all.jar < {}.mx > debug/test.ll".format(file))
-        os.system(
-            "clang src/main/resources/builtin/builtin.ll debug/test.ll -o debug/code")
-        os.system("./debug/code")
-        exit(0)
-
-    getInputAndOutput(fd)
-
-    os.system("	clang++ -fno-discard-value-names -S -emit-llvm {}.cpp -o debug/standard.ll -O0".format(file))
-    os.system(
-        "java -jar build/libs/meteor-all.jar < {}.mx > debug/test.ll".format(file))
-    os.system(
-        "clang src/main/resources/builtin/builtin.ll debug/test.ll -o debug/code")
-
-    exitCode = os.system("./debug/code < debug/input.txt > debug/answer.txt")
-    if exitCode:
-        print(bcolors.FAIL + "Runtime Error {}".format(exitCode) + bcolors.ENDC)
-        exit(0)
-
-    if os.system("diff --strip-trailing-cr --ignore-all-space debug/answer.txt debug/output.txt > debug/diff.txt"):
-        print(bcolors.FAIL + "Wrong Answer" + bcolors.ENDC)
-        if enumerateCount("debug/output.txt") > 50:
-            print(bcolors.FAIL + "Output too long" + bcolors.ENDC)
-        else:
-            print(bcolors.FAIL + "Expected: " + bcolors.ENDC)
-            os.system("cat debug/output.txt")
-            print(bcolors.FAIL + "Got: " + bcolors.ENDC)
-            os.system("cat debug/answer.txt")
-    else:
-        print(bcolors.OKGREEN + "Accepted" + bcolors.ENDC)
