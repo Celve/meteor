@@ -1,10 +1,7 @@
 package frontend.ast.node
 
 import frontend.ast.controller.AstVisitor
-import frontend.utils.CondScope
-import frontend.utils.FieldScope
-import frontend.utils.LoopScope
-import frontend.utils.SrcPos
+import frontend.utils.*
 
 abstract class SuiteNode(pos: SrcPos) : BaseNode(pos)
 
@@ -17,7 +14,8 @@ class ForSuiteNode(
   val body: BaseNode
 ) :
   SuiteNode(pos) {
-  val scope = LoopScope(null, "for")
+  val bodyScope = LoopScope(null, "for")
+  val initScope = InitScope(null)
   override fun accept(visitor: AstVisitor) {
     visitor.visit(this)
   }

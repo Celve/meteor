@@ -1,7 +1,7 @@
 ; ModuleID = 'builtin.c'
 source_filename = "builtin.c"
 target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128"
-target triple = "arm64-apple-macosx12.0.0"
+target triple = "riscv32"
 
 @.str = private unnamed_addr constant [3 x i8] c"%s\00", align 1
 @.str.1 = private unnamed_addr constant [4 x i8] c"%s\0A\00", align 1

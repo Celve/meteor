@@ -8,7 +8,7 @@ class Emit(val topModule: TopModule) {
       "; ModuleID = 'test'\n" +
           "source_filename = \"test\"\n" +
           "target datalayout = \"e-m:o-i64:64-i128:128-n32:64-S128\"\n" +
-          "target triple = \"arm64-apple-macosx12.0.0\"\n"
+          "target triple = \"riscv32\"\n"
     )
 
     for ((_, func) in topModule.builtinFunc) {

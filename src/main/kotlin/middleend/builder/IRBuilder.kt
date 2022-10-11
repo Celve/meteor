@@ -89,7 +89,8 @@ object IRBuilder {
 
   fun createAlloca(result: String, type: Type): Value {
     val allocaInst = AllocaInst(vst.defineName(result), type)
-    allocaInst.insertAtIndex(block!!, block!!.getLastAllocaInstIndex() + 1)
+    val allocaBlock = func!!.blockList.first()
+    allocaInst.insertAtIndex(allocaBlock, allocaBlock.getLastAllocaInstIndex() + 1)
     vst.reinsertValue(allocaInst)
     return allocaInst
   }

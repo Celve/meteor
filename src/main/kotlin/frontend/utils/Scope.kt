@@ -29,7 +29,7 @@ open class Scope(var parent: Scope?) {
   }
 
   open fun testVar(name: String): Boolean {
-    return parent?.getClass(name) != null
+    return false
   }
 
   open fun setFunc(name: String, type: FuncMd) {
@@ -41,7 +41,7 @@ open class Scope(var parent: Scope?) {
   }
 
   open fun testFunc(name: String): Boolean {
-    return parent?.getClass(name) != null
+    return false
   }
 
   open fun setClass(name: String, type: ClassMd) {
@@ -53,7 +53,7 @@ open class Scope(var parent: Scope?) {
   }
 
   open fun testClass(name: String): Boolean {
-    return parent?.getClass(name) != null
+    return false
   }
 
   open fun getVarType(name: String): TypeMd? {
@@ -157,12 +157,20 @@ class ClassScope(parent: Scope?, val className: String) : Scope(parent) {
     return members[name] ?: parent?.getVar(name)
   }
 
+  override fun testVar(name: String): Boolean {
+    return members.containsKey(name)
+  }
+
   override fun setFunc(name: String, type: FuncMd) {
     methods[name] = type
   }
 
   override fun getFunc(name: String): FuncMd? {
     return methods[name] ?: parent?.getFunc(name)
+  }
+
+  override fun testFunc(name: String): Boolean {
+    return methods.containsKey(name)
   }
 }
 
@@ -185,6 +193,8 @@ open class FieldScope(parent: Scope?) : Scope(parent) {
 }
 
 // it is used to distinguish loop and func in favor of jump
+class InitScope(parent: Scope?) : FieldScope(parent)
+
 class LoopScope(parent: Scope?, val name: String) : FieldScope(parent)
 
 class CondScope(parent: Scope?) : FieldScope(parent)

@@ -4,6 +4,8 @@ import frontend.metadata.ClassMd
 import frontend.metadata.FuncMd
 import frontend.metadata.TypeMd
 
+const val pointerNumBits = 64
+
 object TypeFactory {
   private val existedType: HashMap<Type, Type> = hashMapOf()
 
@@ -15,12 +17,13 @@ object TypeFactory {
     return type
   }
 
-  fun getLabelType(labelName: String): LabelType {
-    return screen(LabelType(labelName)) as LabelType
-  }
-
+  // generate types themselves
   fun getIntType(numOfBits: Int): IntType {
     return screen(IntType(numOfBits)) as IntType
+  }
+
+  fun getLabelType(labelName: String): LabelType {
+    return screen(LabelType(labelName)) as LabelType
   }
 
   fun getNullType(): PointerType {
@@ -39,59 +42,58 @@ object TypeFactory {
     return screen(ArrayType(type, numElements)) as ArrayType
   }
 
-  fun getPtrToArrayType(typeMd: TypeMd): PointerType {
-    var ptrToArray = getPtrToType(TypeMd(typeMd.cl, 0))
-    for (i in 1 until typeMd.dim) {
-      ptrToArray = screen(PointerType(ptrToArray)) as PointerType
+  fun getFuncType(funcMd: FuncMd): FuncType {
+    return screen(FuncType(funcMd)) as FuncType
+  }
+
+  fun getFuncType(funcMd: FuncMd, classMd: ClassMd): FuncType {
+    return screen(FuncType(funcMd, classMd)) as FuncType
+  }
+
+  fun getStructType(classMd: ClassMd): StructType {
+    val structType = screen(StructType("class.${classMd.className}")) as StructType
+    if (!structType.registered) {
+      structType.registered = true
+      structType.init(classMd)
     }
-    return ptrToArray
+    return structType
+  }
+
+  fun getNestedPtr(typeMd: TypeMd): PointerType {
+    return if (typeMd.dim == 1) {
+      getPtrType(getAnyType(TypeMd(typeMd.cl, 0)))
+    } else {
+      getPtrType(getNestedPtr(TypeMd(typeMd.cl, typeMd.dim - 1)))
+    }
   }
 
   /// For primitive types, this function returns its exact type.
   /// For non-primitive types, like arrays and structs, this function returns a pointer.
   /// There is no exception control inside, make sure that all parameters are right.
-  fun getPtrToType(typeMd: TypeMd): PointerType {
-    return screen(
-      when {
-        typeMd.isVoid() -> PointerType(screen(VoidType())) // FIXME: ???
-        typeMd.isInt() -> PointerType(screen(IntType(32)))
-        typeMd.isBool() -> PointerType(screen(IntType(1)))
-        typeMd.isString() -> PointerType(screen(IntType(8))) // TODO: make sure that this is ok
-        typeMd.isArray() -> PointerType(getPtrToType(TypeMd(typeMd.cl, typeMd.dim - 1)))
-        else -> PointerType(StructType(typeMd.cl))
-      }
-    ) as PointerType
+  fun getPtrType(typeMd: TypeMd): PointerType {
+    return when {
+      typeMd.isVoid() -> getPtrType(getVoidType()) // FIXME: ???
+      typeMd.isInt() -> getPtrType(getIntType(32))
+      typeMd.isBool() -> getPtrType(getIntType(8))
+      typeMd.isString() -> getPtrType(getIntType(8)) // TODO: make sure that this is ok
+      typeMd.isArray() -> getNestedPtr(typeMd)
+      else -> getPtrType(getStructType(typeMd.cl))
+    }
   }
 
-  fun getPtrToStructType(classMd: ClassMd): PointerType {
+  fun getPtrType(classMd: ClassMd): PointerType {
     return getPtrType(getStructType(classMd))
   }
 
-  fun getStructType(classMd: ClassMd): StructType {
-    return screen(StructType(classMd)) as StructType
-  }
-
-  /// This function is for func type.
-  /// Because there is no function pointer in Mx*, therefore it doesn't need to be distinguished.
-  fun getFuncType(funcMd: FuncMd): FuncType {
-    return screen(FuncType(funcMd)) as FuncType
-  }
-
-  fun getFuncType(funcName: String, params: List<Type>, result: Type): FuncType {
-    return screen(FuncType(funcName, params, result)) as FuncType
-  }
-
-  fun getType(typeMd: TypeMd): Type {
-    return screen(
-      when {
-        typeMd.isVoid() -> VoidType()
-        typeMd.isInt() -> IntType(32)
-        typeMd.isBool() -> IntType(8)
-        typeMd.isString() -> PointerType(screen(IntType(8))) // TODO: make sure that this is ok
-        typeMd.isArray() -> getPtrType(getType(TypeMd(typeMd.cl, typeMd.dim - 1)))
-        else -> PointerType(StructType(typeMd.cl))
-      }
-    )
+  fun getAnyType(typeMd: TypeMd): Type {
+    return when {
+      typeMd.isVoid() -> getVoidType()
+      typeMd.isInt() -> getIntType(32)
+      typeMd.isBool() -> getIntType(8)
+      typeMd.isString() -> getPtrType(getIntType(8)) // TODO: make sure that this is ok
+      typeMd.isArray() -> getNestedPtr(typeMd)
+      else -> getPtrType(getStructType(typeMd.cl))
+    }
   }
 
   // please don't give it string and array
@@ -101,7 +103,7 @@ object TypeFactory {
         typeMd.isVoid() -> VoidType()
         typeMd.isInt() -> IntType(32)
         typeMd.isBool() -> IntType(8)
-        else -> StructType(typeMd.cl)
+        else -> getStructType(typeMd.cl)
       }
     )
   }
@@ -151,7 +153,7 @@ data class IntType(val numOfBits: Int) : Type() {
 
 data class PointerType(val pointeeTy: Type?) : Type() {
   override fun getNumBits(): Int {
-    return 32
+    return pointerNumBits
   }
 
   override fun toString(): String {
@@ -163,7 +165,7 @@ data class PointerType(val pointeeTy: Type?) : Type() {
 data class ArrayType internal constructor(val containedType: Type, val numElements: Int) :
   Type() {
   internal constructor(typeMd: TypeMd, len: Int) : this(
-    TypeFactory.getPtrToType(TypeMd(typeMd.cl, typeMd.dim - 1)),
+    TypeFactory.getPtrType(TypeMd(typeMd.cl, typeMd.dim - 1)),
     len
   )
 
@@ -181,16 +183,33 @@ data class ArrayType internal constructor(val containedType: Type, val numElemen
 /// StructType provides a mapping from name to index, with its type clarified.
 /// This is basically a part of class, because it only contains members.
 /// As for methods, it should be obtained in other ways. The AST will handle this.
-data class StructType internal constructor(val structName: String) : Type() {
+class StructType(val structName: String) : Type() {
   val symbolList: MutableList<Pair<String, Type>> = mutableListOf()
   private var numOfBits = 0
+  var registered = false
 
-  internal constructor(classMd: ClassMd) : this("class.${classMd.className}") {
+  fun getRealStructName(): String {
+    return structName.substring(6)
+  }
+
+  fun init(classMd: ClassMd) {
     for ((memberName, memberValue) in classMd.classScope.members) {
-      val memberType = TypeFactory.getType(memberValue)
+      val memberType = TypeFactory.getAnyType(memberValue)
       symbolList.add(Pair(memberName, memberType))
       numOfBits += memberType.getNumBits()
     }
+  }
+
+  override fun equals(other: Any?): Boolean {
+    return if (other is StructType) {
+      other.structName == structName
+    } else {
+      false
+    }
+  }
+
+  override fun hashCode(): Int {
+    return structName.hashCode()
   }
 
   fun getIndex(symbol: String): Int {
@@ -213,14 +232,21 @@ data class StructType internal constructor(val structName: String) : Type() {
   fun toDeclaration(): String {
     return "%$structName = type { ${symbolList.joinToString(", ") { it.second.toString() }} }\n"
   }
+
 }
 
 /// It would be guaranteed that the funcName is always unchanged.
-data class FuncType internal constructor(val funcName: String, val params: List<Type>, val result: Type) : Type() {
-  internal constructor(funcMd: FuncMd) : this(
+data class FuncType(val funcName: String, val params: List<Type>, val result: Type) : Type() {
+  constructor(funcMd: FuncMd) : this(
     funcMd.funcName,
-    funcMd.paramInput.map { TypeFactory.getType(it.second) },
-    TypeFactory.getType(funcMd.returnType!!)
+    funcMd.paramInput.map { TypeFactory.getAnyType(it.second) },
+    TypeFactory.getAnyType(funcMd.returnType!!)
+  )
+
+  constructor(funcMd: FuncMd, classMd: ClassMd) : this(
+    "${classMd.className}.${funcMd.funcName}",
+    listOf(TypeFactory.getPtrType(classMd)) + funcMd.paramInput.map { TypeFactory.getAnyType(it.second) },
+    TypeFactory.getAnyType(funcMd.returnType!!)
   )
 
   override fun getNumBits(): Int {

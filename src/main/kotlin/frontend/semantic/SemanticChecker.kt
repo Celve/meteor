@@ -108,7 +108,7 @@ class SemanticChecker : AstVisitor() {
   }
 
   override fun visit(curr: ForSuiteNode) {
-    scopeManager.addLast(curr.scope)
+    scopeManager.addLast(curr.initScope)
     curr.init?.accept(this)
     if (curr.cond != null) {
       curr.cond.accept(this)
@@ -117,7 +117,12 @@ class SemanticChecker : AstVisitor() {
       }
     }
     curr.inc?.accept(this)
+
+    scopeManager.addLast(curr.bodyScope)
+
     curr.body.accept(this)
+
+    scopeManager.removeLast()
     scopeManager.removeLast()
   }
 
@@ -264,14 +269,14 @@ class SemanticChecker : AstVisitor() {
   }
 
   override fun visit(curr: FuncCallNode) {
-    curr.params.forEach { it.accept(this) }
+    curr.argList.forEach { it.accept(this) }
     val method = scopeManager.last().getFunc(curr.funcName) ?: throw SemanticException(curr.pos, "No such function")
-    checkParamsForFunc(curr, method, curr.params)
+    checkParamsForFunc(curr, method, curr.argList)
   }
 
   override fun visit(curr: MethodCallNode) {
     curr.expr.accept(this)
-    curr.params.forEach { it.accept(this) }
+    curr.argList.forEach { it.accept(this) }
 
     val varType = curr.expr.type!!
     val method = if (!curr.expr.type!!.isArray()) {
@@ -285,7 +290,7 @@ class SemanticChecker : AstVisitor() {
       throw SemanticException(curr.pos, "No correspond method for ${varType.cl.className}.${curr.method}")
     }
 
-    checkParamsForFunc(curr, method, curr.params)
+    checkParamsForFunc(curr, method, curr.argList)
   }
 
   override fun visit(curr: MemberAccessNode) {

@@ -47,13 +47,13 @@ class LambdaCallNode(pos: SrcPos, val lambdaDef: LambdaDefNode, val params: List
   }
 }
 
-class FuncCallNode(pos: SrcPos, val funcName: String, val params: List<ExprNode>) : ExprNode(pos, false) {
+class FuncCallNode(pos: SrcPos, val funcName: String, val argList: List<ExprNode>) : ExprNode(pos, false) {
   override fun accept(visitor: AstVisitor) {
     visitor.visit(this)
   }
 }
 
-class MethodCallNode(pos: SrcPos, val expr: ExprNode, val method: String, val params: List<ExprNode>) :
+class MethodCallNode(pos: SrcPos, val expr: ExprNode, val method: String, val argList: List<ExprNode>) :
   ExprNode(pos, false) {
   override fun accept(visitor: AstVisitor) {
     visitor.visit(this)

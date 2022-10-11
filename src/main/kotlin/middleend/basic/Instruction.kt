@@ -66,7 +66,7 @@ class StoreInst(val value: Value, val addr: Value) : Instruction(TypeFactory.get
     } else {
       value.type
     }
-    return "store ${lhsTy} ${value.toOperand()}, ${addr.type} ${addr.toOperand()}"
+    return "store ${lhsTy} ${value.toOperand()}, ${addr.type} ${addr.toOperand()}, align ${value.type.getAlign()}"
   }
 }
 
@@ -118,7 +118,9 @@ class CallInst(name: String?, val funcType: FuncType, val args: List<Value>) :
   Instruction(funcType.result, name) {
   override fun toString(): String {
     val prefix: String = if (name == null) "" else "%$name = "
-    return "${prefix}call ${funcType.result} @${funcType.funcName}(${args.joinToString(", ") { it.toArg() }})"
+    return "${prefix}call ${funcType.result} @${funcType.funcName}(${
+      funcType.params.zip(args).joinToString(", ") { "${it.first} ${it.second.toOperand()}" }
+    })"
   }
 }
 

@@ -7,6 +7,7 @@ import frontend.utils.FuncScope
 data class ClassMd(val className: String) {
   val memberToIndex: HashMap<String, Int> = hashMapOf()
   val classScope = ClassScope(null, className) // className is only needed for ctor
+  var hasCustomCtor = false
 }
 
 /// The FuncMetadata is the same to ClassMetadata.

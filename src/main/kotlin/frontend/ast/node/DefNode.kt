@@ -20,7 +20,7 @@ class ClassCtorNode(
   val params: List<Pair<String, String>>,
   val funcBlock: BaseNode?
 ) : DefNode(pos) {
-  var funcMd = FuncMd(className, listOf(), null)
+  var funcMd = FuncMd("new", listOf(), null)
   override fun accept(visitor: AstVisitor) {
     visitor.visit(this)
   }

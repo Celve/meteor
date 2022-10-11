@@ -39,17 +39,25 @@ class IRVisitor : AstVisitor() {
 
       for ((funcName, funcMd) in localScope.methods) {
         // value's name should be reinserted into value symbol table again, because it didn't be renamed.
-        val args = funcMd.paramInput.map { Value(TypeFactory.getType(it.second), it.first) }.toMutableList()
-        args.add(0, Value(TypeFactory.getPtrToStructType(classMd), "this"))
+        val args = funcMd.paramInput.map { Value(TypeFactory.getAnyType(it.second), it.first) }.toMutableList()
+        args.add(0, Value(TypeFactory.getPtrType(classMd), "this"))
 
         topModule.setFunc(
           "$className.$funcName",
           Func(
             "$className.$funcName",
-            TypeFactory.getFuncType(funcMd),
+            TypeFactory.getFuncType(funcMd, classMd),
             args
           )
         )
+      }
+
+      if (!classMd.hasCustomCtor) {
+        val ctor = topModule.getFunc("${className}.new")!!
+        val entryBlock = BasicBlock("entry")
+        IRBuilder.setCurrentFunc(ctor)
+        IRBuilder.setInsertBlock(entryBlock)
+        IRBuilder.createRetVoid()
       }
     }
 
@@ -61,7 +69,7 @@ class IRVisitor : AstVisitor() {
         Func(
           funcName,
           funcType,
-          funcMd.paramInput.map { Value(TypeFactory.getType(it.second), it.first) }
+          funcMd.paramInput.map { Value(TypeFactory.getAnyType(it.second), it.first) }
         )
       )
     }
@@ -74,7 +82,7 @@ class IRVisitor : AstVisitor() {
         Func(
           funcName,
           funcType,
-          funcMd.paramInput.map { Value(TypeFactory.getType(it.second)) }
+          funcMd.paramInput.map { Value(TypeFactory.getAnyType(it.second)) }
         )
       )
     }
@@ -122,7 +130,34 @@ class IRVisitor : AstVisitor() {
   }
 
   override fun visit(curr: ClassCtorNode) {
-    TODO("Not yet implemented")
+    scopeManger.addLast(curr.funcMd)
+    val recentClass = scopeManger.getRecentClass()!!
+    val funcName = "${recentClass.className}.new"
+    val func = topModule.getFunc(funcName)!!
+    val innerScope = scopeManger.last()
+    IRBuilder.setCurrentFunc(func)
+    func.vst.addAll(topModule)
+    IRBuilder.setValueSymbolTable(func.vst)
+
+    val entryBlock = BasicBlock(func.vst.defineName("entry"))
+    IRBuilder.setInsertBlock(entryBlock)
+
+    // it must contain only one, and it should be the "this" pointer
+    assert(func.args.size == 1 && func.args.first().name == "this")
+    val arg = func.args.first()
+    func.vst.insertValue(arg)
+    innerScope.setValue("this", arg)
+
+    curr.funcBlock?.accept(this)
+
+    if (!IRBuilder.getInsertBlock()!!.hasTerminator()) {
+      val returnBlock = BasicBlock(func.vst.defineName("return"))
+      IRBuilder.createBr(returnBlock)
+      IRBuilder.setInsertBlock(returnBlock)
+      IRBuilder.createRetVoid()
+    }
+
+    scopeManger.removeLast()
   }
 
   override fun visit(curr: FuncDefNode) {
@@ -193,7 +228,7 @@ class IRVisitor : AstVisitor() {
 
   override fun visit(curr: VarDeclNode) {
     val innerScope = scopeManger.last()
-    val type = TypeFactory.getType(curr.varTypeMd!!)
+    val type = TypeFactory.getAnyType(curr.varTypeMd!!)
 
     if (innerScope !is GlobalScope) { // if it is a local variable
       for (assign in curr.assigns) {
@@ -227,7 +262,7 @@ class IRVisitor : AstVisitor() {
     val bodyBlock = BasicBlock("for.body")
     val endBlock = BasicBlock("for.end")
 
-    scopeManger.addLast(curr.scope)
+    scopeManger.addLast(curr.initScope)
     loopManager.addLast(incBlock, endBlock)
 
     curr.init?.accept(this)
@@ -242,7 +277,9 @@ class IRVisitor : AstVisitor() {
     }
 
     IRBuilder.setInsertBlock(bodyBlock)
+    scopeManger.addLast(curr.bodyScope)
     curr.body.accept(this)
+    scopeManger.removeLast()
     IRBuilder.createBr(incBlock)
 
     IRBuilder.setInsertBlock(incBlock)
@@ -366,26 +403,43 @@ class IRVisitor : AstVisitor() {
     val elemByteNum = ConstantInt(32, currType.getAlign())
     val malloc = topModule.getBuiltinFunc("_malloc")!!
     val call = IRBuilder.createCall(malloc.funcType, listOf(elemByteNum))
-    return IRBuilder.createBitCast("bitcast", call, TypeFactory.getPtrType(currType))
+    val bitcast = IRBuilder.createBitCast("bitcast", call, TypeFactory.getPtrType(currType))
+    if (currType is StructType) {
+      val initFunc = topModule.getFunc(currType.getRealStructName() + ".new")!!
+      IRBuilder.createCall(initFunc.funcType, listOf(bitcast))
+    } else {
+      TODO("Not yet implemented")
+    }
+    return bitcast
   }
 
   private fun mallocArray(currType: PointerType, arraySizeList: List<Value>): Value {
     val arraySize = arraySizeList.first()
+    val containedType = currType.pointeeTy!!
     val pureArrayByteNum =
       IRBuilder.createBinary(
         "mul",
         "mul",
         TypeFactory.getIntType(32),
         arraySize,
-        ConstantInt(32, currType.getAlign())
+        ConstantInt(32, containedType.getAlign())
       )
     val extendedArrayByteNum =
-      IRBuilder.createBinary("add", "add", TypeFactory.getIntType(32), pureArrayByteNum, ConstantInt(32, 4))
+      IRBuilder.createBinary(
+        "add",
+        "add",
+        TypeFactory.getIntType(32),
+        pureArrayByteNum,
+        ConstantInt(32, containedType.getAlign())
+      )
     val malloc = topModule.getBuiltinFunc("_malloc")!!
     val createdSpace = IRBuilder.createCall(malloc.funcType, listOf(extendedArrayByteNum))
     val extendedArray = IRBuilder.createBitCast("bitcast", createdSpace, currType)
-    val arraySizeAddr =
+    val arraySizeAddr = if (extendedArray.type == TypeFactory.getPtrType(TypeFactory.getIntType(32))) {
+      extendedArray
+    } else {
       IRBuilder.createBitCast("bitcast", extendedArray, TypeFactory.getPtrType(TypeFactory.getIntType(32)))
+    }
     IRBuilder.createStore(arraySize, arraySizeAddr)
     val pureArray = IRBuilder.createGEP("ptr", "arrayidx", extendedArray, ConstantInt(32, 1))
 
@@ -393,7 +447,7 @@ class IRVisitor : AstVisitor() {
       return pureArray
     }
 
-    val startPoint = IRBuilder.createGEP("ptr", "arrayidx", pureArray, arraySize)
+    val startPoint = IRBuilder.createGEP("ptr", "arrayidx", extendedArray, arraySize)
     val previousBlock = IRBuilder.getInsertBlock()!!
     val condBlock = BasicBlock("while.cond")
     val bodyBlock = BasicBlock("while.body")
@@ -412,7 +466,8 @@ class IRVisitor : AstVisitor() {
 
     // some preparation for following recursive building
     IRBuilder.setInsertBlock(bodyBlock)
-    mallocArray(currType.pointeeTy!! as PointerType, arraySizeList.subList(1, arraySizeList.size))
+    val subArray = mallocArray(currType.pointeeTy as PointerType, arraySizeList.subList(1, arraySizeList.size))
+    IRBuilder.createStore(subArray, phiInst)
 
     val nextElement = IRBuilder.createGEP(
       "ptr",
@@ -430,7 +485,7 @@ class IRVisitor : AstVisitor() {
   override fun visit(curr: InitExprNode) {
     curr.arraySizeExprList.forEach { it?.accept(this) }
     curr.value = if (curr.arraySizeExprList.isNotEmpty()) {
-      val currType = TypeFactory.getType(curr.type!!) as PointerType
+      val currType = TypeFactory.getAnyType(curr.type!!) as PointerType
       val arraySizeList = curr.arraySizeExprList.map { it!!.value!! }
       mallocArray(currType, arraySizeList)
     } else {
@@ -444,16 +499,26 @@ class IRVisitor : AstVisitor() {
   }
 
   override fun visit(curr: FuncCallNode) {
-    val callee = topModule.getFunc(curr.funcName) ?: topModule.getBuiltinFunc(curr.funcName)!!
-    curr.params.forEach { it.accept(this) }
-    curr.value = IRBuilder.createCall(
-      callee.funcType,
-      curr.params.map { it.value!! }) // TODO: determine its type
+    val recentClass = scopeManger.getRecentClass()
+    if (recentClass != null && recentClass.classScope.testFunc(curr.funcName)) {
+      val callee = topModule.getFunc("${recentClass.className}.${curr.funcName}")!!
+      val thisPtr = scopeManger.last().getValue("this")!!
+      curr.value = IRBuilder.createCall(
+        callee.funcType,
+        listOf(thisPtr) + curr.argList.map { it.accept(this); it.value!! }
+      )
+    } else {
+      val callee = topModule.getFunc(curr.funcName) ?: topModule.getBuiltinFunc(curr.funcName)!!
+      curr.value = IRBuilder.createCall(
+        callee.funcType,
+        curr.argList.map { it.accept(this); it.value!! }) // TODO: determine its type
+    }
   }
 
   override fun visit(curr: MethodCallNode) {
-    curr.value = if (curr.method == "size") {
-      curr.expr.accept(this)
+    curr.expr.accept(this)
+    curr.value = if (curr.expr.type!!.isArray()) {
+      assert(curr.method == "size")
       val arraySizeAddr = IRBuilder.createGEP("ptr", "arraysize.addr", curr.expr.value!!, ConstantInt(32, -1))
       val finalInst = if (arraySizeAddr.type != TypeFactory.getPtrType(TypeFactory.getIntType(32))) {
         IRBuilder.createBitCast("bitcast", arraySizeAddr, TypeFactory.getPtrType(TypeFactory.getIntType(32)))
@@ -464,12 +529,9 @@ class IRVisitor : AstVisitor() {
     } else {
       val callee = topModule.getFunc("${curr.expr.type!!.cl.className}.${curr.method}")
         ?: topModule.getBuiltinFunc("_${curr.expr.type!!.cl.className}_${curr.method}")!!
-      // TODO: size()
-      curr.expr.accept(this)
-      curr.params.forEach { it.accept(this) }
       IRBuilder.createCall(
         callee.funcType,
-        listOf(curr.expr.value!!) + curr.params.map { it.value!! }) // TODO: determine its type
+        listOf(curr.expr.value!!) + curr.argList.map { it.accept(this); it.value!! })
     }
   }
 
@@ -478,8 +540,13 @@ class IRVisitor : AstVisitor() {
     val memberName = "${curr.expr.type!!.cl.className}.${curr.member}"
     val pointerType = curr.expr.value!!.type as PointerType
     val structType = pointerType.pointeeTy as StructType
-    curr.value =
-      IRBuilder.createGEP("struct", memberName, curr.expr.value!!, ConstantInt(32, structType.getIndex(curr.member)))
+    val gepInst = IRBuilder.createGEP(
+      "struct",
+      "$memberName.addr",
+      curr.expr.value!!,
+      ConstantInt(32, structType.getIndex(curr.member))
+    )
+    curr.value = IRBuilder.createLoad(memberName, gepInst)
   }
 
   override fun visit(curr: ArrayAccessNode) {
@@ -492,26 +559,25 @@ class IRVisitor : AstVisitor() {
   private fun getIdsNameAndItsPtr(curr: AtomNode): Pair<String, Value> {
     val innerScope = scopeManger.last()
     val id = curr.literal
+    val recentClass = scopeManger.getRecentClass()
+    if (recentClass != null && recentClass.memberToIndex.containsKey(id)) {
+      // now we could know that this is a class member
+      val memberName = "${recentClass.className}.$id"
+      val structType = topModule.getStruct("class.${recentClass.className}")
+      return Pair(
+        memberName,
+        IRBuilder.createGEP(
+          "struct",
+          "$memberName.addr",
+          innerScope.getValue("this")!!,
+          ConstantInt(32, structType.getIndex(id))
+        )
+      )
+    }
     val ptrSuffixed = "$id.addr"
     val ptr = innerScope.getValue(ptrSuffixed)
     return if (ptr == null) {
-      val recentClass = scopeManger.getRecentClass()
-      if (recentClass != null && recentClass.memberToIndex.containsKey(id)) {
-        // now we could know that this is a class member
-        val memberName = "${recentClass.className}.$id"
-        val structType = topModule.getStruct("class.${recentClass.className}")
-        Pair(
-          memberName,
-          IRBuilder.createGEP(
-            "struct",
-            "${memberName}.addr",
-            innerScope.getValue("this")!!,
-            ConstantInt(32, structType.getIndex(id))
-          )
-        )
-      } else {
-        Pair(id, topModule.getGlobalVar(ptrSuffixed))
-      }
+      Pair(id, topModule.getGlobalVar(ptrSuffixed))
     } else {
       Pair(id, ptr)
     }
@@ -536,7 +602,7 @@ class IRVisitor : AstVisitor() {
           memberName,
           IRBuilder.createGEP(
             "struct",
-            memberName,
+            "$memberName.addr",
             curr.expr.value!!,
             ConstantInt(32, structType.getIndex(curr.member))
           )
@@ -551,7 +617,7 @@ class IRVisitor : AstVisitor() {
     val op = Utils.unaryOpToStr(curr.op)
     val (varName, varPtr) = getVarsNameAndItsPtr(curr.expr)
     curr.expr.value = IRBuilder.createLoad(varName, varPtr)
-    val varType = TypeFactory.getType(curr.type!!)
+    val varType = TypeFactory.getAnyType(curr.type!!)
     val binaryInst = IRBuilder.createBinary(
       op,
       if (op == "inc") "add" else "sub",
@@ -610,16 +676,20 @@ class IRVisitor : AstVisitor() {
 
       else -> { // !
         curr.expr.accept(this)
-        val truncInst = IRBuilder.createTrunc(
-          op,
-          curr.expr.value!!,
-          TypeFactory.getIntType(1)
-        )
+        val value = if (curr.expr.value!!.type == TypeFactory.getIntType(1)) {
+          curr.expr.value!!
+        } else {
+          IRBuilder.createTrunc(
+            op,
+            curr.expr.value!!,
+            TypeFactory.getIntType(1)
+          )
+        }
         IRBuilder.createBinary(
           op,
           "xor",
-          truncInst.type,
-          truncInst,
+          value.type,
+          value,
           ConstantInt(1, 1)
         )
       }
@@ -643,7 +713,7 @@ class IRVisitor : AstVisitor() {
             val func = topModule.getBuiltinFunc("_string_concat")!!
             IRBuilder.createCall(func.funcType, listOf(lhs, rhs))
           } else {
-            IRBuilder.createBinary(op, op, TypeFactory.getType(curr.type!!), lhs, rhs)
+            IRBuilder.createBinary(op, op, TypeFactory.getAnyType(curr.type!!), lhs, rhs)
           }
         }
         lhs
@@ -659,7 +729,7 @@ class IRVisitor : AstVisitor() {
             continue
           }
           val op = Utils.binaryOpToStr(curr.ops[index - 1])
-          lhs = IRBuilder.createBinary(op, op, TypeFactory.getType(curr.type!!), lhs, rhs)
+          lhs = IRBuilder.createBinary(op, op, TypeFactory.getAnyType(curr.type!!), lhs, rhs)
         }
         lhs
       }

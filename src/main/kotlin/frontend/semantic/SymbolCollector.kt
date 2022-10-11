@@ -33,11 +33,6 @@ class SymbolCollector : AstVisitor() {
           throw SemanticException(curr.pos, "Class ${it.className} has the same name with another function")
         }
         globalScope.setClass(it.className, it.classMd)
-        // use this special format to stand for implicit class creator
-//        globalScope.setFunc(
-//          it.className,
-//          FuncMd("${it.className}.${it.className}", listOf(), globalScope.getFuncType("null"))
-//        )
       }
     }
 
@@ -50,7 +45,7 @@ class SymbolCollector : AstVisitor() {
         // in the case that it doesn't have a initial constructor
         val scope = it.classMd.classScope
         if (!scope.testFunc("new")) {
-          scope.setFunc("new", FuncMd("${it.className}.${it.className}", listOf(), globalScope.getFuncType("void")))
+          scope.setFunc("new", FuncMd("new", listOf(), globalScope.getFuncType("void")))
         }
       }
     }
@@ -85,8 +80,9 @@ class SymbolCollector : AstVisitor() {
     val outerScope = scopeManager.last()
     val innerScope = curr.funcMd.funcScope
     val paramInput: MutableList<Pair<String, TypeMd>> = mutableListOf()
+    val recentClass = scopeManager.getRecentClass()!!
 
-    if (curr.className != scopeManager.getRecentClass()!!.className) {
+    if (curr.className != recentClass.className) {
       throw SemanticException(curr.pos, "Class can't have this constructor")
     }
 
@@ -106,6 +102,7 @@ class SymbolCollector : AstVisitor() {
 //    curr.funcMd.returnType = globalScope.getFuncType(curr.className)
     curr.funcMd.returnType = globalScope.getFuncType("void") // forbid ctor's parameters
     outerScope.setFunc("new", curr.funcMd) // use new to infer ctor
+    recentClass.hasCustomCtor = true
   }
 
   override fun visit(curr: FuncDefNode) {

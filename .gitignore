@@ -47,5 +47,8 @@ utilities/
 ### Log Files ###
 *.log
 
+### Python ###
+venv/
+
 ### Others ###
 debug/
