@@ -227,12 +227,12 @@ public interface MeteorVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitPrefixIncrement(MeteorParser.PrefixIncrementContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code initExpr}
+	 * Visit a parse tree produced by the {@code newExpr}
 	 * labeled alternative in {@link MeteorParser#prefixExpr}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitInitExpr(MeteorParser.InitExprContext ctx);
+	T visitNewExpr(MeteorParser.NewExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code suffixExprRelay}
 	 * labeled alternative in {@link MeteorParser#prefixExpr}.

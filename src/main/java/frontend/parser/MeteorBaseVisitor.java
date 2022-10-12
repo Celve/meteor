@@ -263,7 +263,7 @@ public class MeteorBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitInitExpr(MeteorParser.InitExprContext ctx) { return visitChildren(ctx); }
+	@Override public T visitNewExpr(MeteorParser.NewExprContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

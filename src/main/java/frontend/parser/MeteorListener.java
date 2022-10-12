@@ -370,17 +370,17 @@ public interface MeteorListener extends ParseTreeListener {
 	 */
 	void exitPrefixIncrement(MeteorParser.PrefixIncrementContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code initExpr}
+	 * Enter a parse tree produced by the {@code newExpr}
 	 * labeled alternative in {@link MeteorParser#prefixExpr}.
 	 * @param ctx the parse tree
 	 */
-	void enterInitExpr(MeteorParser.InitExprContext ctx);
+	void enterNewExpr(MeteorParser.NewExprContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code initExpr}
+	 * Exit a parse tree produced by the {@code newExpr}
 	 * labeled alternative in {@link MeteorParser#prefixExpr}.
 	 * @param ctx the parse tree
 	 */
-	void exitInitExpr(MeteorParser.InitExprContext ctx);
+	void exitNewExpr(MeteorParser.NewExprContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code suffixExprRelay}
 	 * labeled alternative in {@link MeteorParser#prefixExpr}.

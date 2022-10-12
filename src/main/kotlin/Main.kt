@@ -1,5 +1,5 @@
+import frontend.ast.controller.ASTBuilder
 import frontend.ast.controller.AntlrErrorListener
-import frontend.ast.controller.AstBuilder
 import frontend.ast.node.ProgNode
 import frontend.parser.MeteorLexer
 import frontend.parser.MeteorParser
@@ -23,17 +23,17 @@ fun main(args: Array<String>) {
   parser.addErrorListener(AntlrErrorListener())
   val parserRoot = parser.prog()
 
-  val astBuilder = AstBuilder()
+  val astBuilder = ASTBuilder()
   val builderRoot = astBuilder.visitProg(parserRoot) as ProgNode
 
   val symbolCollector = SymbolCollector()
-  symbolCollector.visit(builderRoot)
+  symbolCollector.visitProg(builderRoot)
 
   val semanticChecker = SemanticChecker()
-  semanticChecker.visit(builderRoot)
+  semanticChecker.visitProg(builderRoot)
 
   val middleend = IRVisitor()
-  middleend.visit(builderRoot)
+  middleend.visitProg(builderRoot)
 
   val emit = Emit(middleend.topModule)
   emit.main()

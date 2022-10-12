@@ -1,6 +1,6 @@
 package frontend.ast.node
 
-import frontend.ast.controller.AstVisitor
+import frontend.ast.controller.ASTVisitor
 import frontend.metadata.ClassMd
 import frontend.metadata.FuncMd
 import frontend.utils.SrcPos
@@ -9,8 +9,8 @@ abstract class DefNode(pos: SrcPos) : BaseNode(pos)
 
 class ClassDefNode(pos: SrcPos, val className: String, val classBlock: BaseNode?) : DefNode(pos) {
   val classMd = ClassMd(className)
-  override fun accept(visitor: AstVisitor) {
-    visitor.visit(this)
+  override fun accept(visitor: ASTVisitor) {
+    visitor.visitClassDef(this)
   }
 }
 
@@ -21,8 +21,8 @@ class ClassCtorNode(
   val funcBlock: BaseNode?
 ) : DefNode(pos) {
   var funcMd = FuncMd("new", listOf(), null)
-  override fun accept(visitor: AstVisitor) {
-    visitor.visit(this)
+  override fun accept(visitor: ASTVisitor) {
+    visitor.visitClassCtor(this)
   }
 }
 
@@ -35,8 +35,8 @@ class FuncDefNode(
 ) : DefNode(pos) {
   var funcMd = FuncMd(funcName, listOf(), null)
 
-  override fun accept(visitor: AstVisitor) {
-    visitor.visit(this)
+  override fun accept(visitor: ASTVisitor) {
+    visitor.visitFuncDef(this)
   }
 }
 
@@ -49,7 +49,7 @@ class LambdaDefNode(
   DefNode(pos) {
   var funcMd = FuncMd("lambda", listOf(), null, isRef)
 
-  override fun accept(visitor: AstVisitor) {
-    visitor.visit(this)
+  override fun accept(visitor: ASTVisitor) {
+    visitor.visitLambdaDef(this)
   }
 }

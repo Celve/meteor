@@ -437,13 +437,13 @@ public class MeteorBaseListener implements MeteorListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterInitExpr(MeteorParser.InitExprContext ctx) { }
+	@Override public void enterNewExpr(MeteorParser.NewExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitInitExpr(MeteorParser.InitExprContext ctx) { }
+	@Override public void exitNewExpr(MeteorParser.NewExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

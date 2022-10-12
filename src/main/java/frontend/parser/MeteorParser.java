@@ -2289,6 +2289,35 @@ public class MeteorParser extends Parser {
 		}
 	}
 	@SuppressWarnings("CheckReturnValue")
+	public static class NewExprContext extends PrefixExprContext {
+		public TerminalNode New() { return getToken(MeteorParser.New, 0); }
+		public ClassTypeContext classType() {
+			return getRuleContext(ClassTypeContext.class,0);
+		}
+		public List<BracketedExprContext> bracketedExpr() {
+			return getRuleContexts(BracketedExprContext.class);
+		}
+		public BracketedExprContext bracketedExpr(int i) {
+			return getRuleContext(BracketedExprContext.class,i);
+		}
+		public TerminalNode LeftParen() { return getToken(MeteorParser.LeftParen, 0); }
+		public TerminalNode RightParen() { return getToken(MeteorParser.RightParen, 0); }
+		public NewExprContext(PrefixExprContext ctx) { copyFrom(ctx); }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof MeteorListener ) ((MeteorListener)listener).enterNewExpr(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof MeteorListener ) ((MeteorListener)listener).exitNewExpr(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof MeteorVisitor ) return ((MeteorVisitor<? extends T>)visitor).visitNewExpr(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+	@SuppressWarnings("CheckReturnValue")
 	public static class SuffixExprRelayContext extends PrefixExprContext {
 		public SuffixExprContext suffixExpr() {
 			return getRuleContext(SuffixExprContext.class,0);
@@ -2331,35 +2360,6 @@ public class MeteorParser extends Parser {
 			else return visitor.visitChildren(this);
 		}
 	}
-	@SuppressWarnings("CheckReturnValue")
-	public static class InitExprContext extends PrefixExprContext {
-		public TerminalNode New() { return getToken(MeteorParser.New, 0); }
-		public ClassTypeContext classType() {
-			return getRuleContext(ClassTypeContext.class,0);
-		}
-		public List<BracketedExprContext> bracketedExpr() {
-			return getRuleContexts(BracketedExprContext.class);
-		}
-		public BracketedExprContext bracketedExpr(int i) {
-			return getRuleContext(BracketedExprContext.class,i);
-		}
-		public TerminalNode LeftParen() { return getToken(MeteorParser.LeftParen, 0); }
-		public TerminalNode RightParen() { return getToken(MeteorParser.RightParen, 0); }
-		public InitExprContext(PrefixExprContext ctx) { copyFrom(ctx); }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof MeteorListener ) ((MeteorListener)listener).enterInitExpr(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof MeteorListener ) ((MeteorListener)listener).exitInitExpr(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MeteorVisitor ) return ((MeteorVisitor<? extends T>)visitor).visitInitExpr(this);
-			else return visitor.visitChildren(this);
-		}
-	}
 
 	public final PrefixExprContext prefixExpr() throws RecognitionException {
 		PrefixExprContext _localctx = new PrefixExprContext(_ctx, getState());
@@ -2385,7 +2385,7 @@ public class MeteorParser extends Parser {
 				}
 				break;
 			case New:
-				_localctx = new InitExprContext(_localctx);
+				_localctx = new NewExprContext(_localctx);
 				enterOuterAlt(_localctx, 2);
 				{
 				setState(303);

@@ -4,8 +4,11 @@ import frontend.metadata.ClassMd
 import frontend.metadata.FuncMd
 import java.util.*
 
-// it forms a tree structure for scopes
-// when a var or something else is not discovered in the current scope, it would look upward to search
+/**
+ * ScopeManager forms a tree structure for scopes.
+ * When a var or something else is not discovered in the current scope, it would look upward to search for it.
+ * Besides, it maintains some info the scope hierarchy, such as the recent class and function.
+ */
 class ScopeManager {
   private val scopes: Vector<Scope> = Vector()
   private var classMd: ClassMd? = null

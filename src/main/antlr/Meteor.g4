@@ -80,7 +80,7 @@ suffixExpr: suffixExpr '.' (methodName = Id) paramInputList #methodCall
   ;
 prefixOps: Increment | Decrement | Add | Sub | LogicalNot | BitwiseNot;
 prefixExpr: prefixOps prefixExpr #prefixIncrement
-  | New classType bracketedExpr* ('(' ')')? #initExpr
+  | New classType bracketedExpr* ('(' ')')? #newExpr
   | suffixExpr #suffixExprRelay
   ;
 mulOps: Mul | Div | Mod;

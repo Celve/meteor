@@ -1,6 +1,6 @@
 package middleend.builder
 
-import frontend.ast.controller.AstVisitor
+import frontend.ast.controller.ASTVisitor
 import frontend.ast.node.*
 import frontend.utils.BuiltinScope
 import frontend.utils.FuncScope
@@ -11,35 +11,36 @@ import middleend.helper.LoopManager
 import middleend.helper.Utils
 import middleend.helper.ValueSymbolTable
 
-class IRVisitor : AstVisitor() {
+class IRVisitor : ASTVisitor() {
   private val scopeManger = ScopeManager()
   private val loopManager = LoopManager()
   val topModule = TopModule()
   private var initFunc: Func? = null
   private val globalVst = ValueSymbolTable()
 
-  override fun visit(curr: ProgNode) {
+  override fun visitProg(curr: ProgNode) {
+    /**
+     * insert class definitions, method declarations, and function declarations first to support forward reference
+     * class member isn't needed to be inserted
+     * member declarations are omitted, because there are simply retrieve by index
+     */
     scopeManger.addLast(curr.scope)
-    curr.block.accept(this)
-    scopeManger.removeLast()
-  }
+    val globalScope = curr.scope
 
-  override fun visit(curr: ProgBlockNode) {
-    /// In order to support forward reference,
-    /// class definitions, method declarations, function declarations,
-    /// all have to be iterated first to build the type system.
-    /// Member declarations are omitted, because there are simply retrieve by index.
-    val globalScope = scopeManger.first() as GlobalScope
-
-    // class definitions
+    /** class definitions */
     for ((className, classMd) in globalScope.classes) {
       val localScope = classMd.classScope
-      val structType = TypeFactory.getStructType(classMd) // create the concrete struct, instead of reference
+      val structType = TypeFactory.getStructType(classMd)
+
+      /** create the concrete struct directly, instead of reference, which is done in elsewhere */
       topModule.setStruct("class.$className", structType)
 
       for ((funcName, funcMd) in localScope.methods) {
-        // value's name should be reinserted into value symbol table again, because it didn't be renamed.
-        val args = funcMd.paramInput.map { Value(TypeFactory.getAnyType(it.second), it.first) }.toMutableList()
+        /**
+         * arg's name should be reinserted into value symbol table in the following process, because it wasn't renamed
+         * @see visitFuncDef
+         */
+        val args = funcMd.argList.map { Value(TypeFactory.getAnyType(it.second), it.first) }.toMutableList()
         args.add(0, Value(TypeFactory.getPtrType(classMd), "this"))
 
         topModule.setFunc(
@@ -52,6 +53,7 @@ class IRVisitor : AstVisitor() {
         )
       }
 
+      /** create implicit constructor */
       if (!classMd.hasCustomCtor) {
         val ctor = topModule.getFunc("${className}.new")!!
         val entryBlock = BasicBlock("entry")
@@ -61,7 +63,7 @@ class IRVisitor : AstVisitor() {
       }
     }
 
-    // function definitions
+    /** function definitions */
     for ((funcName, funcMd) in globalScope.funcs) {
       val funcType = TypeFactory.getFuncType(funcMd)
       topModule.setFunc(
@@ -69,12 +71,12 @@ class IRVisitor : AstVisitor() {
         Func(
           funcName,
           funcType,
-          funcMd.paramInput.map { Value(TypeFactory.getAnyType(it.second), it.first) }
+          funcMd.argList.map { Value(TypeFactory.getAnyType(it.second), it.first) }
         )
       )
     }
 
-    // builtin function declarations
+    /** builtin function declarations */
     for ((funcName, funcMd) in BuiltinScope.funcs) {
       val funcType = TypeFactory.getFuncType(funcMd)
       topModule.setBuiltinFunc(
@@ -82,22 +84,27 @@ class IRVisitor : AstVisitor() {
         Func(
           funcName,
           funcType,
-          funcMd.paramInput.map { Value(TypeFactory.getAnyType(it.second)) }
+          funcMd.argList.map { Value(TypeFactory.getAnyType(it.second)) }
         )
       )
     }
 
-    // set up init func
-    // because all variables are suffixed with ".addr", then there is no need to distinguish them
-    // this naming custom might be changed in the future
+    /**
+     * set up init func
+     * all global initiation should be done in init func
+     * because all variables are suffixed with ".addr", there is no need to distinguish them with function or class
+     * @see visitVarDecl
+     * this naming custom might be changed in the future
+     */
     val initFuncName = "_global_variable_init"
     initFunc = Func(initFuncName, FuncType(initFuncName, listOf(), TypeFactory.getVoidType()), listOf())
-    val initBlock = BasicBlock("init")
-    initBlock.insertAtTheTailOf(initFunc!!) // it supposes that the initFunc contains only one block
 
-    curr.children.forEach { it.accept(this) }
+    val initBlock = BasicBlock("entry")
+    initBlock.insertAtTheTailOf(initFunc!!)
 
-    // to see if there is a need to init global variable in a particular function
+    curr.block.accept(this)
+
+    /** to check if there is a need to init global variable in main function */
     if (initBlock.instList.size > 0) {
       IRBuilder.resetInsertBlock(initFunc!!.blockList.last())
       IRBuilder.createRetVoid()
@@ -105,31 +112,36 @@ class IRVisitor : AstVisitor() {
 
       val mainFunc = topModule.getFunc("main")!!
       val mainEntryBlock = mainFunc.blockList.first()
-      IRBuilder.resetInsertBlock(mainEntryBlock)
-      IRBuilder.createCall(initFunc!!.funcType, listOf(), true)
+      IRBuilder.setInsertPointBefore(mainEntryBlock.instList.first())
+      IRBuilder.createCall(initFunc!!.funcType, listOf())
     }
 
+    scopeManger.removeLast()
   }
 
-  override fun visit(curr: FuncBlockNode) {
+  override fun visitProgBlock(curr: ProgBlockNode) {
     curr.children.forEach { it.accept(this) }
   }
 
-  override fun visit(curr: ClassBlockNode) {
+  override fun visitFuncBlock(curr: FuncBlockNode) {
+    curr.children.forEach { it.accept(this) }
+  }
+
+  override fun visitClassBlock(curr: ClassBlockNode) {
     curr.children.forEach { if (it !is VarDeclNode) it.accept(this) }
   }
 
-  override fun visit(curr: SimpleBlockNode) {
+  override fun visitSimpleBlock(curr: SimpleBlockNode) {
     curr.child.accept(this)
   }
 
-  override fun visit(curr: ClassDefNode) {
+  override fun visitClassDef(curr: ClassDefNode) {
     scopeManger.addLast(curr.classMd)
     curr.classBlock?.accept(this)
     scopeManger.removeLast()
   }
 
-  override fun visit(curr: ClassCtorNode) {
+  override fun visitClassCtor(curr: ClassCtorNode) {
     scopeManger.addLast(curr.funcMd)
     val recentClass = scopeManger.getRecentClass()!!
     val funcName = "${recentClass.className}.new"
@@ -137,12 +149,11 @@ class IRVisitor : AstVisitor() {
     val innerScope = scopeManger.last()
     IRBuilder.setCurrentFunc(func)
     func.vst.addAll(topModule)
-    IRBuilder.setValueSymbolTable(func.vst)
 
-    val entryBlock = BasicBlock(func.vst.defineName("entry"))
+    val entryBlock = BasicBlock("entry")
     IRBuilder.setInsertBlock(entryBlock)
 
-    // it must contain only one, and it should be the "this" pointer
+    /** it must contain only one arg, which should be the "this" pointer */
     assert(func.args.size == 1 && func.args.first().name == "this")
     val arg = func.args.first()
     func.vst.insertValue(arg)
@@ -151,7 +162,7 @@ class IRVisitor : AstVisitor() {
     curr.funcBlock?.accept(this)
 
     if (!IRBuilder.getInsertBlock()!!.hasTerminator()) {
-      val returnBlock = BasicBlock(func.vst.defineName("return"))
+      val returnBlock = BasicBlock("return")
       IRBuilder.createBr(returnBlock)
       IRBuilder.setInsertBlock(returnBlock)
       IRBuilder.createRetVoid()
@@ -160,7 +171,7 @@ class IRVisitor : AstVisitor() {
     scopeManger.removeLast()
   }
 
-  override fun visit(curr: FuncDefNode) {
+  override fun visitFuncDef(curr: FuncDefNode) {
     scopeManger.addLast(curr.funcMd)
     val innerScope = scopeManger.last() as FuncScope
     val recentClass = scopeManger.getRecentClass()
@@ -168,18 +179,21 @@ class IRVisitor : AstVisitor() {
     val funcName = if (recentClass != null) "${recentClass.className}.${innerScope.funcName}" else innerScope.funcName
     val func = topModule.getFunc(funcName)!!
     IRBuilder.setCurrentFunc(func)
-    func.vst.addAll(topModule) // avoid conflicts with global value
-    IRBuilder.setValueSymbolTable(func.vst)
+    func.vst.addAll(topModule)
+    /** avoid conflicts with global value */
     val funcType = func.type as FuncType
 
-    val entryBlock = BasicBlock(func.vst.defineName("entry"))
+    val entryBlock = BasicBlock("entry")
     IRBuilder.setInsertBlock(entryBlock)
 
-    // setup for parameters
+    /** setup for parameters */
     if (func.args.isNotEmpty()) {
       for (arg in func.args) {
-        // "this" should be inserted into method's value symbol table and scope, in order to retrieve
         func.vst.insertValue(arg)
+        /**
+         * This pointer should be inserted into method's value symbol table and scope, in order to retrieve it.
+         * And there is no need to alloca and load it like other args.
+         */
         if (arg.name == "this") {
           innerScope.setValue("this", arg)
           continue
@@ -191,7 +205,7 @@ class IRVisitor : AstVisitor() {
       }
     }
 
-    // setup for the return value
+    /** setup for the return value */
     if (funcType.result != TypeFactory.getVoidType()) {
       val addrSuffixed = "retaddr"
       val allocaInst = IRBuilder.createAlloca(addrSuffixed, funcType.result)
@@ -222,15 +236,16 @@ class IRVisitor : AstVisitor() {
     scopeManger.removeLast()
   }
 
-  override fun visit(curr: LambdaDefNode) {
+  override fun visitLambdaDef(curr: LambdaDefNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visit(curr: VarDeclNode) {
+  override fun visitVarDecl(curr: VarDeclNode) {
     val innerScope = scopeManger.last()
     val type = TypeFactory.getAnyType(curr.varTypeMd!!)
 
-    if (innerScope !is GlobalScope) { // if it is a local variable
+    if (innerScope !is GlobalScope) {
+      /** if it is a local variable */
       for (assign in curr.assigns) {
         val ptrSuffixed = "${assign.first}.addr"
         val ptr = IRBuilder.createAlloca(ptrSuffixed, type)
@@ -242,7 +257,8 @@ class IRVisitor : AstVisitor() {
           IRBuilder.createStore(ConstantNull(), ptr)
         }
       }
-    } else { // if it is a global variable
+    } else {
+      /** is a global variable */
       IRBuilder.resetInsertBlock(initFunc!!.blockList.last())
       for (assign in curr.assigns) {
         val ptrSuffixed = "${assign.first}.addr"
@@ -256,7 +272,7 @@ class IRVisitor : AstVisitor() {
     }
   }
 
-  override fun visit(curr: ForSuiteNode) {
+  override fun visitForSuite(curr: ForSuiteNode) {
     val condBlock = BasicBlock("for.cond")
     val incBlock = BasicBlock("for.inc")
     val bodyBlock = BasicBlock("for.body")
@@ -292,14 +308,13 @@ class IRVisitor : AstVisitor() {
     loopManager.removeLast()
   }
 
-  override fun visit(curr: WhileSuiteNode) {
+  override fun visitWhileSuite(curr: WhileSuiteNode) {
     val condBlock = BasicBlock("while.cond")
     val bodyBlock = BasicBlock("while.body")
     val endBlock = BasicBlock("while.end")
 
     scopeManger.addLast(curr.scope)
     loopManager.addLast(condBlock, endBlock)
-
     IRBuilder.createBr(condBlock)
 
     IRBuilder.setInsertBlock(condBlock)
@@ -316,7 +331,7 @@ class IRVisitor : AstVisitor() {
     loopManager.removeLast()
   }
 
-  override fun visit(curr: CondSuiteNode) {
+  override fun visitCondSuite(curr: CondSuiteNode) {
     curr.cond.accept(this)
 
     val endBlock = BasicBlock("if.end")
@@ -345,11 +360,11 @@ class IRVisitor : AstVisitor() {
     IRBuilder.setInsertBlock(endBlock)
   }
 
-  override fun visit(curr: FieldSuiteNode) {
+  override fun visitFieldSuite(curr: FieldSuiteNode) {
     curr.block.accept(this)
   }
 
-  override fun visit(curr: JumpNode) {
+  override fun visitJump(curr: JumpNode) {
     when (curr.type) {
       "return" -> {
         if (curr.expr != null) {
@@ -369,33 +384,45 @@ class IRVisitor : AstVisitor() {
     }
   }
 
-  override fun visit(curr: ShortNode) {
+  override fun visitShort(curr: ShortNode) {
     curr.expr?.accept(this)
   }
 
-  override fun visit(curr: PriorExprNode) {
+  override fun visitPriorExpr(curr: PriorExprNode) {
     curr.expr.accept(this)
     curr.value = curr.expr.value
   }
 
-  override fun visit(curr: AtomNode) {
+  override fun visitAtom(curr: AtomNode) {
     val innerScope = scopeManger.last()
     curr.value = when (curr.id) {
-      0 -> ConstantInt(32, curr.literal.toInt()) // const int
+      /** const int */
+      0 -> ConstantInt(32, curr.literal.toInt())
+
+      /** const str */
       1 -> {
         val const = ConstantStr(curr.literal.substring(1, curr.literal.length - 1), globalVst.defineName(".str"))
         topModule.setConst(const.name!!, const)
         IRBuilder.createGEP("array", "str", const, ConstantInt(32, 0))
-      } // const str
+      }
+
+      /** identifier */
       2 -> {
         val (varName, varAddr) = getIdsNameAndItsPtr(curr)
         IRBuilder.createLoad(varName, varAddr)
       }
 
+      /** this pointer */
       3 -> innerScope.getValue("this")
-      4 -> ConstantInt(8, 1) // const bool for true
-      5 -> ConstantInt(8, 0) // const bool for false
-      else -> ConstantNull() // const null
+
+      /** const bool for true */
+      4 -> ConstantInt(8, 1)
+
+      /** const bool for false */
+      5 -> ConstantInt(8, 0)
+
+      /** const null */
+      else -> ConstantNull()
     }
   }
 
@@ -416,11 +443,12 @@ class IRVisitor : AstVisitor() {
   private fun mallocArray(currType: PointerType, arraySizeList: List<Value>): Value {
     val arraySize = arraySizeList.first()
     val containedType = currType.pointeeTy!!
+
+    /** due to the size(), an extra space is needed to store the size of the array, which is right before the array */
     val pureArrayByteNum =
       IRBuilder.createBinary(
         "mul",
         "mul",
-        TypeFactory.getIntType(32),
         arraySize,
         ConstantInt(32, containedType.getAlign())
       )
@@ -428,43 +456,45 @@ class IRVisitor : AstVisitor() {
       IRBuilder.createBinary(
         "add",
         "add",
-        TypeFactory.getIntType(32),
         pureArrayByteNum,
         ConstantInt(32, containedType.getAlign())
       )
+
     val malloc = topModule.getBuiltinFunc("_malloc")!!
     val createdSpace = IRBuilder.createCall(malloc.funcType, listOf(extendedArrayByteNum))
     val extendedArray = IRBuilder.createBitCast("bitcast", createdSpace, currType)
-    val arraySizeAddr = if (extendedArray.type == TypeFactory.getPtrType(TypeFactory.getIntType(32))) {
+    val arraySizeAddr = if (extendedArray.type == TypeFactory.getPtrType("int")) {
       extendedArray
     } else {
-      IRBuilder.createBitCast("bitcast", extendedArray, TypeFactory.getPtrType(TypeFactory.getIntType(32)))
+      IRBuilder.createBitCast("bitcast", extendedArray, TypeFactory.getPtrType("int"))
     }
     IRBuilder.createStore(arraySize, arraySizeAddr)
     val pureArray = IRBuilder.createGEP("ptr", "arrayidx", extendedArray, ConstantInt(32, 1))
 
+    /** there is no need to recurse more, because the size of arraySizeList indicates the remainder of dimension */
     if (arraySizeList.size == 1) {
       return pureArray
     }
 
+    /** the start point is the last element of array, which iterate until the addr before the first element */
     val startPoint = IRBuilder.createGEP("ptr", "arrayidx", extendedArray, arraySize)
     val previousBlock = IRBuilder.getInsertBlock()!!
     val condBlock = BasicBlock("while.cond")
     val bodyBlock = BasicBlock("while.body")
     val endBlock = BasicBlock("while.end")
 
+    /** a small optimization by using phi instruction */
     IRBuilder.createBr(condBlock)
     IRBuilder.setInsertBlock(condBlock)
     val phiInst = IRBuilder.createPhi(
       "phi",
       currType,
       mutableListOf(Pair(startPoint, previousBlock))
-    ) // the body block would be split, so no one knows which block will it comes from, maybe the next layer's while end?
+    )
 
-    val cond = IRBuilder.createCmp("cmp", "ne", phiInst.type, phiInst, extendedArray)
+    val cond = IRBuilder.createCmp("cmp", "ne", phiInst, extendedArray)
     IRBuilder.createBr(cond, bodyBlock, endBlock)
 
-    // some preparation for following recursive building
     IRBuilder.setInsertBlock(bodyBlock)
     val subArray = mallocArray(currType.pointeeTy as PointerType, arraySizeList.subList(1, arraySizeList.size))
     IRBuilder.createStore(subArray, phiInst)
@@ -482,7 +512,7 @@ class IRVisitor : AstVisitor() {
     return pureArray
   }
 
-  override fun visit(curr: InitExprNode) {
+  override fun visitInitExpr(curr: NewExprNode) {
     curr.arraySizeExprList.forEach { it?.accept(this) }
     curr.value = if (curr.arraySizeExprList.isNotEmpty()) {
       val currType = TypeFactory.getAnyType(curr.type!!) as PointerType
@@ -493,12 +523,11 @@ class IRVisitor : AstVisitor() {
     }
   }
 
-
-  override fun visit(curr: LambdaCallNode) {
+  override fun visitLambdaCall(curr: LambdaCallNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visit(curr: FuncCallNode) {
+  override fun visitFuncCall(curr: FuncCallNode) {
     val recentClass = scopeManger.getRecentClass()
     if (recentClass != null && recentClass.classScope.testFunc(curr.funcName)) {
       val callee = topModule.getFunc("${recentClass.className}.${curr.funcName}")!!
@@ -511,22 +540,24 @@ class IRVisitor : AstVisitor() {
       val callee = topModule.getFunc(curr.funcName) ?: topModule.getBuiltinFunc(curr.funcName)!!
       curr.value = IRBuilder.createCall(
         callee.funcType,
-        curr.argList.map { it.accept(this); it.value!! }) // TODO: determine its type
+        curr.argList.map { it.accept(this); it.value!! })
     }
   }
 
-  override fun visit(curr: MethodCallNode) {
+  override fun visitMethodCall(curr: MethodCallNode) {
     curr.expr.accept(this)
     curr.value = if (curr.expr.type!!.isArray()) {
+      /** for array, it has only one method called size() */
       assert(curr.method == "size")
       val arraySizeAddr = IRBuilder.createGEP("ptr", "arraysize.addr", curr.expr.value!!, ConstantInt(32, -1))
-      val finalInst = if (arraySizeAddr.type != TypeFactory.getPtrType(TypeFactory.getIntType(32))) {
-        IRBuilder.createBitCast("bitcast", arraySizeAddr, TypeFactory.getPtrType(TypeFactory.getIntType(32)))
+      val finalInst = if (arraySizeAddr.type != TypeFactory.getPtrType("int")) {
+        IRBuilder.createBitCast("bitcast", arraySizeAddr, TypeFactory.getPtrType("int"))
       } else {
         arraySizeAddr
       }
       IRBuilder.createLoad("arraysize", finalInst)
     } else {
+      /** for others, it might be custom method or builtin method */
       val callee = topModule.getFunc("${curr.expr.type!!.cl.className}.${curr.method}")
         ?: topModule.getBuiltinFunc("_${curr.expr.type!!.cl.className}_${curr.method}")!!
       IRBuilder.createCall(
@@ -535,7 +566,7 @@ class IRVisitor : AstVisitor() {
     }
   }
 
-  override fun visit(curr: MemberAccessNode) {
+  override fun visitMemberAccess(curr: MemberAccessNode) {
     curr.expr.accept(this)
     val memberName = "${curr.expr.type!!.cl.className}.${curr.member}"
     val pointerType = curr.expr.value!!.type as PointerType
@@ -549,7 +580,7 @@ class IRVisitor : AstVisitor() {
     curr.value = IRBuilder.createLoad(memberName, gepInst)
   }
 
-  override fun visit(curr: ArrayAccessNode) {
+  override fun visitArrayAccess(curr: ArrayAccessNode) {
     curr.array.accept(this)
     curr.index.accept(this)
     val ptr = IRBuilder.createGEP("ptr", "elem.addr", curr.array.value!!, curr.index.value!!)
@@ -560,10 +591,12 @@ class IRVisitor : AstVisitor() {
     val innerScope = scopeManger.last()
     val id = curr.literal
     val recentClass = scopeManger.getRecentClass()
+
+    /** Even though it's not in member access format, it could still be a member access when this happens in class's method definition. */
     if (recentClass != null && recentClass.memberToIndex.containsKey(id)) {
-      // now we could know that this is a class member
       val memberName = "${recentClass.className}.$id"
       val structType = topModule.getStruct("class.${recentClass.className}")
+
       return Pair(
         memberName,
         IRBuilder.createGEP(
@@ -573,13 +606,15 @@ class IRVisitor : AstVisitor() {
           ConstantInt(32, structType.getIndex(id))
         )
       )
-    }
-    val ptrSuffixed = "$id.addr"
-    val ptr = innerScope.getValue(ptrSuffixed)
-    return if (ptr == null) {
-      Pair(id, topModule.getGlobalVar(ptrSuffixed))
     } else {
-      Pair(id, ptr)
+      val ptrSuffixed = "$id.addr"
+      val ptr = innerScope.getValue(ptrSuffixed)
+
+      return if (ptr == null) {
+        Pair(id, topModule.getGlobalVar(ptrSuffixed))
+      } else {
+        Pair(id, ptr)
+      }
     }
   }
 
@@ -609,37 +644,35 @@ class IRVisitor : AstVisitor() {
         )
       }
 
-      else -> TODO() // I don't know that exact implementation detail of struct
+      else -> TODO("I don't know the exact implementation detail of struct")
     }
   }
 
-  override fun visit(curr: SuffixExprNode) {
+  override fun visitSuffixExpr(curr: SuffixExprNode) {
     val op = Utils.unaryOpToStr(curr.op)
     val (varName, varPtr) = getVarsNameAndItsPtr(curr.expr)
     curr.expr.value = IRBuilder.createLoad(varName, varPtr)
-    val varType = TypeFactory.getAnyType(curr.type!!)
     val binaryInst = IRBuilder.createBinary(
       op,
       if (op == "inc") "add" else "sub",
-      varType,
       curr.expr.value!!,
       ConstantInt(32, 1)
     )
     IRBuilder.createStore(binaryInst, varPtr)
+
+    /** because it's suffix, return the original one */
     curr.value = curr.expr.value
   }
 
-  override fun visit(curr: PrefixExprNode) {
+  override fun visitPrefixExpr(curr: PrefixExprNode) {
     val op = Utils.unaryOpToStr(curr.op)
     curr.value = when (curr.op) {
       "++", "--" -> {
         val (varName, varPtr) = getVarsNameAndItsPtr(curr.expr)
         curr.expr.value = IRBuilder.createLoad(varName, varPtr)
-        val varType = TypeFactory.getIntType(32)
         val binaryInst = IRBuilder.createBinary(
           op,
           if (op == "inc") "add" else "sub",
-          varType,
           curr.expr.value!!,
           ConstantInt(32, 1)
         )
@@ -657,7 +690,6 @@ class IRVisitor : AstVisitor() {
         IRBuilder.createBinary(
           op,
           "sub",
-          TypeFactory.getIntType(32),
           ConstantInt(32, 0),
           curr.expr.value!!
         )
@@ -668,36 +700,25 @@ class IRVisitor : AstVisitor() {
         IRBuilder.createBinary(
           op,
           "xor",
-          TypeFactory.getIntType(32),
           curr.expr.value!!,
           ConstantInt(32, -1)
         )
       }
 
-      else -> { // !
+      /** ! */
+      else -> {
         curr.expr.accept(this)
-        val value = if (curr.expr.value!!.type == TypeFactory.getIntType(1)) {
-          curr.expr.value!!
-        } else {
-          IRBuilder.createTrunc(
-            op,
-            curr.expr.value!!,
-            TypeFactory.getIntType(1)
-          )
-        }
         IRBuilder.createBinary(
           op,
           "xor",
-          value.type,
-          value,
+          IRBuilder.checki8Toi1(curr.expr.value!!),
           ConstantInt(1, 1)
         )
       }
     }
   }
 
-  // it gives out a value containing a temporary result of given binary operator
-  override fun visit(curr: BinaryExprNode) {
+  override fun visitBinaryExpr(curr: BinaryExprNode) {
     curr.value = when (curr.ops.first()) {
       "+" -> {
         var lhs: Value? = null
@@ -713,7 +734,7 @@ class IRVisitor : AstVisitor() {
             val func = topModule.getBuiltinFunc("_string_concat")!!
             IRBuilder.createCall(func.funcType, listOf(lhs, rhs))
           } else {
-            IRBuilder.createBinary(op, op, TypeFactory.getAnyType(curr.type!!), lhs, rhs)
+            IRBuilder.createBinary(op, op, lhs, rhs)
           }
         }
         lhs
@@ -729,12 +750,13 @@ class IRVisitor : AstVisitor() {
             continue
           }
           val op = Utils.binaryOpToStr(curr.ops[index - 1])
-          lhs = IRBuilder.createBinary(op, op, TypeFactory.getAnyType(curr.type!!), lhs, rhs)
+          lhs = IRBuilder.createBinary(op, op, lhs, rhs)
         }
         lhs
       }
 
-      else -> { // namely <, <=, >, >=, ==, !=
+      /** namely <, <=, >, >=, ==, != */
+      else -> {
         var lhs: Value? = null
         for ((index, expr) in curr.exprs.withIndex()) {
           expr.accept(this)
@@ -744,28 +766,35 @@ class IRVisitor : AstVisitor() {
             continue
           }
           val op = Utils.binaryOpToStr(curr.ops[index - 1])
-          lhs = IRBuilder.createCmp("cmp", op, lhs.type, lhs, rhs!!)
+          lhs = IRBuilder.createCmp("cmp", op, lhs, rhs!!)
         }
         lhs
       }
     }
   }
 
-  override fun visit(curr: LogicalOrExprNode) {
+  override fun visitLogicalOrExpr(curr: LogicalOrExprNode) {
     val endBlock = BasicBlock("lor.end")
     val candidates: MutableList<Pair<Value, BasicBlock>> = mutableListOf()
     val size = curr.exprs.size
     for ((index, expr) in curr.exprs.withIndex()) {
       expr.accept(this)
+
+      /**
+       * it's a short circuit operator, implemented by using phi instruction
+       * for last, it's the comparison result assigned to phi; for all except last, it's 0 assigned to phi
+       */
       candidates.add(
-        Pair(if (index == size - 1) expr.value!! else ConstantInt(8, 1), IRBuilder.getInsertBlock()!!)
+        Pair(
+          if (index == size - 1) IRBuilder.checki8Toi1(expr.value!!) else ConstantInt(8, 1),
+          IRBuilder.getInsertBlock()!!
+        )
       )
       if (index == size - 1) {
         IRBuilder.createBr(endBlock)
       } else {
         val rhsBlock = BasicBlock(if (index != size - 2) "lor.lhs.false" else "lor.rhs")
         IRBuilder.createBr(expr.value!!, endBlock, rhsBlock)
-        // TODO: create something called type?
         IRBuilder.setInsertBlock(rhsBlock)
       }
     }
@@ -773,28 +802,28 @@ class IRVisitor : AstVisitor() {
     curr.value = IRBuilder.createPhi("phi", TypeFactory.getIntType(1), candidates)
   }
 
-  override fun visit(curr: LogicalAndExprNode) {
+  override fun visitLogicalAndExpr(curr: LogicalAndExprNode) {
     val endBlock = BasicBlock("land.end")
     val candidates: MutableList<Pair<Value, BasicBlock>> = mutableListOf()
     val size = curr.exprs.size
     for ((index, expr) in curr.exprs.withIndex()) {
       expr.accept(this)
-      val value = if (index == size - 1) {
-        if (expr.value!!.type == TypeFactory.getIntType(1)) {
-          expr.value!!
-        } else {
-          IRBuilder.createTrunc("trunc", expr.value!!, TypeFactory.getIntType(1))
-        }
-      } else {
-        ConstantInt(8, 0)
-      }
-      candidates.add(Pair(value, IRBuilder.getInsertBlock()!!))
+
+      /**
+       * it's a short circuit operator, implemented by using phi instruction
+       * for last, it's the comparison result assigned to phi; for all except last, it's 1 assigned to phi
+       */
+      candidates.add(
+        Pair(
+          if (index == size - 1) IRBuilder.checki8Toi1(expr.value!!) else ConstantInt(8, 0),
+          IRBuilder.getInsertBlock()!!
+        )
+      )
       if (index == size - 1) {
         IRBuilder.createBr(endBlock)
       } else {
         val rhsBlock = BasicBlock(if (index != size - 2) "land.lhs.true" else "land.rhs")
         IRBuilder.createBr(expr.value!!, rhsBlock, endBlock)
-        // TODO: create something called type?
         IRBuilder.setInsertBlock(rhsBlock)
       }
     }
@@ -802,7 +831,7 @@ class IRVisitor : AstVisitor() {
     curr.value = IRBuilder.createPhi("phi", TypeFactory.getIntType(1), candidates)
   }
 
-  override fun visit(curr: AssignExprNode) {
+  override fun visitAssignExpr(curr: AssignExprNode) {
     val (_, ptr) = getVarsNameAndItsPtr(curr.lhs)
     curr.rhs.accept(this)
     IRBuilder.createStore(curr.rhs.value!!, ptr)

@@ -6,9 +6,18 @@ import frontend.metadata.TypeMd
 
 const val pointerNumBits = 64
 
+/**
+ * TypeFactory is the only way to create a type, and there is no other way.
+ * Type manufactured by TypeFactory is unique, as long as two types are semantically the same, they are the same object.
+ * This obeys to the LLVM rule.
+ */
 object TypeFactory {
   private val existedType: HashMap<Type, Type> = hashMapOf()
 
+  /**
+   * Key function to keep the uniqueness of types.
+   * Every type directly created by constructor of type should be passed to this function.
+   */
   private fun screen(type: Type): Type {
     if (existedType.containsKey(type)) {
       return existedType[type]!!
@@ -17,7 +26,6 @@ object TypeFactory {
     return type
   }
 
-  // generate types themselves
   fun getIntType(numOfBits: Int): IntType {
     return screen(IntType(numOfBits)) as IntType
   }
@@ -32,6 +40,10 @@ object TypeFactory {
 
   fun getPtrType(type: Type?): PointerType {
     return screen(PointerType(type)) as PointerType
+  }
+
+  fun getPtrType(classMd: ClassMd): PointerType {
+    return getPtrType(getStructType(classMd))
   }
 
   fun getVoidType(): VoidType {
@@ -67,9 +79,11 @@ object TypeFactory {
     }
   }
 
-  /// For primitive types, this function returns its exact type.
-  /// For non-primitive types, like arrays and structs, this function returns a pointer.
-  /// There is no exception control inside, make sure that all parameters are right.
+  /**
+   * For primitive types, this function returns its exact type.
+   * For non-primitive types, like arrays and structs, this function returns a pointer.
+   * There is no exception control inside, make sure that all parameters are right.
+   */
   fun getPtrType(typeMd: TypeMd): PointerType {
     return when {
       typeMd.isVoid() -> getPtrType(getVoidType()) // FIXME: ???
@@ -81,8 +95,14 @@ object TypeFactory {
     }
   }
 
-  fun getPtrType(classMd: ClassMd): PointerType {
-    return getPtrType(getStructType(classMd))
+  fun getPtrType(type: String): PointerType {
+    return when (type) {
+      "void" -> getPtrType(getVoidType())
+      "int" -> getPtrType(getIntType(32))
+      "bool" -> getPtrType(getIntType(8))
+      "string" -> getPtrType(getIntType(8))
+      else -> TODO("Not yet implemented")
+    }
   }
 
   fun getAnyType(typeMd: TypeMd): Type {
@@ -115,18 +135,6 @@ abstract class Type {
 
   fun getAlign(): Int {
     return if (getNumBits() == 1) 1 else getNumBits() / 8
-  }
-
-  fun getLevel(): Int {
-    return if (this is PointerType) {
-      if (this.pointeeTy == null) {
-        1
-      } else {
-        this.pointeeTy.getLevel() + 1
-      }
-    } else {
-      0
-    }
   }
 }
 
@@ -161,14 +169,10 @@ data class PointerType(val pointeeTy: Type?) : Type() {
   }
 }
 
-/// In Mx*, all arrays are regarded as references.
-data class ArrayType internal constructor(val containedType: Type, val numElements: Int) :
-  Type() {
-  internal constructor(typeMd: TypeMd, len: Int) : this(
-    TypeFactory.getPtrType(TypeMd(typeMd.cl, typeMd.dim - 1)),
-    len
-  )
-
+/**
+ * For now, the array type only used for string.
+ */
+data class ArrayType(val containedType: Type, val numElements: Int) : Type() {
   override fun getNumBits(): Int {
     return numElements * containedType.getNumBits()
   }
@@ -178,11 +182,13 @@ data class ArrayType internal constructor(val containedType: Type, val numElemen
   }
 }
 
-/// Basically, the definition of struct is the same as in the Kotlin.
-/// The only exception is that the reference is by index instead of by name.
-/// StructType provides a mapping from name to index, with its type clarified.
-/// This is basically a part of class, because it only contains members.
-/// As for methods, it should be obtained in other ways. The AST will handle this.
+/**
+ * Basically, the definition of struct is the same as in the Kotlin.
+ * The only exception is that the reference is by index instead of by name.
+ * StructType provides a mapping from name to index, with its type clarified.
+ * This is basically a part of class, because it only contains members.
+ * As for methods, it should be obtained in other ways. The AST will handle this.
+ */
 class StructType(val structName: String) : Type() {
   val symbolList: MutableList<Pair<String, Type>> = mutableListOf()
   private var numOfBits = 0
@@ -239,13 +245,13 @@ class StructType(val structName: String) : Type() {
 data class FuncType(val funcName: String, val params: List<Type>, val result: Type) : Type() {
   constructor(funcMd: FuncMd) : this(
     funcMd.funcName,
-    funcMd.paramInput.map { TypeFactory.getAnyType(it.second) },
+    funcMd.argList.map { TypeFactory.getAnyType(it.second) },
     TypeFactory.getAnyType(funcMd.returnType!!)
   )
 
   constructor(funcMd: FuncMd, classMd: ClassMd) : this(
     "${classMd.className}.${funcMd.funcName}",
-    listOf(TypeFactory.getPtrType(classMd)) + funcMd.paramInput.map { TypeFactory.getAnyType(it.second) },
+    listOf(TypeFactory.getPtrType(classMd)) + funcMd.argList.map { TypeFactory.getAnyType(it.second) },
     TypeFactory.getAnyType(funcMd.returnType!!)
   )
 

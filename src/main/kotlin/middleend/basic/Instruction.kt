@@ -36,8 +36,8 @@ open class Instruction(type: Type, name: String? = null) : User(type, name) {
   }
 }
 
-class BinaryInst(name: String, val op: String, type: Type, val lhs: Value, val rhs: Value) :
-  Instruction(type, name) {
+class BinaryInst(name: String, val op: String, val lhs: Value, val rhs: Value) :
+  Instruction(lhs.type, name) {
   override fun toString(): String {
     return "%$name = $op $type ${lhs.toOperand()}, ${rhs.toOperand()}"
   }
@@ -49,7 +49,7 @@ class AllocaInst(name: String, val varType: Type) : Instruction(TypeFactory.getP
   }
 }
 
-class LoadInst(name: String, type: Type, val addr: Value) : Instruction(type, name) {
+class LoadInst(name: String, val addr: Value) : Instruction(Utils.getPointee(addr.type), name) {
   init {
     addr.addUser(this)
   }
@@ -71,14 +71,14 @@ class StoreInst(val value: Value, val addr: Value) : Instruction(TypeFactory.get
 }
 
 
-class CmpInst(name: String, val cond: Cond, val varType: Type, val lhs: Value, val rhs: Value) :
+class CmpInst(name: String, val cond: Cond, val lhs: Value, val rhs: Value) :
   Instruction(TypeFactory.getIntType(1), name) {
   enum class Cond {
     eq, ne, ugt, uge, ult, ule, sgt, sge, slt, sle,
   }
 
   override fun toString(): String {
-    return "%$name = icmp $cond $varType ${lhs.toOperand()}, ${rhs.toOperand()}"
+    return "%$name = icmp $cond ${lhs.type} ${lhs.toOperand()}, ${rhs.toOperand()}"
   }
 }
 

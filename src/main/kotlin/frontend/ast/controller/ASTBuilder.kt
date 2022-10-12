@@ -5,7 +5,7 @@ import frontend.parser.MeteorBaseVisitor
 import frontend.parser.MeteorParser
 import frontend.utils.SrcPos
 
-class AstBuilder : MeteorBaseVisitor<BaseNode>() {
+class ASTBuilder : MeteorBaseVisitor<BaseNode>() {
   override fun visitProg(ctx: MeteorParser.ProgContext?): BaseNode {
     return ProgNode(SrcPos(ctx!!), visit(ctx.progBlock()))
   }
@@ -176,12 +176,12 @@ class AstBuilder : MeteorBaseVisitor<BaseNode>() {
     return PrefixExprNode(SrcPos(ctx!!), ctx.prefixOps().text, visit(ctx.prefixExpr()) as ExprNode)
   }
 
-  override fun visitInitExpr(ctx: MeteorParser.InitExprContext?): BaseNode {
+  override fun visitNewExpr(ctx: MeteorParser.NewExprContext?): BaseNode {
     val exprs: MutableList<ExprNode?> = mutableListOf()
     for (it in ctx!!.bracketedExpr()) {
       exprs.add(if (it.expr() != null) visit(it.expr()) as ExprNode else null)
     }
-    return InitExprNode(
+    return NewExprNode(
       SrcPos(ctx),
       ctx.classType().text,
       ctx.bracketedExpr().size,
