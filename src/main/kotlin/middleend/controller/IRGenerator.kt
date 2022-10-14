@@ -1,4 +1,4 @@
-package middleend.builder
+package middleend.controller
 
 import frontend.ast.controller.ASTVisitor
 import frontend.ast.node.*
@@ -11,14 +11,14 @@ import middleend.helper.LoopManager
 import middleend.helper.Utils
 import middleend.helper.ValueSymbolTable
 
-class IRVisitor : ASTVisitor() {
+class IRGenerator : ASTVisitor() {
   private val scopeManger = ScopeManager()
   private val loopManager = LoopManager()
   val topModule = TopModule()
   private var initFunc: Func? = null
   private val globalVst = ValueSymbolTable()
 
-  override fun visitProg(curr: ProgNode) {
+  override fun visit(curr: ProgNode) {
     /**
      * insert class definitions, method declarations, and function declarations first to support forward reference
      * class member isn't needed to be inserted
@@ -38,7 +38,7 @@ class IRVisitor : ASTVisitor() {
       for ((funcName, funcMd) in localScope.methods) {
         /**
          * arg's name should be reinserted into value symbol table in the following process, because it wasn't renamed
-         * @see visitFuncDef
+         * @see visit
          */
         val args = funcMd.argList.map { Value(TypeFactory.getAnyType(it.second), it.first) }.toMutableList()
         args.add(0, Value(TypeFactory.getPtrType(classMd), "this"))
@@ -93,7 +93,7 @@ class IRVisitor : ASTVisitor() {
      * set up init func
      * all global initiation should be done in init func
      * because all variables are suffixed with ".addr", there is no need to distinguish them with function or class
-     * @see visitVarDecl
+     * @see visit
      * this naming custom might be changed in the future
      */
     val initFuncName = "_global_variable_init"
@@ -119,29 +119,29 @@ class IRVisitor : ASTVisitor() {
     scopeManger.removeLast()
   }
 
-  override fun visitProgBlock(curr: ProgBlockNode) {
+  override fun visit(curr: ProgBlockNode) {
     curr.children.forEach { it.accept(this) }
   }
 
-  override fun visitFuncBlock(curr: FuncBlockNode) {
+  override fun visit(curr: FuncBlockNode) {
     curr.children.forEach { it.accept(this) }
   }
 
-  override fun visitClassBlock(curr: ClassBlockNode) {
+  override fun visit(curr: ClassBlockNode) {
     curr.children.forEach { if (it !is VarDeclNode) it.accept(this) }
   }
 
-  override fun visitSimpleBlock(curr: SimpleBlockNode) {
+  override fun visit(curr: SimpleBlockNode) {
     curr.child.accept(this)
   }
 
-  override fun visitClassDef(curr: ClassDefNode) {
+  override fun visit(curr: ClassDefNode) {
     scopeManger.addLast(curr.classMd)
     curr.classBlock?.accept(this)
     scopeManger.removeLast()
   }
 
-  override fun visitClassCtor(curr: ClassCtorNode) {
+  override fun visit(curr: ClassCtorNode) {
     scopeManger.addLast(curr.funcMd)
     val recentClass = scopeManger.getRecentClass()!!
     val funcName = "${recentClass.className}.new"
@@ -171,7 +171,7 @@ class IRVisitor : ASTVisitor() {
     scopeManger.removeLast()
   }
 
-  override fun visitFuncDef(curr: FuncDefNode) {
+  override fun visit(curr: FuncDefNode) {
     scopeManger.addLast(curr.funcMd)
     val innerScope = scopeManger.last() as FuncScope
     val recentClass = scopeManger.getRecentClass()
@@ -236,11 +236,11 @@ class IRVisitor : ASTVisitor() {
     scopeManger.removeLast()
   }
 
-  override fun visitLambdaDef(curr: LambdaDefNode) {
+  override fun visit(curr: LambdaDefNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitVarDecl(curr: VarDeclNode) {
+  override fun visit(curr: VarDeclNode) {
     val innerScope = scopeManger.last()
     val type = TypeFactory.getAnyType(curr.varTypeMd!!)
 
@@ -272,7 +272,7 @@ class IRVisitor : ASTVisitor() {
     }
   }
 
-  override fun visitForSuite(curr: ForSuiteNode) {
+  override fun visit(curr: ForSuiteNode) {
     val condBlock = BasicBlock("for.cond")
     val incBlock = BasicBlock("for.inc")
     val bodyBlock = BasicBlock("for.body")
@@ -308,7 +308,7 @@ class IRVisitor : ASTVisitor() {
     loopManager.removeLast()
   }
 
-  override fun visitWhileSuite(curr: WhileSuiteNode) {
+  override fun visit(curr: WhileSuiteNode) {
     val condBlock = BasicBlock("while.cond")
     val bodyBlock = BasicBlock("while.body")
     val endBlock = BasicBlock("while.end")
@@ -331,7 +331,7 @@ class IRVisitor : ASTVisitor() {
     loopManager.removeLast()
   }
 
-  override fun visitCondSuite(curr: CondSuiteNode) {
+  override fun visit(curr: CondSuiteNode) {
     curr.cond.accept(this)
 
     val endBlock = BasicBlock("if.end")
@@ -360,11 +360,11 @@ class IRVisitor : ASTVisitor() {
     IRBuilder.setInsertBlock(endBlock)
   }
 
-  override fun visitFieldSuite(curr: FieldSuiteNode) {
+  override fun visit(curr: FieldSuiteNode) {
     curr.block.accept(this)
   }
 
-  override fun visitJump(curr: JumpNode) {
+  override fun visit(curr: JumpNode) {
     when (curr.type) {
       "return" -> {
         if (curr.expr != null) {
@@ -384,16 +384,16 @@ class IRVisitor : ASTVisitor() {
     }
   }
 
-  override fun visitShort(curr: ShortNode) {
+  override fun visit(curr: ShortNode) {
     curr.expr?.accept(this)
   }
 
-  override fun visitPriorExpr(curr: PriorExprNode) {
+  override fun visit(curr: PriorExprNode) {
     curr.expr.accept(this)
     curr.value = curr.expr.value
   }
 
-  override fun visitAtom(curr: AtomNode) {
+  override fun visit(curr: AtomNode) {
     val innerScope = scopeManger.last()
     curr.value = when (curr.id) {
       /** const int */
@@ -512,7 +512,7 @@ class IRVisitor : ASTVisitor() {
     return pureArray
   }
 
-  override fun visitInitExpr(curr: NewExprNode) {
+  override fun visit(curr: NewExprNode) {
     curr.arraySizeExprList.forEach { it?.accept(this) }
     curr.value = if (curr.arraySizeExprList.isNotEmpty()) {
       val currType = TypeFactory.getAnyType(curr.type!!) as PointerType
@@ -523,11 +523,11 @@ class IRVisitor : ASTVisitor() {
     }
   }
 
-  override fun visitLambdaCall(curr: LambdaCallNode) {
+  override fun visit(curr: LambdaCallNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitFuncCall(curr: FuncCallNode) {
+  override fun visit(curr: FuncCallNode) {
     val recentClass = scopeManger.getRecentClass()
     if (recentClass != null && recentClass.classScope.testFunc(curr.funcName)) {
       val callee = topModule.getFunc("${recentClass.className}.${curr.funcName}")!!
@@ -544,7 +544,7 @@ class IRVisitor : ASTVisitor() {
     }
   }
 
-  override fun visitMethodCall(curr: MethodCallNode) {
+  override fun visit(curr: MethodCallNode) {
     curr.expr.accept(this)
     curr.value = if (curr.expr.type!!.isArray()) {
       /** for array, it has only one method called size() */
@@ -566,7 +566,7 @@ class IRVisitor : ASTVisitor() {
     }
   }
 
-  override fun visitMemberAccess(curr: MemberAccessNode) {
+  override fun visit(curr: MemberAccessNode) {
     curr.expr.accept(this)
     val memberName = "${curr.expr.type!!.cl.className}.${curr.member}"
     val pointerType = curr.expr.value!!.type as PointerType
@@ -580,7 +580,7 @@ class IRVisitor : ASTVisitor() {
     curr.value = IRBuilder.createLoad(memberName, gepInst)
   }
 
-  override fun visitArrayAccess(curr: ArrayAccessNode) {
+  override fun visit(curr: ArrayAccessNode) {
     curr.array.accept(this)
     curr.index.accept(this)
     val ptr = IRBuilder.createGEP("ptr", "elem.addr", curr.array.value!!, curr.index.value!!)
@@ -648,7 +648,7 @@ class IRVisitor : ASTVisitor() {
     }
   }
 
-  override fun visitSuffixExpr(curr: SuffixExprNode) {
+  override fun visit(curr: SuffixExprNode) {
     val op = Utils.unaryOpToStr(curr.op)
     val (varName, varPtr) = getVarsNameAndItsPtr(curr.expr)
     curr.expr.value = IRBuilder.createLoad(varName, varPtr)
@@ -664,7 +664,7 @@ class IRVisitor : ASTVisitor() {
     curr.value = curr.expr.value
   }
 
-  override fun visitPrefixExpr(curr: PrefixExprNode) {
+  override fun visit(curr: PrefixExprNode) {
     val op = Utils.unaryOpToStr(curr.op)
     curr.value = when (curr.op) {
       "++", "--" -> {
@@ -718,7 +718,7 @@ class IRVisitor : ASTVisitor() {
     }
   }
 
-  override fun visitBinaryExpr(curr: BinaryExprNode) {
+  override fun visit(curr: BinaryExprNode) {
     curr.value = when (curr.ops.first()) {
       "+" -> {
         var lhs: Value? = null
@@ -773,7 +773,7 @@ class IRVisitor : ASTVisitor() {
     }
   }
 
-  override fun visitLogicalOrExpr(curr: LogicalOrExprNode) {
+  override fun visit(curr: LogicalOrExprNode) {
     val endBlock = BasicBlock("lor.end")
     val candidates: MutableList<Pair<Value, BasicBlock>> = mutableListOf()
     val size = curr.exprs.size
@@ -802,7 +802,7 @@ class IRVisitor : ASTVisitor() {
     curr.value = IRBuilder.createPhi("phi", TypeFactory.getIntType(1), candidates)
   }
 
-  override fun visitLogicalAndExpr(curr: LogicalAndExprNode) {
+  override fun visit(curr: LogicalAndExprNode) {
     val endBlock = BasicBlock("land.end")
     val candidates: MutableList<Pair<Value, BasicBlock>> = mutableListOf()
     val size = curr.exprs.size
@@ -831,7 +831,7 @@ class IRVisitor : ASTVisitor() {
     curr.value = IRBuilder.createPhi("phi", TypeFactory.getIntType(1), candidates)
   }
 
-  override fun visitAssignExpr(curr: AssignExprNode) {
+  override fun visit(curr: AssignExprNode) {
     val (_, ptr) = getVarsNameAndItsPtr(curr.lhs)
     curr.rhs.accept(this)
     IRBuilder.createStore(curr.rhs.value!!, ptr)

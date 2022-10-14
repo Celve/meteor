@@ -242,7 +242,7 @@ class StructType(val structName: String) : Type() {
 }
 
 /// It would be guaranteed that the funcName is always unchanged.
-data class FuncType(val funcName: String, val params: List<Type>, val result: Type) : Type() {
+data class FuncType(val funcName: String, val argList: List<Type>, val result: Type) : Type() {
   constructor(funcMd: FuncMd) : this(
     funcMd.funcName,
     funcMd.argList.map { TypeFactory.getAnyType(it.second) },
@@ -260,7 +260,7 @@ data class FuncType(val funcName: String, val params: List<Type>, val result: Ty
   }
 
   override fun toString(): String {
-    return "(${params.joinToString(",") { it.toString() }}) -> $result"
+    return "(${argList.joinToString(",") { it.toString() }}) -> $result"
   }
 }
 

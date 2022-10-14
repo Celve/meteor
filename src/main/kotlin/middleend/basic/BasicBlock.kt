@@ -1,5 +1,7 @@
 package middleend.basic
 
+import middleend.pass.IRVisitor
+
 class BasicBlock(name: String) : Value(TypeFactory.getLabelType(name), name) {
   var parent: Func? = null
   val instList: MutableList<Instruction> = mutableListOf()
@@ -59,5 +61,9 @@ class BasicBlock(name: String) : Value(TypeFactory.getLabelType(name), name) {
 
   override fun toOperand(): String {
     return "%$name"
+  }
+
+  fun accept(visitor: IRVisitor) {
+    visitor.visit(this)
   }
 }

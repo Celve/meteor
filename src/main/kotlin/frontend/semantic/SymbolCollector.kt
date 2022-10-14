@@ -13,7 +13,7 @@ import frontend.utils.ScopeManager
 class SymbolCollector : ASTVisitor() {
   private val scopeManager = ScopeManager()
 
-  override fun visitProg(curr: ProgNode) {
+  override fun visit(curr: ProgNode) {
     scopeManager.addLast(curr.scope)
     curr.block.accept(this)
     scopeManager.removeLast()
@@ -22,7 +22,7 @@ class SymbolCollector : ASTVisitor() {
     curr.scope.getFunc("main") ?: throw SemanticException(curr.pos, "No main function")
   }
 
-  override fun visitProgBlock(curr: ProgBlockNode) {
+  override fun visit(curr: ProgBlockNode) {
     // check for redefinition and register classes and funcs
     val globalScope = scopeManager.first()
     for (it in curr.children) {
@@ -56,25 +56,25 @@ class SymbolCollector : ASTVisitor() {
     }
   }
 
-  override fun visitFuncBlock(curr: FuncBlockNode) {
+  override fun visit(curr: FuncBlockNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitClassBlock(curr: ClassBlockNode) {
+  override fun visit(curr: ClassBlockNode) {
     curr.children.forEach { it.accept(this) }
   }
 
-  override fun visitSimpleBlock(curr: SimpleBlockNode) {
+  override fun visit(curr: SimpleBlockNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitClassDef(curr: ClassDefNode) {
+  override fun visit(curr: ClassDefNode) {
     scopeManager.addLast(curr.classMd)
     curr.classBlock?.accept(this)
     scopeManager.removeLast()
   }
 
-  override fun visitClassCtor(curr: ClassCtorNode) {
+  override fun visit(curr: ClassCtorNode) {
     // omit this duplication for the time being
     val globalScope = scopeManager.first()
     val outerScope = scopeManager.last()
@@ -105,7 +105,7 @@ class SymbolCollector : ASTVisitor() {
     recentClass.hasCustomCtor = true
   }
 
-  override fun visitFuncDef(curr: FuncDefNode) {
+  override fun visit(curr: FuncDefNode) {
     // omit this duplication for the time being
     val outerScope = scopeManager.last()
     val innerScope = curr.funcMd.funcScope
@@ -141,12 +141,12 @@ class SymbolCollector : ASTVisitor() {
     outerScope.setFunc(curr.funcName, curr.funcMd)
   }
 
-  override fun visitLambdaDef(curr: LambdaDefNode) {
+  override fun visit(curr: LambdaDefNode) {
     TODO("Not yet implemented")
   }
 
   // this node would only be included in classDef
-  override fun visitVarDecl(curr: VarDeclNode) {
+  override fun visit(curr: VarDeclNode) {
     val globalScope = scopeManager.first()
     val classScope = scopeManager.last()
     val classMd = scopeManager.getRecentClass()!!
@@ -163,83 +163,83 @@ class SymbolCollector : ASTVisitor() {
     }
   }
 
-  override fun visitForSuite(curr: ForSuiteNode) {
+  override fun visit(curr: ForSuiteNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitWhileSuite(curr: WhileSuiteNode) {
+  override fun visit(curr: WhileSuiteNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitCondSuite(curr: CondSuiteNode) {
+  override fun visit(curr: CondSuiteNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitFieldSuite(curr: FieldSuiteNode) {
+  override fun visit(curr: FieldSuiteNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitJump(curr: JumpNode) {
+  override fun visit(curr: JumpNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitShort(curr: ShortNode) {
+  override fun visit(curr: ShortNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitPriorExpr(curr: PriorExprNode) {
+  override fun visit(curr: PriorExprNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitAtom(curr: AtomNode) {
+  override fun visit(curr: AtomNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitInitExpr(curr: NewExprNode) {
+  override fun visit(curr: NewExprNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitLambdaCall(curr: LambdaCallNode) {
+  override fun visit(curr: LambdaCallNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitFuncCall(curr: FuncCallNode) {
+  override fun visit(curr: FuncCallNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitMethodCall(curr: MethodCallNode) {
+  override fun visit(curr: MethodCallNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitMemberAccess(curr: MemberAccessNode) {
+  override fun visit(curr: MemberAccessNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitArrayAccess(curr: ArrayAccessNode) {
+  override fun visit(curr: ArrayAccessNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitSuffixExpr(curr: SuffixExprNode) {
+  override fun visit(curr: SuffixExprNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitPrefixExpr(curr: PrefixExprNode) {
+  override fun visit(curr: PrefixExprNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitBinaryExpr(curr: BinaryExprNode) {
+  override fun visit(curr: BinaryExprNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitLogicalAndExpr(curr: LogicalAndExprNode) {
+  override fun visit(curr: LogicalAndExprNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitLogicalOrExpr(curr: LogicalOrExprNode) {
+  override fun visit(curr: LogicalOrExprNode) {
     TODO("Not yet implemented")
   }
 
-  override fun visitAssignExpr(curr: AssignExprNode) {
+  override fun visit(curr: AssignExprNode) {
     TODO("Not yet implemented")
   }
 }

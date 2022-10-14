@@ -10,7 +10,7 @@ abstract class DefNode(pos: SrcPos) : BaseNode(pos)
 class ClassDefNode(pos: SrcPos, val className: String, val classBlock: BaseNode?) : DefNode(pos) {
   val classMd = ClassMd(className)
   override fun accept(visitor: ASTVisitor) {
-    visitor.visitClassDef(this)
+    visitor.visit(this)
   }
 }
 
@@ -22,7 +22,7 @@ class ClassCtorNode(
 ) : DefNode(pos) {
   var funcMd = FuncMd("new", listOf(), null)
   override fun accept(visitor: ASTVisitor) {
-    visitor.visitClassCtor(this)
+    visitor.visit(this)
   }
 }
 
@@ -36,7 +36,7 @@ class FuncDefNode(
   var funcMd = FuncMd(funcName, listOf(), null)
 
   override fun accept(visitor: ASTVisitor) {
-    visitor.visitFuncDef(this)
+    visitor.visit(this)
   }
 }
 
@@ -50,6 +50,6 @@ class LambdaDefNode(
   var funcMd = FuncMd("lambda", listOf(), null, isRef)
 
   override fun accept(visitor: ASTVisitor) {
-    visitor.visitLambdaDef(this)
+    visitor.visit(this)
   }
 }

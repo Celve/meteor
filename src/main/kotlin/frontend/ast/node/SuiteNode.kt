@@ -17,14 +17,14 @@ class ForSuiteNode(
   val bodyScope = LoopScope(null, "for")
   val initScope = InitScope(null)
   override fun accept(visitor: ASTVisitor) {
-    visitor.visitForSuite(this)
+    visitor.visit(this)
   }
 }
 
 class WhileSuiteNode(pos: SrcPos, val cond: ExprNode, val body: BaseNode) : SuiteNode(pos) {
   val scope = LoopScope(null, "while")
   override fun accept(visitor: ASTVisitor) {
-    visitor.visitWhileSuite(this)
+    visitor.visit(this)
   }
 }
 
@@ -32,13 +32,13 @@ class CondSuiteNode(pos: SrcPos, val cond: ExprNode, val thenDo: BaseNode, val e
   val thenScope = CondScope(null)
   val elseScope = CondScope(null)
   override fun accept(visitor: ASTVisitor) {
-    visitor.visitCondSuite(this)
+    visitor.visit(this)
   }
 }
 
 class FieldSuiteNode(pos: SrcPos, val block: BaseNode) : SuiteNode(pos) {
   val scope = FieldScope(null)
   override fun accept(visitor: ASTVisitor) {
-    visitor.visitFieldSuite(this)
+    visitor.visit(this)
   }
 }

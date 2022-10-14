@@ -10,6 +10,6 @@ class VarDeclNode(pos: SrcPos, val varTypeStr: String, val assigns: List<Pair<St
   DeclNode(pos) {
   var varTypeMd: TypeMd? = null
   override fun accept(visitor: ASTVisitor) {
-    visitor.visitVarDecl(this)
+    visitor.visit(this)
   }
 }

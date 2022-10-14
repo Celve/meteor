@@ -5,7 +5,7 @@ import frontend.parser.MeteorLexer
 import frontend.parser.MeteorParser
 import frontend.semantic.SemanticChecker
 import frontend.semantic.SymbolCollector
-import middleend.builder.IRVisitor
+import middleend.controller.IRGenerator
 import middleend.pass.Emit
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
@@ -27,13 +27,13 @@ fun main(args: Array<String>) {
   val builderRoot = astBuilder.visitProg(parserRoot) as ProgNode
 
   val symbolCollector = SymbolCollector()
-  symbolCollector.visitProg(builderRoot)
+  symbolCollector.visit(builderRoot)
 
   val semanticChecker = SemanticChecker()
-  semanticChecker.visitProg(builderRoot)
+  semanticChecker.visit(builderRoot)
 
-  val middleend = IRVisitor()
-  middleend.visitProg(builderRoot)
+  val middleend = IRGenerator()
+  middleend.visit(builderRoot)
 
   val emit = Emit(middleend.topModule)
   emit.main()

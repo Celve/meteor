@@ -4,48 +4,46 @@ import frontend.ast.node.*
 
 abstract class ASTVisitor {
   // more
-  abstract fun visitProg(curr: ProgNode)
+  abstract fun visit(curr: ProgNode)
 
   // suites
-  abstract fun visitProgBlock(curr: ProgBlockNode)
-  abstract fun visitFuncBlock(curr: FuncBlockNode)
-  abstract fun visitClassBlock(curr: ClassBlockNode)
-  abstract fun visitSimpleBlock(curr: SimpleBlockNode)
+  abstract fun visit(curr: ProgBlockNode)
+  abstract fun visit(curr: FuncBlockNode)
+  abstract fun visit(curr: ClassBlockNode)
+  abstract fun visit(curr: SimpleBlockNode)
 
   // definitions
-  abstract fun visitClassDef(curr: ClassDefNode)
-  abstract fun visitClassCtor(curr: ClassCtorNode)
-  abstract fun visitFuncDef(curr: FuncDefNode)
-  abstract fun visitLambdaDef(curr: LambdaDefNode)
+  abstract fun visit(curr: ClassDefNode)
+  abstract fun visit(curr: ClassCtorNode)
+  abstract fun visit(curr: FuncDefNode)
+  abstract fun visit(curr: LambdaDefNode)
 
   // declarations
-  abstract fun visitVarDecl(curr: VarDeclNode)
+  abstract fun visit(curr: VarDeclNode)
 
   // blocks
-  abstract fun visitForSuite(curr: ForSuiteNode)
-  abstract fun visitWhileSuite(curr: WhileSuiteNode)
-  abstract fun visitCondSuite(curr: CondSuiteNode)
-  abstract fun visitFieldSuite(curr: FieldSuiteNode)
+  abstract fun visit(curr: ForSuiteNode)
+  abstract fun visit(curr: WhileSuiteNode)
+  abstract fun visit(curr: CondSuiteNode)
+  abstract fun visit(curr: FieldSuiteNode)
 
   // jumps
-  abstract fun visitJump(curr: JumpNode)
+  abstract fun visit(curr: JumpNode)
 
   // expressions
-  abstract fun visitShort(curr: ShortNode)
-  abstract fun visitPriorExpr(curr: PriorExprNode)
-  abstract fun visitAtom(curr: AtomNode)
-  abstract fun visitInitExpr(curr: NewExprNode)
-  abstract fun visitLambdaCall(curr: LambdaCallNode)
-  abstract fun visitFuncCall(curr: FuncCallNode)
-  abstract fun visitMethodCall(curr: MethodCallNode)
-  abstract fun visitMemberAccess(curr: MemberAccessNode)
-  abstract fun visitArrayAccess(curr: ArrayAccessNode)
-  abstract fun visitSuffixExpr(curr: SuffixExprNode)
-  abstract fun visitPrefixExpr(curr: PrefixExprNode)
-  abstract fun visitBinaryExpr(curr: BinaryExprNode)
-  abstract fun visitLogicalAndExpr(curr: LogicalAndExprNode)
-  abstract fun visitLogicalOrExpr(curr: LogicalOrExprNode)
-  abstract fun visitAssignExpr(curr: AssignExprNode)
-
-
+  abstract fun visit(curr: ShortNode)
+  abstract fun visit(curr: PriorExprNode)
+  abstract fun visit(curr: AtomNode)
+  abstract fun visit(curr: NewExprNode)
+  abstract fun visit(curr: LambdaCallNode)
+  abstract fun visit(curr: FuncCallNode)
+  abstract fun visit(curr: MethodCallNode)
+  abstract fun visit(curr: MemberAccessNode)
+  abstract fun visit(curr: ArrayAccessNode)
+  abstract fun visit(curr: SuffixExprNode)
+  abstract fun visit(curr: PrefixExprNode)
+  abstract fun visit(curr: BinaryExprNode)
+  abstract fun visit(curr: LogicalAndExprNode)
+  abstract fun visit(curr: LogicalOrExprNode)
+  abstract fun visit(curr: AssignExprNode)
 }

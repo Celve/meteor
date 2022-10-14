@@ -1,4 +1,4 @@
-package middleend.builder
+package middleend.controller
 
 import middleend.basic.*
 import middleend.helper.ValueSymbolTable
@@ -78,7 +78,7 @@ object IRBuilder {
 
   fun checki8Toi1(value: Value): Value {
     return if (value.type != TypeFactory.getIntType(1)) {
-      createTrunc("trunc", value, TypeFactory.getIntType(1))
+      createTrunc("tobool", value, TypeFactory.getIntType(1))
     } else {
       value
     }
@@ -86,7 +86,7 @@ object IRBuilder {
 
   fun checki1Toi8(value: Value): Value {
     return if (value.type == TypeFactory.getIntType(1)) {
-      createZExt("zext", value, TypeFactory.getIntType(8))
+      createZExt("frombool", value, TypeFactory.getIntType(8))
     } else {
       value
     }

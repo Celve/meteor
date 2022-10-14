@@ -10,38 +10,38 @@ import frontend.utils.ScopeManager
 
 class SemanticChecker : ASTVisitor() {
   private val scopeManager = ScopeManager()
-  override fun visitProg(curr: ProgNode) {
+  override fun visit(curr: ProgNode) {
     scopeManager.addLast(curr.scope)
     curr.block.accept(this)
   }
 
-  override fun visitProgBlock(curr: ProgBlockNode) {
+  override fun visit(curr: ProgBlockNode) {
     curr.children.forEach { it.accept(this) }
   }
 
-  override fun visitFuncBlock(curr: FuncBlockNode) {
+  override fun visit(curr: FuncBlockNode) {
     curr.children.forEach { it.accept(this) }
   }
 
-  override fun visitClassBlock(curr: ClassBlockNode) {
+  override fun visit(curr: ClassBlockNode) {
     curr.children.forEach { it.accept(this) }
   }
 
-  override fun visitSimpleBlock(curr: SimpleBlockNode) {
+  override fun visit(curr: SimpleBlockNode) {
     curr.child.accept(this)
   }
 
   // the definition of class should be in global scope
   // the antlr guarantees it, so here is not check
   // the member and method should be put only inside the local space
-  override fun visitClassDef(curr: ClassDefNode) {
+  override fun visit(curr: ClassDefNode) {
 //    scope.setClass(curr.className, curr.classMd)
     scopeManager.addLast(curr.classMd)
     curr.classBlock?.accept(this)
     scopeManager.removeLast()
   }
 
-  override fun visitClassCtor(curr: ClassCtorNode) {
+  override fun visit(curr: ClassCtorNode) {
     scopeManager.addLast(curr.funcMd)
     curr.funcBlock?.accept(this)
     scopeManager.removeLast()
@@ -49,13 +49,13 @@ class SemanticChecker : ASTVisitor() {
 
   // definition of function should be in global scope
   // antlr guarantees it, so here is no check
-  override fun visitFuncDef(curr: FuncDefNode) {
+  override fun visit(curr: FuncDefNode) {
     scopeManager.addLast(curr.funcMd)
     curr.funcBlock?.accept(this)
     scopeManager.removeLast()
   }
 
-  override fun visitLambdaDef(curr: LambdaDefNode) {
+  override fun visit(curr: LambdaDefNode) {
     // omit this duplication for the time being
     val innerScope = curr.funcMd.funcScope
     val globalScope = scopeManager.first()
@@ -78,7 +78,7 @@ class SemanticChecker : ASTVisitor() {
     }
   }
 
-  override fun visitVarDecl(curr: VarDeclNode) {
+  override fun visit(curr: VarDeclNode) {
     val globalScope = scopeManager.first()
     val innerScope = scopeManager.last()
 
@@ -107,7 +107,7 @@ class SemanticChecker : ASTVisitor() {
     }
   }
 
-  override fun visitForSuite(curr: ForSuiteNode) {
+  override fun visit(curr: ForSuiteNode) {
     scopeManager.addLast(curr.initScope)
     curr.init?.accept(this)
     if (curr.cond != null) {
@@ -126,7 +126,7 @@ class SemanticChecker : ASTVisitor() {
     scopeManager.removeLast()
   }
 
-  override fun visitWhileSuite(curr: WhileSuiteNode) {
+  override fun visit(curr: WhileSuiteNode) {
     // omit this duplication
     curr.cond.accept(this)
     if (!curr.cond.type!!.isBool()) {
@@ -137,7 +137,7 @@ class SemanticChecker : ASTVisitor() {
     scopeManager.removeLast()
   }
 
-  override fun visitCondSuite(curr: CondSuiteNode) {
+  override fun visit(curr: CondSuiteNode) {
     // omit this duplication
     curr.cond.accept(this)
     if (!curr.cond.type!!.isBool()) {
@@ -153,13 +153,13 @@ class SemanticChecker : ASTVisitor() {
     }
   }
 
-  override fun visitFieldSuite(curr: FieldSuiteNode) {
+  override fun visit(curr: FieldSuiteNode) {
     scopeManager.addLast(curr.scope)
     curr.block.accept(this)
     scopeManager.removeLast()
   }
 
-  override fun visitJump(curr: JumpNode) {
+  override fun visit(curr: JumpNode) {
     when (curr.type) {
       "return" -> {
         val recentFunc = scopeManager.getRecentFunc() ?: throw SemanticException(
@@ -192,17 +192,17 @@ class SemanticChecker : ASTVisitor() {
     }
   }
 
-  override fun visitShort(curr: ShortNode) {
+  override fun visit(curr: ShortNode) {
     curr.expr?.accept(this)
   }
 
-  override fun visitPriorExpr(curr: PriorExprNode) {
+  override fun visit(curr: PriorExprNode) {
     curr.expr.accept(this)
     curr.type = curr.expr.type
     curr.assignable = curr.expr.assignable
   }
 
-  override fun visitAtom(curr: AtomNode) {
+  override fun visit(curr: AtomNode) {
     val scope = scopeManager.last()
     when (curr.id) {
       0 -> curr.type = scope.getVarType("int")!!
@@ -240,7 +240,7 @@ class SemanticChecker : ASTVisitor() {
     curr.type = func.returnType
   }
 
-  override fun visitInitExpr(curr: NewExprNode) {
+  override fun visit(curr: NewExprNode) {
     val globalScope = scopeManager.first()
     val type =
       globalScope.getClass(curr.typeDef) ?: throw SemanticException(curr.pos, "Type ${curr.typeDef} not found")
@@ -261,20 +261,20 @@ class SemanticChecker : ASTVisitor() {
     curr.type = TypeMd(type, curr.dim)
   }
 
-  override fun visitLambdaCall(curr: LambdaCallNode) {
+  override fun visit(curr: LambdaCallNode) {
     curr.params.forEach { it.accept(this) }
     curr.lambdaDef.accept(this)
     val func = curr.lambdaDef.funcMd
     checkParamsForFunc(curr, func, curr.params)
   }
 
-  override fun visitFuncCall(curr: FuncCallNode) {
+  override fun visit(curr: FuncCallNode) {
     curr.argList.forEach { it.accept(this) }
     val method = scopeManager.last().getFunc(curr.funcName) ?: throw SemanticException(curr.pos, "No such function")
     checkParamsForFunc(curr, method, curr.argList)
   }
 
-  override fun visitMethodCall(curr: MethodCallNode) {
+  override fun visit(curr: MethodCallNode) {
     curr.expr.accept(this)
     curr.argList.forEach { it.accept(this) }
 
@@ -293,7 +293,7 @@ class SemanticChecker : ASTVisitor() {
     checkParamsForFunc(curr, method, curr.argList)
   }
 
-  override fun visitMemberAccess(curr: MemberAccessNode) {
+  override fun visit(curr: MemberAccessNode) {
     curr.expr.accept(this)
     curr.type = curr.expr.type!!.cl.classScope.getVar(curr.member) ?: throw SemanticException(
       curr.pos,
@@ -301,7 +301,7 @@ class SemanticChecker : ASTVisitor() {
     )
   }
 
-  override fun visitArrayAccess(curr: ArrayAccessNode) {
+  override fun visit(curr: ArrayAccessNode) {
     curr.array.accept(this)
     curr.index.accept(this)
     val arrayType = curr.array.type!!
@@ -312,7 +312,7 @@ class SemanticChecker : ASTVisitor() {
     curr.type = TypeMd(arrayType.cl, arrayType.dim - 1)
   }
 
-  override fun visitSuffixExpr(curr: SuffixExprNode) {
+  override fun visit(curr: SuffixExprNode) {
     curr.expr.accept(this)
     if (!curr.expr.assignable) {
       throw SemanticException(curr.pos, "Expression is not assignable")
@@ -324,7 +324,7 @@ class SemanticChecker : ASTVisitor() {
     curr.type = src
   }
 
-  override fun visitPrefixExpr(curr: PrefixExprNode) {
+  override fun visit(curr: PrefixExprNode) {
     curr.expr.accept(this)
     val src = curr.expr.type!!
     when (curr.op) {
@@ -353,7 +353,7 @@ class SemanticChecker : ASTVisitor() {
     curr.type = src
   }
 
-  override fun visitBinaryExpr(curr: BinaryExprNode) {
+  override fun visit(curr: BinaryExprNode) {
     curr.exprs.forEach { it.accept(this) }
     var lhs: TypeMd? = null
     for (index in curr.exprs.indices) {
@@ -410,7 +410,7 @@ class SemanticChecker : ASTVisitor() {
     curr.type = lhs
   }
 
-  override fun visitLogicalAndExpr(curr: LogicalAndExprNode) {
+  override fun visit(curr: LogicalAndExprNode) {
     curr.exprs.forEach { it.accept(this) }
     var lhs: TypeMd? = null
     for (index in curr.exprs.indices) {
@@ -426,7 +426,7 @@ class SemanticChecker : ASTVisitor() {
     curr.type = lhs
   }
 
-  override fun visitLogicalOrExpr(curr: LogicalOrExprNode) {
+  override fun visit(curr: LogicalOrExprNode) {
     curr.exprs.forEach { it.accept(this) }
     var lhs: TypeMd? = null
     for (index in curr.exprs.indices) {
@@ -442,7 +442,7 @@ class SemanticChecker : ASTVisitor() {
     curr.type = lhs
   }
 
-  override fun visitAssignExpr(curr: AssignExprNode) {
+  override fun visit(curr: AssignExprNode) {
     curr.lhs.accept(this)
     curr.rhs.accept(this)
     val lhs = curr.lhs
