@@ -1,3 +1,5 @@
+import backend.controller.ASMGenerator
+import backend.pass.ASMEmit
 import frontend.ast.controller.ASTBuilder
 import frontend.ast.controller.AntlrErrorListener
 import frontend.ast.node.ProgNode
@@ -37,4 +39,9 @@ fun main(args: Array<String>) {
 
   val emit = Emit(middleend.topModule)
   emit.main()
+  val backend = ASMGenerator()
+  backend.visit(middleend.topModule)
+
+  val asmEmit = ASMEmit()
+  asmEmit.visit(backend.module!!)
 }

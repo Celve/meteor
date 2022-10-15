@@ -44,7 +44,8 @@ object IRBuilder {
   fun setReturnBlock(newBlock: BasicBlock) {
     vst.insertValue(newBlock)
     block = newBlock
-    func!!.returnBlock = newBlock
+    func!!.returnBlock = newBlock // TODO: optimize this process, which should be encapsulated in a function
+    newBlock.parent = func
   }
 
   fun getInsertBlock(): BasicBlock? {
@@ -67,12 +68,12 @@ object IRBuilder {
     point = block!!.instList[inst.getIndexAtBlock() + 1]
   }
 
-  private fun addInstAtPoint(inst: Instruction) {
+  private fun insertInstBeforeInsertPoint(inst: Instruction) {
     if (point == null) {
       inst.insertAtTheTailOf(block!!)
     } else {
       val index = point!!.getIndexAtBlock()
-      inst.insertAtIndex(block!!, index)
+      inst.insertAtIndexOf(block!!, index)
     }
   }
 
@@ -95,14 +96,14 @@ object IRBuilder {
   fun createAlloca(result: String, type: Type): Value {
     val allocaInst = AllocaInst(vst.defineName(result), type)
     val allocaBlock = func!!.blockList.first()
-    allocaInst.insertAtIndex(allocaBlock, allocaBlock.getLastAllocaInstIndex() + 1)
+    allocaInst.insertAtIndexOf(allocaBlock, allocaBlock.getLastAllocaInstIndex() + 1)
     vst.reinsertValue(allocaInst)
     return allocaInst
   }
 
   fun createLoad(result: String, ptr: Value): Value {
     val loadInst = LoadInst(vst.defineName(result), ptr)
-    addInstAtPoint(loadInst)
+    insertInstBeforeInsertPoint(loadInst)
     vst.reinsertValue(loadInst)
 
     loadInst.addUsee(ptr)
@@ -112,7 +113,7 @@ object IRBuilder {
 
   fun createBinary(result: String, op: String, lhs: Value, rhs: Value): Value {
     val binaryInst = BinaryInst(vst.defineName(result), op, lhs, rhs)
-    addInstAtPoint(binaryInst)
+    insertInstBeforeInsertPoint(binaryInst)
     vst.reinsertValue(binaryInst)
 
     binaryInst.addUsee(lhs)
@@ -123,7 +124,7 @@ object IRBuilder {
 
   fun createStore(value: Value, ptr: Value): Value {
     val storeInst = StoreInst(checki1Toi8(value), ptr)
-    addInstAtPoint(storeInst)
+    insertInstBeforeInsertPoint(storeInst)
 
     storeInst.addUsee(value)
     storeInst.addUsee(ptr)
@@ -133,7 +134,7 @@ object IRBuilder {
 
   fun createCmp(result: String, cond: String, lhs: Value, rhs: Value): CmpInst {
     val cmpInst = CmpInst(vst.defineName(result), CmpInst.Cond.valueOf(cond), lhs, rhs)
-    addInstAtPoint(cmpInst)
+    insertInstBeforeInsertPoint(cmpInst)
     vst.reinsertValue(cmpInst)
 
     cmpInst.addUsee(lhs)
@@ -144,7 +145,7 @@ object IRBuilder {
 
   fun createTrunc(result: String, originalVal: Value, toTy: Type): TruncInst {
     val truncInst = TruncInst(vst.defineName(result), originalVal, toTy)
-    addInstAtPoint(truncInst)
+    insertInstBeforeInsertPoint(truncInst)
     vst.reinsertValue(truncInst)
 
     truncInst.addUsee(originalVal)
@@ -154,20 +155,20 @@ object IRBuilder {
 
   fun createRetVoid(): ReturnInst {
     val retInst = ReturnInst(TypeFactory.getVoidType(), null)
-    addInstAtPoint(retInst)
+    insertInstBeforeInsertPoint(retInst)
     return retInst
   }
 
   fun createRet(value: Value): ReturnInst {
     val retInst = ReturnInst(value.type, value)
-    addInstAtPoint(retInst)
+    insertInstBeforeInsertPoint(retInst)
     retInst.addUsee(value)
     return retInst
   }
 
   fun createBr(trueBlock: BasicBlock): BranchInst {
     val brInst = BranchInst(null, trueBlock, null)
-    addInstAtPoint(brInst)
+    insertInstBeforeInsertPoint(brInst)
     return brInst
   }
 
@@ -179,14 +180,14 @@ object IRBuilder {
       vst.reinsertValue(tempInst)
       tempInst
     }
-    addInstAtPoint(callInst)
+    insertInstBeforeInsertPoint(callInst)
     args.forEach { it.addUser(callInst) }
     return callInst
   }
 
   fun createGEP(op: String, name: String, value: Value, index: Value): GetElementPtrInst {
     val gepInst = GetElementPtrInst(op, vst.defineName(name), value, index)
-    addInstAtPoint(gepInst)
+    insertInstBeforeInsertPoint(gepInst)
     vst.reinsertValue(gepInst)
 
     gepInst.addUsee(value)
@@ -197,7 +198,7 @@ object IRBuilder {
   fun createBr(cond: Value, trueBlock: BasicBlock, falseBlock: BasicBlock): BranchInst {
     val brInst = BranchInst(checki8Toi1(cond), trueBlock, falseBlock)
 //    brInst.insertAtTheTailOf(block!!)
-    addInstAtPoint(brInst)
+    insertInstBeforeInsertPoint(brInst)
 
     brInst.addUsee(cond)
     brInst.addUsee(trueBlock)
@@ -209,7 +210,7 @@ object IRBuilder {
   fun createPhi(name: String, type: Type, candidates: MutableList<Pair<Value, BasicBlock>>): PhiInst {
     val phiInst = PhiInst(vst.defineName(name), type, candidates)
 //    phiInst.insertAtTheTailOf(block!!)
-    addInstAtPoint(phiInst)
+    insertInstBeforeInsertPoint(phiInst)
     vst.reinsertValue(phiInst)
 
     candidates.forEach { phiInst.addUsee(it.first) }
@@ -221,7 +222,7 @@ object IRBuilder {
   fun createBitCast(name: String, castee: Value, toTy: Type): BitCastInst {
     val bitCallInst = BitCastInst(vst.defineName(name), castee, toTy)
 //    bitCallInst.insertAtTheTailOf(block!!)
-    addInstAtPoint(bitCallInst)
+    insertInstBeforeInsertPoint(bitCallInst)
     vst.reinsertValue(bitCallInst)
 
     bitCallInst.addUsee(castee)
@@ -231,7 +232,7 @@ object IRBuilder {
 
   fun createZExt(name: String, castee: Value, toTy: Type): ZExtInst {
     val zextInst = ZExtInst(vst.defineName(name), castee, toTy)
-    addInstAtPoint(zextInst)
+    insertInstBeforeInsertPoint(zextInst)
     vst.reinsertValue(zextInst)
 
     zextInst.addUsee(castee)

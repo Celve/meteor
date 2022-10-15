@@ -1,3 +1,3 @@
 package backend.basic
 
-class Operand
+abstract class ASMValue

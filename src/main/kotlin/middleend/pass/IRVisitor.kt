@@ -2,7 +2,8 @@ package middleend.pass
 
 import middleend.basic.*
 
-abstract class IRVisitor(val topModule: TopModule) {
+abstract class IRVisitor {
+  abstract fun visit(topModule: TopModule)
   abstract fun visit(func: Func)
   abstract fun visit(block: BasicBlock)
   abstract fun visit(inst: AllocaInst)

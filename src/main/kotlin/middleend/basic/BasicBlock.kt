@@ -40,17 +40,17 @@ class BasicBlock(name: String) : Value(TypeFactory.getLabelType(name), name) {
   }
 
   fun insertAtTheTailOf(func: Func) {
-    func.addBasicBlock(func.blockList.size, this)
+    func.addBasicBlockAtIndex(func.blockList.size, this)
     parent = func
   }
 
   fun insertAtTheHeadOf(func: Func) {
-    func.addBasicBlock(0, this)
+    func.addBasicBlockAtIndex(0, this)
     parent = func
   }
 
   fun insertAtIndex(func: Func, index: Int) {
-    func.addBasicBlock(index, this)
+    func.addBasicBlockAtIndex(index, this)
     parent = func
   }
 

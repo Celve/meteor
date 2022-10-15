@@ -1,5 +1,7 @@
 package backend.controller
 
+import backend.basic.ASMModule
+import backend.basic.Imm
 import backend.basic.PhyReg
 import middleend.basic.*
 import middleend.pass.IRVisitor
@@ -25,29 +27,40 @@ import middleend.pass.IRVisitor
  *      jal
  */
 
-class ASMGenerator(topModule: TopModule) : IRVisitor(topModule) {
-
+class ASMGenerator : IRVisitor() {
+  var module: ASMModule? = null
+  override fun visit(topModule: TopModule) {
+    module = ASMModule(topModule)
+    topModule.func.forEach { it.value.accept(this) }
+  }
 
   override fun visit(func: Func) {
-    ASMBuilder.setCurrentFunc(func)
+    val asmFunc = module!!.getFunc(func.name!!)!!
+    ASMBuilder.setCurrentFunc(asmFunc)
     func.blockList.forEach { it.accept(this) }
+    ASMBuilder.setInsertPointBefore(asmFunc.blockList.first().instList.first())
+    ASMBuilder.pushSp()
+    ASMBuilder.setInsertBlock(asmFunc.blockList.last())
+    ASMBuilder.popSp()
+    ASMBuilder.ret()
   }
 
   override fun visit(block: BasicBlock) {
-    ASMBuilder.setCurrentBlock(block)
+    val func = ASMBuilder.getCurrentFunc()
+    ASMBuilder.setInsertBlock(func.getBlock(block.name!!)!!)
     block.instList.forEach { it.accept(this) }
   }
 
   override fun visit(inst: AllocaInst) {
-    ASMBuilder.alloca(inst.getAllocatedSize())
+    ASMBuilder.alloca(inst.getAllocatedSize(), inst)
   }
 
   override fun visit(inst: CallInst) {
     // there is not a concept of caller save in virtual register
     for ((index, arg) in inst.args.withIndex()) { // TODO: I don't know what to do when too many args
-      ASMBuilder.mvVal2Reg(arg, PhyReg(index))
+      ASMBuilder.mvVal2OldReg(arg, PhyReg(index))
     }
-    ASMBuilder.call(inst.funcType.funcName)
+    ASMBuilder.call(module!!.getFunc(inst.funcType.funcName)!!)
   }
 
   override fun visit(inst: LoadInst) {
@@ -68,14 +81,11 @@ class ASMGenerator(topModule: TopModule) : IRVisitor(topModule) {
 
   override fun visit(inst: BranchInst) {
     if (inst.cond == null) { // unconditional br
-//      ASMBuilder.j2Label(inst.trueBlock) TODO: determine the argument
+      ASMBuilder.j2Label(inst.trueBlock) // TODO: determine the argument
     } else { // conditional br
-      if (inst.cond is Instruction) {
-        inst.accept(this)
-      }
-
-//      ASMBuilder.bnez2Label(inst.cond, inst.trueBlock) TODO: determine the second argument
-//      ASMBuilder.beqz2Label(inst.cond, inst.falseBlock) TODO: determine the second argument
+      val func = ASMBuilder.getCurrentFunc()
+      ASMBuilder.brz2Label("bnez", inst.cond, inst.trueBlock) // TODO: determine the second argument
+      ASMBuilder.brz2Label("beqz", inst.cond, inst.falseBlock!!) // TODO: determine the second argument
     }
   }
 
@@ -92,7 +102,7 @@ class ASMGenerator(topModule: TopModule) : IRVisitor(topModule) {
   }
 
   override fun visit(inst: StoreInst) {
-    ASMBuilder.store(inst.value, inst.addr)
+    ASMBuilder.store(inst.value, inst.addr, 0)
   }
 
   override fun visit(inst: CmpInst) {
@@ -102,13 +112,15 @@ class ASMGenerator(topModule: TopModule) : IRVisitor(topModule) {
     if (inst.rhs is Instruction) {
       inst.rhs.accept(this)
     }
-//    ASMBuilder.cmp2NewReg(inst.op, inst.lhs, inst.rhs, inst)
+    ASMBuilder.cmp2NewReg(inst.cond.toString(), inst.lhs, inst.rhs, inst)
   }
 
   override fun visit(inst: ReturnInst) {
     if (inst.retVal != null) {
-      ASMBuilder.mvVal2Reg(inst.retVal, PhyReg(10))
+      ASMBuilder.mvVal2OldReg(inst.retVal, PhyReg(10))
     }
+    val stackAlloca = ASMBuilder.stackAlloca
+    ASMBuilder.arith2OldReg("addi", PhyReg("sp"), Imm(stackAlloca), PhyReg("sp"))
     ASMBuilder.ret()
   }
 }

@@ -22,7 +22,7 @@ abstract class Instruction(type: Type, name: String? = null) : User(type, name) 
     parent = block
   }
 
-  fun insertAtIndex(block: BasicBlock, index: Int) {
+  fun insertAtIndexOf(block: BasicBlock, index: Int) {
     block.addInst(index, this)
     parent = block
   }
@@ -170,7 +170,7 @@ class CallInst(name: String?, val funcType: FuncType, val args: List<Value>) :
 //<result> = getelementptr inbounds [<#elements> x <type>], [<#elements> x <type>]* <variable>, i32 0, i32 <index>
 class GetElementPtrInst(val op: String, name: String, val value: Value, val index: Value) : Instruction(
   when (op) {
-    "struct" -> TypeFactory.getPtrType((Utils.getPointee(value.type) as StructType).symbolList[(index as ConstantInt).intValue].second)
+    "struct" -> TypeFactory.getPtrType((Utils.getPointee(value.type) as StructType).symbolList[(index as ConstantInt).value].second)
     "array" -> TypeFactory.getPtrType((Utils.getPointee(value.type) as ArrayType).containedType)
     "ptr" -> value.type
     else -> throw Exception("the operation is forbidden")
