@@ -188,12 +188,12 @@ class GetElementPtrInst(val op: String, name: String, val value: Value, val inde
 }
 
 /**
- * @param candidates: it might come from latter blocks, therefore it's allowed to be modified later
+ * @param preds: it might come from latter blocks, therefore it's allowed to be modified later
  */
-class PhiInst(name: String, type: Type, val candidates: MutableList<Pair<Value, BasicBlock>>) :
+class PhiInst(name: String, type: Type, val preds: MutableList<Pair<Value, BasicBlock>>) :
   Instruction(type, name) {
   override fun toString(): String {
-    return "%$name = phi $type ".plus(candidates.joinToString(", ") { "[ ${it.first.toOperand()}, ${it.second.toOperand()} ]" })
+    return "%$name = phi $type ".plus(preds.joinToString(", ") { "[ ${it.first.toOperand()}, ${it.second.toOperand()} ]" })
   }
 
   override fun accept(irVisitor: IRVisitor) {

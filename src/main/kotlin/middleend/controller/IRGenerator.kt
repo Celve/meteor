@@ -505,7 +505,7 @@ class IRGenerator : ASTVisitor() {
       phiInst,
       ConstantInt(32, -1)
     )
-    phiInst.candidates.add(Pair(nextElement, bodyBlock))
+    phiInst.preds.add(Pair(nextElement, bodyBlock))
     IRBuilder.createBr(condBlock)
 
     IRBuilder.setInsertBlock(endBlock)

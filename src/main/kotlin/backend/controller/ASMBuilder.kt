@@ -14,15 +14,16 @@ object ASMBuilder {
   private var reg2Value = hashMapOf<Register, Value>() // this mapping is only for virtual register
   var virRegId = 0
 
-  private fun newVirReg(value: Value? = null): VirReg {
+  fun newVirReg(value: Value? = null): VirReg {
     val virReg = VirReg(virRegId++)
     if (value != null) {
+      println("newVirReg: $value -> $virReg")
       linkValAndReg(value, virReg)
     }
     return virReg
   }
 
-  private fun linkValAndReg(value: Value, reg: Register) {
+  fun linkValAndReg(value: Value, reg: Register) {
     value2Reg[value] = reg
     reg2Value[reg] = value
   }
@@ -134,7 +135,24 @@ object ASMBuilder {
 
   fun cmp2NewReg(op: String, lhs: Value, rhs: Value, dst: Value) {
     val virReg = newVirReg(dst)
-    val cmpInst = ASMCmpInst(op, value2Reg[lhs]!!, value2Reg[rhs]!!, virReg)
+    println("cmp2NewReg: $lhs $op $rhs -> $virReg")
+    val lhsReg = if (lhs is ConstantInt) {
+      val anotherVirReg = newVirReg()
+      val liInst = ASMLiInst(anotherVirReg, Imm(lhs.value))
+      insertInstBeforeInsertPoint(liInst)
+      anotherVirReg
+    } else {
+      value2Reg[lhs]!!
+    }
+    val rhsReg = if (rhs is ConstantInt) {
+      val anotherVirReg = newVirReg()
+      val liInst = ASMLiInst(anotherVirReg, Imm(rhs.value))
+      insertInstBeforeInsertPoint(liInst)
+      anotherVirReg
+    } else {
+      value2Reg[rhs]!!
+    }
+    val cmpInst = ASMCmpInst(op, lhsReg, rhsReg, virReg)
     insertInstBeforeInsertPoint(cmpInst)
   }
 

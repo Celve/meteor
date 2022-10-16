@@ -72,7 +72,17 @@ class ASMGenerator : IRVisitor() {
   }
 
   override fun visit(inst: PhiInst) {
-    TODO("Not yet implemented")
+    val func = ASMBuilder.getCurrentFunc()
+    val block = ASMBuilder.getInsertBlock()
+    val reg = ASMBuilder.newVirReg(inst)
+    for (pred in inst.preds) {
+      val predBlock = func.getBlock(pred.second.name!!)!!
+      ASMBuilder.setInsertBlock(predBlock)
+      ASMBuilder.mvVal2OldReg(pred.first, reg)
+    }
+    ASMBuilder.linkValAndReg(inst, reg)
+    ASMBuilder.setInsertBlock(block)
+    ASMBuilder.mvReg2NewReg(reg)
   }
 
   override fun visit(inst: BinaryInst) {
