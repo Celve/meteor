@@ -100,7 +100,7 @@ class ASMGenerator : IRVisitor() {
   }
 
   override fun visit(inst: GetElementPtrInst) {
-    TODO("Not yet implemented")
+    ASMBuilder.fetch2NewReg(inst)
   }
 
   override fun visit(inst: ZExtInst) {

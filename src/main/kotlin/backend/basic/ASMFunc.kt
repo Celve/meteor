@@ -9,6 +9,7 @@ class ASMFunc(func: Func) : Label(func.name!!) {
   val reg2Value = hashMapOf<Register, Value>()
   val blockList =
     func.blockList.map { ASMBlock(it) } + (if (func.returnBlock == null) listOf() else listOf(ASMBlock(func.returnBlock!!)))
+  var usedVirRegNum = 0
 
   init {
     blockList.forEach { it.parent = this }
