@@ -25,6 +25,21 @@ abstract class ASMInst {
     parent = newParent
   }
 
+  fun insertedBefore(other: ASMInst) {
+    val index = other.getIndexAtBlock()
+    insertAtIndexOf(other.parent!!, index)
+  }
+
+  fun insertedAfter(other: ASMInst) {
+    val index = other.getIndexAtBlock()
+    insertAtIndexOf(other.parent!!, index + 1)
+  }
+
+  fun unlink() {
+    parent!!.instList.remove(this)
+    parent = null
+  }
+
   fun getIndexAtBlock(): Int {
     for ((index, inst) in parent!!.instList.withIndex()) {
       if (inst === this) {
@@ -43,25 +58,25 @@ class ASMLoadInst(val byteNum: Int, val rs: Register, val rd: Register, val imm:
   }
 }
 
-class ASMStoreInst(val byteNum: Int, val rs: Register, val rd: Register, val imm: Imm) : ASMInst() {
+class ASMStoreInst(val byteNum: Int, val rs: Register, val imm: Imm, val rd: Register) : ASMInst() {
   override fun accept(visitor: ASMVisitor) {
     visitor.visit(this)
   }
 }
 
-class ASMArithInst(val op: String, val rs2: Register, val rs1: Register, val rd: Register) : ASMInst() {
+class ASMArithInst(val op: String, val rs1: Register, val rs2: Register, val rd: Register) : ASMInst() {
   override fun accept(visitor: ASMVisitor) {
     visitor.visit(this)
   }
 }
 
-class ASMArithiInst(val op: String, val rs1: Register, val imm: Imm, val rd: Register) : ASMInst() {
+class ASMArithiInst(val op: String, val rs: Register, var imm: Imm, val rd: Register) : ASMInst() {
   override fun accept(visitor: ASMVisitor) {
     visitor.visit(this)
   }
 }
 
-class ASMCmpInst(val op: String, val rs2: Register, val rs1: Register, val rd: Register) : ASMInst() {
+class ASMCmpInst(val op: String, val rs1: Register, val rs2: Register, val rd: Register) : ASMInst() {
   override fun accept(visitor: ASMVisitor) {
     visitor.visit(this)
   }
@@ -84,7 +99,7 @@ class ASMCallInst(val label: Label) : ASMInst() {
  * which decides whether to jump by judging whether it's zero or not.
  * Brz stands for beqz, bnez, ...
  */
-class ASMBrzInst(val op: String, val rs: ASMValue, val label: Label) : ASMInst() {
+class ASMBzInst(val op: String, val rs: Register, val label: Label) : ASMInst() {
   override fun accept(visitor: ASMVisitor) {
     visitor.visit(this)
   }
@@ -101,7 +116,7 @@ class ASMJalrInst : ASMInst() {
   }
 }
 
-class ASMLiInst(val rd: Register, val imm: Imm) : ASMInst() {
+class ASMLiInst(val imm: Imm, val rd: Register) : ASMInst() {
   override fun accept(visitor: ASMVisitor) {
     visitor.visit(this)
   }

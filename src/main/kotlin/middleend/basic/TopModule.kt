@@ -3,7 +3,7 @@ package middleend.basic
 class TopModule {
   val constData: LinkedHashMap<String, ConstantData> = linkedMapOf()
   val structType: LinkedHashMap<String, StructType> = linkedMapOf()
-  val func: LinkedHashMap<String, Func> = linkedMapOf()
+  val funcList: LinkedHashMap<String, Func> = linkedMapOf()
   val builtinFunc: LinkedHashMap<String, Func> = linkedMapOf()
   val globalVar: LinkedHashMap<String, GlobalVariable> = linkedMapOf()
 
@@ -24,11 +24,11 @@ class TopModule {
   }
 
   fun setFunc(name: String, value: Func) {
-    func[name] = value
+    funcList[name] = value
   }
 
   fun getFunc(name: String): Func? {
-    return func[name]
+    return funcList[name]
   }
 
   fun setBuiltinFunc(name: String, value: Func) {

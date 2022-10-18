@@ -3,7 +3,7 @@ package middleend.basic
 import middleend.helper.ValueSymbolTable
 import middleend.pass.IRVisitor
 
-class Func(name: String, val funcType: FuncType, val args: List<Value>) : GlobalValue(name, funcType) {
+class Func(name: String, val funcType: FuncType, val argList: List<Value>) : GlobalValue(name, funcType) {
   val blockList: MutableList<BasicBlock> = mutableListOf()
   var returnBlock: BasicBlock? = null
   val vst = ValueSymbolTable()
@@ -13,7 +13,7 @@ class Func(name: String, val funcType: FuncType, val args: List<Value>) : Global
   }
 
   override fun toString(): String {
-    return "define ${funcType.result} @$name(${args.joinToString(", ") { "${it.type} %${it.name}" }}) {\n${
+    return "define ${funcType.result} @$name(${argList.joinToString(", ") { "${it.type} %${it.name}" }}) {\n${
       blockList.joinToString(
         "\n"
       ).plus(if (returnBlock == null) "" else "\n$returnBlock")
@@ -21,7 +21,7 @@ class Func(name: String, val funcType: FuncType, val args: List<Value>) : Global
   }
 
   fun toDeclaration(): String {
-    return "declare ${funcType.result} @$name(${args.joinToString(", ") { it.type.toString() }})\n"
+    return "declare ${funcType.result} @$name(${argList.joinToString(", ") { it.type.toString() }})\n"
   }
 
   fun accept(visitor: IRVisitor) {

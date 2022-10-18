@@ -1,16 +1,19 @@
 package backend.basic
 
-import middleend.basic.TopModule
+class ASMModule {
+  val funcList = mutableListOf<ASMFunc>()
+  var globalVarList = mutableListOf<ASMGlobalPointer>()
+  var constStrList = mutableListOf<ASMGlobalPointer>()
 
-class ASMModule(topModule: TopModule) {
-  val funcList = topModule.func.map { ASMFunc(it.value) }
+  fun addFunc(func: ASMFunc) {
+    funcList.add(func)
+  }
 
   fun getFunc(funcName: String): ASMFunc? {
-    for (func in funcList) {
-      if (func.name == funcName) {
-        return func
-      }
-    }
-    return null
+    return funcList.find { it.name == funcName }
+  }
+
+  fun addGlobalVar(globalVar: ASMGlobalPointer) {
+    globalVarList.add(globalVar)
   }
 }

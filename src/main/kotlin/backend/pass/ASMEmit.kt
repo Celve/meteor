@@ -6,6 +6,14 @@ import backend.controller.ASMVisitor
 class ASMEmit : ASMVisitor() {
   override fun visit(module: ASMModule) {
     module.funcList.forEach { it.accept(this) }
+    module.globalVarList.forEach { it.accept(this) }
+  }
+
+  override fun visit(globalPtr: ASMGlobalPointer) {
+    globalPtr.defDirList.forEach { println("\t${it.op}\t${it.argList.joinToString(",")}") }
+    println("${globalPtr.name}:")
+    globalPtr.emitDirList.forEach { println("\t${it.op}\t${it.argList.joinToString(",")}") }
+    println("")
   }
 
   override fun visit(func: ASMFunc) {
@@ -27,7 +35,7 @@ class ASMEmit : ASMVisitor() {
       4 -> "sw"
       else -> "sd"
     }
-    println("\t$instName ${inst.rd}, ${inst.imm.value}(${inst.rs})")
+    println("\t$instName ${inst.rs}, ${inst.imm.value}(${inst.rd})")
   }
 
   override fun visit(inst: ASMLoadInst) {
@@ -40,7 +48,7 @@ class ASMEmit : ASMVisitor() {
     println("\t$instName ${inst.rd}, ${inst.imm.value}(${inst.rs})")
   }
 
-  override fun visit(inst: ASMBrzInst) {
+  override fun visit(inst: ASMBzInst) {
     println("\t${inst.op} ${inst.rs}, ${inst.label}")
   }
 
@@ -57,7 +65,7 @@ class ASMEmit : ASMVisitor() {
   }
 
   override fun visit(inst: ASMArithiInst) {
-    println("\t${inst.op} ${inst.rd}, ${inst.rs1}, ${inst.imm.value}")
+    println("\t${inst.op} ${inst.rd}, ${inst.rs}, ${inst.imm.value}")
   }
 
   override fun visit(inst: ASMCmpInst) {

@@ -8,7 +8,7 @@ class ValueSymbolTable {
   private val nameToValue: HashMap<String, Value> = hashMapOf()
 
   fun addAll(topModule: TopModule) {
-    for ((funcName, _) in topModule.func) {
+    for ((funcName, _) in topModule.funcList) {
       defineName(funcName)
     }
   }

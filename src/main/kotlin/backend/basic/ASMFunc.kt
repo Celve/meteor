@@ -1,28 +1,26 @@
 package backend.basic
 
 import backend.controller.ASMVisitor
-import middleend.basic.Func
 import middleend.basic.Value
 
-class ASMFunc(func: Func) : Label(func.name!!) {
+class ASMFunc(name: String) : Label(name) {
   val value2Reg = hashMapOf<Value, Register>()
   val reg2Value = hashMapOf<Register, Value>()
-  val blockList =
-    func.blockList.map { ASMBlock(it) } + (if (func.returnBlock == null) listOf() else listOf(ASMBlock(func.returnBlock!!)))
+  val blockList = mutableListOf<ASMBlock>()
   var usedVirRegNum = 0
+  var stackAlloca = 0
 
-  init {
-    blockList.forEach { it.parent = this }
+  fun getBlockByPureName(pureName: String): ASMBlock? {
+    val compositeName = "${name}.$pureName"
+    return getBlockByCompositeName(compositeName)
   }
 
-  fun getBlock(blockName: String): ASMBlock? {
-    val realBlockName = "${name}.$blockName"
-    for (block in blockList) {
-      if (block.name == realBlockName) {
-        return block
-      }
-    }
-    return null
+  fun getBlockByCompositeName(compositeName: String): ASMBlock? {
+    return blockList.find { it.name == compositeName }
+  }
+
+  fun addBlock(block: ASMBlock) {
+    blockList.add(block)
   }
 
   fun accept(visitor: ASMVisitor) {

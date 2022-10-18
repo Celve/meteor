@@ -4,6 +4,7 @@ import middleend.basic.*
 
 abstract class IRVisitor {
   abstract fun visit(topModule: TopModule)
+  abstract fun visit(globalVar: GlobalVariable)
   abstract fun visit(func: Func)
   abstract fun visit(block: BasicBlock)
   abstract fun visit(inst: AllocaInst)

@@ -34,7 +34,7 @@ class Emit(val topModule: TopModule) {
       println()
     }
 
-    for ((_, func) in topModule.func) {
+    for ((_, func) in topModule.funcList) {
       println(func)
     }
   }

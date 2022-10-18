@@ -154,8 +154,8 @@ class IRGenerator : ASTVisitor() {
     IRBuilder.setInsertBlock(entryBlock)
 
     /** it must contain only one arg, which should be the "this" pointer */
-    assert(func.args.size == 1 && func.args.first().name == "this")
-    val arg = func.args.first()
+    assert(func.argList.size == 1 && func.argList.first().name == "this")
+    val arg = func.argList.first()
     func.vst.insertValue(arg)
     innerScope.setValue("this", arg)
 
@@ -187,8 +187,8 @@ class IRGenerator : ASTVisitor() {
     IRBuilder.setInsertBlock(entryBlock)
 
     /** setup for parameters */
-    if (func.args.isNotEmpty()) {
-      for (arg in func.args) {
+    if (func.argList.isNotEmpty()) {
+      for (arg in func.argList) {
         func.vst.insertValue(arg)
         /**
          * This pointer should be inserted into method's value symbol table and scope, in order to retrieve it.

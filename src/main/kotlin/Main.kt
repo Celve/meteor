@@ -1,4 +1,5 @@
 import backend.controller.ASMGenerator
+import backend.pass.ASMAllocator
 import backend.pass.ASMEmit
 import frontend.ast.controller.ASTBuilder
 import frontend.ast.controller.AntlrErrorListener
@@ -44,4 +45,9 @@ fun main(args: Array<String>) {
 
   val asmEmit = ASMEmit()
   asmEmit.visit(backend.module!!)
+
+  val asmAllocator = ASMAllocator()
+  asmAllocator.visit(backend.module!!)
+
+  asmEmit.visit(asmAllocator.module)
 }
