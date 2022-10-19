@@ -7,6 +7,12 @@ repositories {
   mavenCentral()
 }
 
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> { kotlinOptions.jvmTarget = "17" }
+
+java {
+  toolchain.languageVersion.set(JavaLanguageVersion.of(17))
+}
+
 dependencies {
   antlr("org.antlr:antlr4:4.11.1")
 }
