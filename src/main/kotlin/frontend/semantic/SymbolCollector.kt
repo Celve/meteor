@@ -116,6 +116,14 @@ class SymbolCollector : ASTVisitor() {
       throw SemanticException(curr.pos, "Redeclare ${curr.funcName}")
     }
 
+    // a class method should not have a same name with the class
+    val recentClass = scopeManager.getRecentClass()
+    if (recentClass != null) {
+      if (recentClass.className == curr.funcName) {
+        throw SemanticException(curr.pos, "Class method can't have the same name with the class")
+      }
+    }
+
     // init params and add them into local scope
     for (it in curr.params) {
       val varType = outerScope.getVarType(it.first) ?: throw SemanticException(curr.pos, "No type called ${it.first}")
