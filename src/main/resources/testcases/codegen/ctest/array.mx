@@ -1,0 +1,42 @@
+/*
+Test Package: Codegen
+Author: Celve
+Time: 2022-10-21
+Input:
+=== input ===
+10
+=== end ===
+Output:
+=== output ===
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+=== end ===
+ExitCode: 0
+InstLimit: -1
+Origin Package: None
+*/
+
+int[] a;
+
+int getAtIndex(int index) {
+  return a[index] + 100;
+}
+
+int main() {
+  a = new int[100];
+  int n = getInt();
+  for (int i = 1; i <= n; i++) {
+    a[i] = i;
+  }
+  for (int i = 1; i <= n; ++i)  {
+    printlnInt(getAtIndex(i));
+  }
+}

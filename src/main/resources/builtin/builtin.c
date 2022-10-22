@@ -49,6 +49,8 @@ int _string_ord(char *str, int index) { return str[index]; }
 
 char *_string_concat(char *str1, char *str2) {
   char *str = malloc(sizeof(char) * (strlen(str1) + strlen(str2) + 1));
-  sprintf(str, "%s%s", str1, str2);
+  strcpy(str, str1);
+  strcat(str, str2);
+  // sprintf(str, "%s%s", str1, str2);
   return str;
 }

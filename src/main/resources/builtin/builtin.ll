@@ -1,13 +1,12 @@
 ; ModuleID = 'builtin.c'
 source_filename = "builtin.c"
 target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128"
-target triple = "riscv32"
+target triple = "arm64-apple-macosx12.0.0"
 
 @.str = private unnamed_addr constant [3 x i8] c"%s\00", align 1
 @.str.1 = private unnamed_addr constant [4 x i8] c"%s\0A\00", align 1
 @.str.2 = private unnamed_addr constant [3 x i8] c"%d\00", align 1
 @.str.3 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
-@.str.4 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 ; Function Attrs: noinline nounwind optnone ssp uwtable
 define void @print(i8* noundef %0) #0 {
@@ -202,14 +201,24 @@ define i8* @_string_concat(i8* noundef %0, i8* noundef %1) #0 {
   %13 = call i8* @malloc(i64 noundef %12) #5
   store i8* %13, i8** %5, align 8
   %14 = load i8*, i8** %5, align 8
-  %15 = load i8*, i8** %5, align 8
-  %16 = call i64 @llvm.objectsize.i64.p0i8(i8* %15, i1 false, i1 true, i1 false)
-  %17 = load i8*, i8** %3, align 8
-  %18 = load i8*, i8** %4, align 8
-  %19 = call i32 (i8*, i32, i64, i8*, ...) @__sprintf_chk(i8* noundef %14, i32 noundef 0, i64 noundef %16, i8* noundef getelementptr inbounds ([5 x i8], [5 x i8]* @.str.4, i64 0, i64 0), i8* noundef %17, i8* noundef %18)
-  %20 = load i8*, i8** %5, align 8
-  ret i8* %20
+  %15 = load i8*, i8** %3, align 8
+  %16 = load i8*, i8** %5, align 8
+  %17 = call i64 @llvm.objectsize.i64.p0i8(i8* %16, i1 false, i1 true, i1 false)
+  %18 = call i8* @__strcpy_chk(i8* noundef %14, i8* noundef %15, i64 noundef %17) #6
+  %19 = load i8*, i8** %5, align 8
+  %20 = load i8*, i8** %4, align 8
+  %21 = load i8*, i8** %5, align 8
+  %22 = call i64 @llvm.objectsize.i64.p0i8(i8* %21, i1 false, i1 true, i1 false)
+  %23 = call i8* @__strcat_chk(i8* noundef %19, i8* noundef %20, i64 noundef %22) #6
+  %24 = load i8*, i8** %5, align 8
+  ret i8* %24
 }
+
+; Function Attrs: nounwind
+declare i8* @__strcpy_chk(i8* noundef, i8* noundef, i64 noundef) #4
+
+; Function Attrs: nounwind
+declare i8* @__strcat_chk(i8* noundef, i8* noundef, i64 noundef) #4
 
 attributes #0 = { noinline nounwind optnone ssp uwtable "frame-pointer"="non-leaf" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+crc,+crypto,+dotprod,+fp-armv8,+fp16fml,+fullfp16,+lse,+neon,+ras,+rcpc,+rdm,+sha2,+v8.5a,+zcm,+zcz" }
 attributes #1 = { "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+crc,+crypto,+dotprod,+fp-armv8,+fp16fml,+fullfp16,+lse,+neon,+ras,+rcpc,+rdm,+sha2,+v8.5a,+zcm,+zcz" }

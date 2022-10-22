@@ -1,0 +1,35 @@
+/*
+Test Package: Codegen
+Author: Celve
+Time: 2022-10-21
+Input:
+=== input ===
+=== end ===
+Output:
+=== output ===
+3
+-36
+12 
+3
+1
+48
+25
+33
+=== end ===
+ExitCode: 0
+InstLimit: -1
+Origin Package: None
+*/
+int main() {
+  // simple binary expression
+  printlnInt(1 + 2); 
+  printlnInt(22 - 58);
+  printlnInt(3 * 4);
+  printlnInt(7 / 2);
+  printlnInt(52 % 3);
+  printlnInt(3 << 4);
+  printlnInt(100 >> 2);
+
+  // compound statement
+  printlnInt(5 * 8 + 7 - 9 / 4 + 100 % 23 - 199 * 2 / 8 + 3 % 100 - 8 % 2 + (3 + 4 << 2) - (4 >> 1)); 
+}

@@ -1,0 +1,42 @@
+/*
+Test Package: Codegen
+Author: Celve
+Time: 2022-10-22
+Input:
+=== input ===
+=== end ===
+Output:
+=== output ===
+3
+12
+120
+72
+=== end ===
+ExitCode: 0
+InstLimit: -1
+Origin Package: None
+*/
+int double_sum(int a, int b) {
+  return a + b;
+}
+
+int triple_sum(int a, int b, int c) {
+  return a + b + c;
+}
+
+int triple_pi(int a, int b, int c) {
+  return a * b * c;
+}
+
+int magic(int a, int b, int c, int d) {
+  int e = (a + b + c + d) * 4;
+  return e;
+}
+
+int main() {
+  int a = 1, b = 2, c = 3, d = 4, e = 5, f = 6;
+  printlnInt(double_sum(a, b));
+  printlnInt(triple_sum(c, d, e));
+  printlnInt(triple_pi(d, e, f));
+  printlnInt(magic(c, d, e, f));
+}

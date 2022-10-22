@@ -1,0 +1,55 @@
+/*
+Test Package: Codegen
+Author: Celve
+Time: 2022-10-21
+Input:
+=== input ===
+=== end ===
+Output:
+=== output ===
+1
+2
+100
+1000
+101
+1002
+=== end ===
+ExitCode: 0
+InstLimit: -1
+Origin Package: None
+*/
+class Test {
+  int a;
+  int b;
+
+  Test() {
+    a = 1;
+    b = 2;
+  }
+
+  void print()  {
+    printlnInt(a);
+    printlnInt(b);
+  }
+
+  void assign(int a, int b) {
+    this.a = a;
+    this.b = b;
+  }
+};
+
+void printTest(Test a) {
+  printlnInt(a.a);
+  printlnInt(a.b);
+}
+
+int main() {
+  Test a = new Test;
+  a.print();
+  int a_0 = 100, a_1 = 1000;
+  a.assign(a_0, a_1);
+  a.print();
+  a.a = a.a + 1;
+  a.b = a.b + 2;
+  printTest(a);
+}

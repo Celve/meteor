@@ -19,4 +19,6 @@ abstract class ASMVisitor {
   abstract fun visit(inst: ASMCallInst)
   abstract fun visit(inst: ASMLiInst)
   abstract fun visit(inst: ASMMvInst)
+  abstract fun visit(inst: ASMLaInst)
+  abstract fun visit(inst: ASMCmpzInst)
 }

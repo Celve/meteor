@@ -185,8 +185,8 @@ object IRBuilder {
     return callInst
   }
 
-  fun createGEP(op: String, name: String, value: Value, index: Value): GetElementPtrInst {
-    val gepInst = GetElementPtrInst(op, vst.defineName(name), value, index)
+  fun createGEP(op: String, name: String, value: Value, index: Value, offset: ConstantInt?): GetElementPtrInst {
+    val gepInst = GetElementPtrInst(op, vst.defineName(name), value, index, offset)
     insertInstBeforeInsertPoint(gepInst)
     vst.reinsertValue(gepInst)
 

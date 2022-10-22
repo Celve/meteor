@@ -39,15 +39,16 @@ fun main(args: Array<String>) {
   middleend.visit(builderRoot)
 
   val emit = Emit(middleend.topModule)
-  emit.main()
+//  emit.main()
   val backend = ASMGenerator()
   backend.visit(middleend.topModule)
 
   val asmEmit = ASMEmit()
-  asmEmit.visit(backend.module!!)
+//  asmEmit.visit(backend.module!!)
 
   val asmAllocator = ASMAllocator()
   asmAllocator.visit(backend.module!!)
 
   asmEmit.visit(asmAllocator.module)
 }
+

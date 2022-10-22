@@ -403,7 +403,7 @@ class IRGenerator : ASTVisitor() {
       1 -> {
         val const = ConstantStr(curr.literal.substring(1, curr.literal.length - 1), globalVst.defineName(".str"))
         topModule.setConst(const.name!!, const)
-        IRBuilder.createGEP("array", "str", const, ConstantInt(32, 0))
+        IRBuilder.createGEP("array", "str", const, ConstantInt(32, 0), ConstantInt(32, 0))
       }
 
       /** identifier */
@@ -469,7 +469,7 @@ class IRGenerator : ASTVisitor() {
       IRBuilder.createBitCast("bitcast", extendedArray, TypeFactory.getPtrType("int"))
     }
     IRBuilder.createStore(arraySize, arraySizeAddr)
-    val pureArray = IRBuilder.createGEP("ptr", "arrayidx", extendedArray, ConstantInt(32, 1))
+    val pureArray = IRBuilder.createGEP("ptr", "arrayidx", extendedArray, ConstantInt(32, 1), null)
 
     /** there is no need to recurse more, because the size of arraySizeList indicates the remainder of dimension */
     if (arraySizeList.size == 1) {
@@ -477,7 +477,7 @@ class IRGenerator : ASTVisitor() {
     }
 
     /** the start point is the last element of array, which iterate until the addr before the first element */
-    val startPoint = IRBuilder.createGEP("ptr", "arrayidx", extendedArray, arraySize)
+    val startPoint = IRBuilder.createGEP("ptr", "arrayidx", extendedArray, arraySize, null)
     val previousBlock = IRBuilder.getInsertBlock()!!
     val condBlock = BasicBlock("while.cond")
     val bodyBlock = BasicBlock("while.body")
@@ -503,7 +503,8 @@ class IRGenerator : ASTVisitor() {
       "ptr",
       "arrayidx",
       phiInst,
-      ConstantInt(32, -1)
+      ConstantInt(32, -1),
+      null
     )
     phiInst.preds.add(Pair(nextElement, bodyBlock))
     IRBuilder.createBr(condBlock)
@@ -549,7 +550,7 @@ class IRGenerator : ASTVisitor() {
     curr.value = if (curr.expr.type!!.isArray()) {
       /** for array, it has only one method called size() */
       assert(curr.method == "size")
-      val arraySizeAddr = IRBuilder.createGEP("ptr", "arraysize.addr", curr.expr.value!!, ConstantInt(32, -1))
+      val arraySizeAddr = IRBuilder.createGEP("ptr", "arraysize.addr", curr.expr.value!!, ConstantInt(32, -1), null)
       val finalInst = if (arraySizeAddr.type != TypeFactory.getPtrType("int")) {
         IRBuilder.createBitCast("bitcast", arraySizeAddr, TypeFactory.getPtrType("int"))
       } else {
@@ -575,6 +576,7 @@ class IRGenerator : ASTVisitor() {
       "struct",
       "$memberName.addr",
       curr.expr.value!!,
+      ConstantInt(32, 0),
       ConstantInt(32, structType.getIndex(curr.member))
     )
     curr.value = IRBuilder.createLoad(memberName, gepInst)
@@ -583,7 +585,7 @@ class IRGenerator : ASTVisitor() {
   override fun visit(curr: ArrayAccessNode) {
     curr.array.accept(this)
     curr.index.accept(this)
-    val ptr = IRBuilder.createGEP("ptr", "elem.addr", curr.array.value!!, curr.index.value!!)
+    val ptr = IRBuilder.createGEP("ptr", "elem.addr", curr.array.value!!, curr.index.value!!, null)
     curr.value = IRBuilder.createLoad("elem", ptr)
   }
 
@@ -591,30 +593,28 @@ class IRGenerator : ASTVisitor() {
     val innerScope = scopeManger.last()
     val id = curr.literal
     val recentClass = scopeManger.getRecentClass()
+    val ptrSuffixed = "$id.addr"
+    val ptr = innerScope.getValue(ptrSuffixed)
 
-    /** Even though it's not in member access format, it could still be a member access when this happens in class's method definition. */
-    if (recentClass != null && recentClass.memberToIndex.containsKey(id)) {
+    return if (ptr != null) {
+      Pair(id, ptr)
+    } else if (recentClass != null && recentClass.memberToIndex.containsKey(id)) {
+      // Even though it's not in member access format, it could still be a member access when this happens in class's method definition.
       val memberName = "${recentClass.className}.$id"
       val structType = topModule.getStruct("class.${recentClass.className}")
 
-      return Pair(
+      Pair(
         memberName,
         IRBuilder.createGEP(
           "struct",
           "$memberName.addr",
           innerScope.getValue("this")!!,
+          ConstantInt(32, 0),
           ConstantInt(32, structType.getIndex(id))
         )
       )
     } else {
-      val ptrSuffixed = "$id.addr"
-      val ptr = innerScope.getValue(ptrSuffixed)
-
-      return if (ptr == null) {
-        Pair(id, topModule.getGlobalVar(ptrSuffixed))
-      } else {
-        Pair(id, ptr)
-      }
+      Pair(id, topModule.getGlobalVar(ptrSuffixed))
     }
   }
 
@@ -625,7 +625,7 @@ class IRGenerator : ASTVisitor() {
       is ArrayAccessNode -> {
         curr.array.accept(this)
         curr.index.accept(this)
-        Pair("elem", IRBuilder.createGEP("ptr", "elem.addr", curr.array.value!!, curr.index.value!!))
+        Pair("elem", IRBuilder.createGEP("ptr", "elem.addr", curr.array.value!!, curr.index.value!!, null))
       }
 
       is MemberAccessNode -> {
@@ -639,6 +639,7 @@ class IRGenerator : ASTVisitor() {
             "struct",
             "$memberName.addr",
             curr.expr.value!!,
+            ConstantInt(32, 0),
             ConstantInt(32, structType.getIndex(curr.member))
           )
         )

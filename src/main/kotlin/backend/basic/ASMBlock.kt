@@ -8,4 +8,8 @@ class ASMBlock(val pureName: String, val parent: ASMFunc) : Label("${parent.name
   fun accept(visitor: ASMVisitor) {
     visitor.visit(this)
   }
+
+  fun firstBrInstOrNull(): ASMInst? {
+    return instList.firstOrNull { it is ASMBzInst || it is ASMJInst }
+  }
 }

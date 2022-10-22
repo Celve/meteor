@@ -1,0 +1,43 @@
+/*
+Test Package: Codegen
+Author: Celve
+Time: 2022-10-22
+Input:
+=== input ===
+42
+=== end ===
+Output:
+=== output ===
+It's the final answer.
+It's an even.
+It's a small number.
+=== end ===
+ExitCode: 0
+InstLimit: -1
+Origin Package: None
+*/
+
+int main() {
+  int a = getInt();
+  if (a == 42) {
+    println("It's the final answer.");
+  } 
+
+  if (a % 2 == 0) {
+    println("It's an even.");
+  } else {
+    println("It's an odd.");
+  }
+
+  if (a == 1) {
+    println("It's 1.");
+  } else if (a == 2) {
+    println("It's 2.");
+  } else if (a == 3) {
+    println("It's a weird number.");
+  }
+
+  if (1 <= a && a <= 100) {
+    println("It's a small number.");
+  }
+}

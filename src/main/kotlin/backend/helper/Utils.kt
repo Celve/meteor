@@ -43,8 +43,7 @@ object Utils {
     return when (alignment) {
       1 -> "byte"
       2 -> "half"
-      4 -> "word"
-      else -> "unknown"
+      else -> "word"
     }
   }
 }

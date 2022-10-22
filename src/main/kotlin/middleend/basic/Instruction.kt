@@ -168,18 +168,19 @@ class CallInst(name: String?, val funcType: FuncType, val args: List<Value>) :
 }
 
 //<result> = getelementptr inbounds [<#elements> x <type>], [<#elements> x <type>]* <variable>, i32 0, i32 <index>
-class GetElementPtrInst(val op: String, name: String, val ptr: Value, val index: Value) : Instruction(
-  when (op) {
-    "struct" -> TypeFactory.getPtrType((Utils.getPointee(ptr.type) as StructType).symbolList[(index as ConstantInt).value].second)
-    "array" -> TypeFactory.getPtrType((Utils.getPointee(ptr.type) as ArrayType).containedType)
-    "ptr" -> ptr.type
-    else -> throw Exception("the operation is forbidden")
-  }, name
-) {
+class GetElementPtrInst(val op: String, name: String, val ptr: Value, val index: Value, val offset: ConstantInt?) :
+  Instruction(
+    when (op) {
+      "struct" -> TypeFactory.getPtrType((Utils.getPointee(ptr.type) as StructType).symbolList[(offset as ConstantInt).value].second)
+      "array" -> TypeFactory.getPtrType((Utils.getPointee(ptr.type) as ArrayType).containedType)
+      "ptr" -> ptr.type
+      else -> throw Exception("the operation is forbidden")
+    }, name
+  ) {
 
   override fun toString(): String {
-    val extra = if (op != "ptr") "i32 0, " else ""
-    return "%$name = getelementptr inbounds ${Utils.getPointee(ptr.type)}, ${ptr.type} ${ptr.toOperand()}, ${extra}i32 ${index.toOperand()}"
+    val extra = if (offset != null) ", i32 ${offset.toOperand()} " else ""
+    return "%$name = getelementptr inbounds ${Utils.getPointee(ptr.type)}, ${ptr.type} ${ptr.toOperand()}, i32 ${index.toOperand()}$extra"
   }
 
   override fun accept(irVisitor: IRVisitor) {

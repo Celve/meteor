@@ -1,6 +1,7 @@
 package middleend.basic
 
 import middleend.helper.Utils
+import middleend.pass.IRVisitor
 
 /// It would never make sense to RAUW them.
 open class ConstantData(type: Type, name: String? = null) : Constant(type, name)
@@ -46,5 +47,9 @@ class ConstantStr(var str: String, name: String) :
 
   override fun toOperand(): String {
     return "@$name"
+  }
+
+  fun accept(visitor: IRVisitor) {
+    visitor.visit(this)
   }
 }

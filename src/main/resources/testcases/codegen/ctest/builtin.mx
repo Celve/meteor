@@ -1,20 +1,21 @@
 /*
 Test Package: Codegen
-Author: Maohao Jun
-Time: 2020-01-25
+Author: Celve
+Time: 2022-10-21
 Input:
 === input ===
 === end ===
 Output:
 === output ===
+helloworld
+1
 === end ===
 ExitCode: 0
 InstLimit: -1
-Origin Package: Codegen Pretest-542
+Origin Package: None
 */
 
 int main() {
-  if ((1 == 2 || 1 < 2) || 2 < 1) {
-    println("ac");
-  }
+  println("hello" + "world");
+  println(toString(1));
 }

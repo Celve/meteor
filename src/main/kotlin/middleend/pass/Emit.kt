@@ -27,10 +27,10 @@ class Emit(val topModule: TopModule) {
       println()
     }
 
-    for ((_, const) in topModule.constData) {
+    for ((_, const) in topModule.constStr) {
       print(const)
     }
-    if (topModule.constData.size >= 1) {
+    if (topModule.constStr.size >= 1) {
       println()
     }
 

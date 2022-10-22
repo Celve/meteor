@@ -1,18 +1,18 @@
 package middleend.basic
 
 class TopModule {
-  val constData: LinkedHashMap<String, ConstantData> = linkedMapOf()
+  val constStr: LinkedHashMap<String, ConstantStr> = linkedMapOf()
   val structType: LinkedHashMap<String, StructType> = linkedMapOf()
   val funcList: LinkedHashMap<String, Func> = linkedMapOf()
   val builtinFunc: LinkedHashMap<String, Func> = linkedMapOf()
   val globalVar: LinkedHashMap<String, GlobalVariable> = linkedMapOf()
 
-  fun setConst(name: String, value: ConstantData) {
-    constData[name] = value
+  fun setConst(name: String, value: ConstantStr) {
+    constStr[name] = value
   }
 
-  fun getConst(name: String): ConstantData {
-    return constData[name]!!
+  fun getConst(name: String): ConstantStr {
+    return constStr[name]!!
   }
 
   fun setStruct(name: String, value: StructType) {
