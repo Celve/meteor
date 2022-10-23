@@ -138,7 +138,7 @@ class ASMJInst(val label: Label, comment: String) : ASMInst(comment) {
   }
 }
 
-class ASMLaInst(val rd: Register, val symbol: ASMSymbol, comment: String) : ASMInst(comment) {
+class ASMLaInst(val rd: Register, val symbol: ASMGlobalPointer, comment: String) : ASMInst(comment) {
   override fun accept(visitor: ASMVisitor) {
     visitor.visit(this)
   }

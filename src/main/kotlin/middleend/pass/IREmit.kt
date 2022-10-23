@@ -2,7 +2,7 @@ package middleend.pass
 
 import middleend.basic.TopModule
 
-class Emit(val topModule: TopModule) {
+class IREmit(val topModule: TopModule) {
   fun main() {
     println(
       "; ModuleID = 'test'\n" +

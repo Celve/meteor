@@ -2,7 +2,7 @@ package backend.basic
 
 import backend.helper.Utils
 
-abstract class Register : ASMValue()
+abstract class Register
 
 data class VirReg(val id: Int) : Register() {
   override fun toString(): String {

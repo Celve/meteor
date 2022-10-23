@@ -71,6 +71,10 @@ object TypeFactory {
     return structType
   }
 
+  /**
+   * This function is used to construct a pointer to a multidimensional array.
+   * @return is a pointer of a pointer of a pointer of ...
+   */
   fun getNestedPtr(typeMd: TypeMd): PointerType {
     return if (typeMd.dim == 1) {
       getPtrType(getAnyType(TypeMd(typeMd.cl, 0)))
@@ -105,6 +109,9 @@ object TypeFactory {
     }
   }
 
+  /**
+   * This function get the exact type of primitive type, and get the pointer type of non-primitive type.
+   */
   fun getAnyType(typeMd: TypeMd): Type {
     return when {
       typeMd.isVoid() -> getVoidType()
@@ -116,7 +123,10 @@ object TypeFactory {
     }
   }
 
-  // please don't give it string and array
+  /**
+   * This function get the exact type of primitive type and struct type.
+   * Please don't give it string and array, which it cannot handle.
+   */
   fun getBasicType(typeMd: TypeMd): Type {
     return screen(
       when {

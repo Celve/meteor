@@ -2,6 +2,10 @@ package backend.controller
 
 import backend.basic.*
 
+/**
+ * ASMBuilder is a really general singleton class that is used to build assembly code.
+ * When constructing the assembly code, we need to set up the ASMFunc, ASMBlock, or ASMInst properly, indicating the insert point.
+ */
 object ASMBuilder {
   var func: ASMFunc? = null
   var block: ASMBlock? = null
@@ -40,7 +44,7 @@ object ASMBuilder {
     point = block!!.instList[newInst.getIndexAtBlock() + 1]
   }
 
-  fun insertInstBeforeInsertPoint(inst: ASMInst) {
+  private fun insertInstBeforeInsertPoint(inst: ASMInst) {
     if (point == null) {
       inst.insertAtTheTailOf(block!!)
     } else {
@@ -58,6 +62,9 @@ object ASMBuilder {
     insertInstBeforeInsertPoint(callInst)
   }
 
+  /**
+   * This function is used to build almost every binary arithmetic instructions.
+   */
   fun createArithInst(op: String, rd: Register, rs1: Register, rs2: Register, comment: String = "") {
     val newOp = when (op) {
       "sdiv" -> "div"
@@ -95,21 +102,33 @@ object ASMBuilder {
     insertInstBeforeInsertPoint(storeInst)
   }
 
+  /**
+   * This function is used for building instruction j.
+   */
   fun createJInst(target: ASMBlock, comment: String = "") {
     val jInst = ASMJInst(target, comment)
     insertInstBeforeInsertPoint(jInst)
   }
 
+  /**
+   * This function is used to build instructions like beqz, bnez, bltz, bgez, blez, bgtz.
+   */
   fun createBzInst(op: String, rs: Register, target: ASMBlock, comment: String = "") {
     val bzInst = ASMBzInst(op, rs, target, comment)
     insertInstBeforeInsertPoint(bzInst)
   }
 
+  /**
+   * This function is used to build instruction slt.
+   */
   fun createCmpInst(op: String, rd: Register, rs1: Register, rs2: Register, comment: String = "") {
     val cmpInst = ASMCmpInst(op, rd, rs1, rs2, comment)
     insertInstBeforeInsertPoint(cmpInst)
   }
 
+  /**
+   * This function is used to build instruction like seqz, snez.
+   */
   fun createCmpzInst(op: String, rd: Register, rs1: Register, comment: String = "") {
     val cmpzInst = ASMCmpzInst(op, rd, rs1, comment)
     insertInstBeforeInsertPoint(cmpzInst)
@@ -120,7 +139,7 @@ object ASMBuilder {
     insertInstBeforeInsertPoint(retInst)
   }
 
-  fun createLaInst(rd: Register, symbol: ASMSymbol, comment: String = "") {
+  fun createLaInst(rd: Register, symbol: ASMGlobalPointer, comment: String = "") {
     val laInst = ASMLaInst(rd, symbol, comment)
     insertInstBeforeInsertPoint(laInst)
   }

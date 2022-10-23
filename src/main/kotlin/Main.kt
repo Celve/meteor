@@ -9,7 +9,7 @@ import frontend.parser.MeteorParser
 import frontend.semantic.SemanticChecker
 import frontend.semantic.SymbolCollector
 import middleend.controller.IRGenerator
-import middleend.pass.Emit
+import middleend.pass.IREmit
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import java.io.FileInputStream
@@ -38,7 +38,7 @@ fun main(args: Array<String>) {
   val middleend = IRGenerator()
   middleend.visit(builderRoot)
 
-  val emit = Emit(middleend.topModule)
+  val emit = IREmit(middleend.topModule)
 //  emit.main()
   val backend = ASMGenerator()
   backend.visit(middleend.topModule)

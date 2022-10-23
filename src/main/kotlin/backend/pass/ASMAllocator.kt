@@ -4,15 +4,18 @@ import backend.basic.*
 import backend.controller.ASMBuilder
 import backend.controller.ASMVisitor
 import backend.helper.RegFactory
-import middleend.basic.Value
 
+/**
+ * This is a brute-force register allocator.
+ * For every virtual register, we allocate a space for it on stack.
+ * When we need to use it, we load it from stack to a physical register.
+ * After we have use it, we store it back to stack.
+ */
 class ASMAllocator : ASMVisitor() {
-  var vir2Offset = hashMapOf<VirReg, Int>()
-  val regFactory = RegFactory()
-  private var value2Reg = hashMapOf<Value, Register>() // this mapping is only for virtual register
-  private var reg2Value = hashMapOf<Register, Value>() // this mapping is only for virtual register
-  var stackAlloca = 0
-  var limitedStackAlloca = 0
+  private var vir2Offset = hashMapOf<VirReg, Int>()
+  private val regFactory = RegFactory()
+  private var stackAlloca = 0
+  private var limitedStackAlloca = 0
   val module = ASMModule()
 
   override fun visit(module: ASMModule) {
@@ -35,10 +38,6 @@ class ASMAllocator : ASMVisitor() {
     vir2Offset = hashMapOf()
     stackAlloca = func.stackAlloca + func.usedVirRegNum * 4
     limitedStackAlloca = -stackAlloca
-//    val stackPushInst = func.blockList.first().instList.first() as ASMArithiInst
-//    val stackPopInst = func.blockList.last().instList[func.blockList.last().instList.size - 2] as ASMArithiInst
-//    stackPushInst.imm = Imm(stackAlloca)
-//    stackPopInst.imm = Imm(-stackAlloca)
     func.blockList.forEach { it.accept(this) }
   }
 
@@ -62,7 +61,7 @@ class ASMAllocator : ASMVisitor() {
     return if (pendingReg is PhyReg) {
       pendingReg
     } else {
-      ASMBuilder.createLoadInst(4, phyReg, Literal(getOffset(pendingReg as VirReg)), regFactory.getPhyReg("sp"))
+      ASMBuilder.createLoadInst(4, phyReg, Immediate(getOffset(pendingReg as VirReg)), regFactory.getPhyReg("sp"))
       phyReg
     }
   }
@@ -77,7 +76,7 @@ class ASMAllocator : ASMVisitor() {
 
   private fun supplementAsRd(pendingReg: Register, phyReg: PhyReg) {
     if (pendingReg is VirReg) {
-      ASMBuilder.createStoreInst(4, phyReg, Literal(getOffset(pendingReg)), regFactory.getPhyReg("sp"))
+      ASMBuilder.createStoreInst(4, phyReg, Immediate(getOffset(pendingReg)), regFactory.getPhyReg("sp"))
     }
   }
 
@@ -120,11 +119,10 @@ class ASMAllocator : ASMVisitor() {
   override fun visit(inst: ASMArithiInst) {
     if (inst.rs == PhyReg("sp") && inst.rd == PhyReg("sp")) {
       val spReg = regFactory.getPhyReg("sp")
-      ASMBuilder.createArithiInst("addi", spReg, spReg, Literal(limitedStackAlloca))
+      ASMBuilder.createArithiInst("addi", spReg, spReg, Immediate(limitedStackAlloca))
       limitedStackAlloca = -limitedStackAlloca
     } else if (inst.rs == PhyReg("sp")) {
-      // this case would never occur
-//      getOffset(inst.rd as VirReg)
+      // this case would never occur, due to the optimization of the generator
     } else {
       val rsReg = replaceWithAsRs(inst.rs, regFactory.getPhyReg("t0"))
       val rdReg = replaceWithAsRd(inst.rd, regFactory.getPhyReg("t1"))
