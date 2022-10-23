@@ -217,6 +217,7 @@ class IRGenerator : ASTVisitor() {
 
     val returnBlock = BasicBlock("return")
     IRBuilder.setReturnBlock(returnBlock)
+    IRBuilder.resetInsertBlock(returnBlock)
     if (funcType.result != TypeFactory.getVoidType()) {
       val addrSuffixed = "retaddr"
       val valSuffixed = "retval"
@@ -232,6 +233,9 @@ class IRGenerator : ASTVisitor() {
     if (!IRBuilder.getInsertBlock()!!.hasTerminator()) {
       IRBuilder.createBr(returnBlock)
     }
+
+    // don't forget to push the return block into block list
+    IRBuilder.setInsertBlock(returnBlock)
 
     scopeManger.removeLast()
   }

@@ -7,20 +7,12 @@ import middleend.pass.IRVisitor
 open class ConstantData(type: Type, name: String? = null) : Constant(type, name)
 
 class ConstantInt(val numOfBits: Int, val value: Int) : ConstantData(TypeFactory.getIntType(numOfBits)) {
-  override fun toOperand(): String {
-    return value.toString()
-  }
-
   override fun toString(): String {
     return value.toString()
   }
 }
 
 class ConstantNull : ConstantData(TypeFactory.getNullType()) {
-  override fun toOperand(): String {
-    return "null"
-  }
-
   override fun toString(): String {
     return "null"
   }
@@ -41,11 +33,6 @@ class ConstantStr(var str: String, name: String) :
   }
 
   override fun toString(): String {
-    val outputString = str.replace("\\", "\\\\").replace("\n", "\\0A").replace("\"", "\\22").plus("\\00")
-    return "@$name = private unnamed_addr constant [${length} x i8] c\"$outputString\", align 1\n"
-  }
-
-  override fun toOperand(): String {
     return "@$name"
   }
 

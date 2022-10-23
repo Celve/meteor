@@ -54,15 +54,6 @@ class BasicBlock(name: String) : Value(TypeFactory.getLabelType(name), name) {
     parent = func
   }
 
-  override fun toString(): String {
-//    return instList.foldRight("\n") { left, right -> "\t$left\n\t$right" }
-    return "$name:\n${instList.joinToString("\n") { "\t$it" }.plus("\n")}"
-  }
-
-  override fun toOperand(): String {
-    return "%$name"
-  }
-
   fun accept(visitor: IRVisitor) {
     visitor.visit(this)
   }

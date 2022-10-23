@@ -10,12 +10,8 @@ package middleend.basic
 open class Value(val type: Type, var name: String? = null) {
   val userList: MutableList<User> = mutableListOf()
 
-  open fun toOperand(): String {
-    return "%$name"
-  }
-
-  open fun toArg(): String {
-    return "$type ${this.toOperand()}"
+  override fun toString(): String {
+    return "%${name ?: "unnamed"}"
   }
 
   /// This function is bidirectional.

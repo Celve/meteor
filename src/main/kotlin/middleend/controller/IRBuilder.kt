@@ -7,11 +7,13 @@ object IRBuilder {
   private var func: Func? = null
   private var block: BasicBlock? = null
   private var point: Instruction? = null
+  private var returnBlock: BasicBlock? = null
   private var vst = ValueSymbolTable()
 
   fun setCurrentFunc(newFunc: Func) {
     func = newFunc
     vst = newFunc.vst
+    returnBlock = null
   }
 
   fun getCurrentFunc(): Func? {
@@ -42,10 +44,7 @@ object IRBuilder {
 
 
   fun setReturnBlock(newBlock: BasicBlock) {
-    vst.insertValue(newBlock)
-    block = newBlock
-    func!!.returnBlock = newBlock // TODO: optimize this process, which should be encapsulated in a function
-    newBlock.parent = func
+    returnBlock = newBlock // TODO: optimize this process, which should be encapsulated in a function
   }
 
   fun getInsertBlock(): BasicBlock? {
@@ -53,7 +52,7 @@ object IRBuilder {
   }
 
   fun getReturnBlock(): BasicBlock? {
-    return func?.returnBlock
+    return returnBlock
   }
 
   fun setInsertPointBefore(inst: Instruction) {

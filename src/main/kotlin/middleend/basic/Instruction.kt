@@ -41,9 +41,6 @@ abstract class Instruction(type: Type, name: String? = null) : User(type, name) 
 
 class BinaryInst(name: String, val op: String, val lhs: Value, val rhs: Value) :
   Instruction(lhs.type, name) {
-  override fun toString(): String {
-    return "%$name = $op $type ${lhs.toOperand()}, ${rhs.toOperand()}"
-  }
 
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
@@ -53,10 +50,6 @@ class BinaryInst(name: String, val op: String, val lhs: Value, val rhs: Value) :
 class AllocaInst(name: String, val varType: Type) : Instruction(TypeFactory.getPtrType(varType), name) {
   fun getAllocatedSize(): Int {
     return varType.getAlign()
-  }
-
-  override fun toString(): String {
-    return "%$name = alloca $varType, align ${varType.getAlign()}"
   }
 
   override fun accept(irVisitor: IRVisitor) {
@@ -69,25 +62,12 @@ class LoadInst(name: String, val addr: Value) : Instruction(Utils.getPointee(add
     addr.addUser(this)
   }
 
-  override fun toString(): String {
-    return "%$name = load $type, $type* ${addr.toOperand()}, align ${type.getAlign()}"
-  }
-
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
 }
 
 class StoreInst(val value: Value, val addr: Value) : Instruction(TypeFactory.getVoidType()) {
-  override fun toString(): String {
-    val lhsTy = if (value.type is PointerType && value.type.pointeeTy == null) {
-      (addr.type as PointerType).pointeeTy
-    } else {
-      value.type
-    }
-    return "store ${lhsTy} ${value.toOperand()}, ${addr.type} ${addr.toOperand()}, align ${value.type.getAlign()}"
-  }
-
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
@@ -100,10 +80,6 @@ class CmpInst(name: String, val cond: Cond, val lhs: Value, val rhs: Value) :
     eq, ne, ugt, uge, ult, ule, sgt, sge, slt, sle,
   }
 
-  override fun toString(): String {
-    return "%$name = icmp $cond ${lhs.type} ${lhs.toOperand()}, ${rhs.toOperand()}"
-  }
-
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
@@ -111,24 +87,12 @@ class CmpInst(name: String, val cond: Cond, val lhs: Value, val rhs: Value) :
 
 class TruncInst(name: String, val originalVal: Value, val toTy: Type) :
   Instruction(toTy, name) {
-  override fun toString(): String {
-    return "%$name = trunc ${originalVal.type} ${originalVal.toOperand()} to $toTy"
-  }
-
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
 }
 
 class ReturnInst(type: Type, val retVal: Value?) : Instruction(type) {
-  override fun toString(): String {
-    return if (retVal == null) {
-      "ret $type"
-    } else {
-      "ret $type ${retVal.toOperand()}"
-    }
-  }
-
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
@@ -136,14 +100,6 @@ class ReturnInst(type: Type, val retVal: Value?) : Instruction(type) {
 
 class BranchInst(val cond: Value?, val trueBlock: BasicBlock, val falseBlock: BasicBlock?) :
   Instruction(TypeFactory.getVoidType()) {
-  override fun toString(): String {
-    return if (cond == null) {
-      "br label ${trueBlock.toOperand()}"
-    } else {
-      "br i1 ${cond.toOperand()}, label ${trueBlock.toOperand()}, label ${falseBlock!!.toOperand()}"
-    }
-  }
-
   override fun isTerminator(): Boolean {
     return true
   }
@@ -155,13 +111,6 @@ class BranchInst(val cond: Value?, val trueBlock: BasicBlock, val falseBlock: Ba
 
 class CallInst(name: String?, val funcType: FuncType, val args: List<Value>) :
   Instruction(funcType.result, name) {
-  override fun toString(): String {
-    val prefix: String = if (name == null) "" else "%$name = "
-    return "${prefix}call ${funcType.result} @${funcType.funcName}(${
-      funcType.argList.zip(args).joinToString(", ") { "${it.first} ${it.second.toOperand()}" }
-    })"
-  }
-
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
@@ -178,11 +127,6 @@ class GetElementPtrInst(val op: String, name: String, val ptr: Value, val index:
     }, name
   ) {
 
-  override fun toString(): String {
-    val extra = if (offset != null) ", i32 ${offset.toOperand()} " else ""
-    return "%$name = getelementptr inbounds ${Utils.getPointee(ptr.type)}, ${ptr.type} ${ptr.toOperand()}, i32 ${index.toOperand()}$extra"
-  }
-
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
@@ -193,31 +137,19 @@ class GetElementPtrInst(val op: String, name: String, val ptr: Value, val index:
  */
 class PhiInst(name: String, type: Type, val preds: MutableList<Pair<Value, BasicBlock>>) :
   Instruction(type, name) {
-  override fun toString(): String {
-    return "%$name = phi $type ".plus(preds.joinToString(", ") { "[ ${it.first.toOperand()}, ${it.second.toOperand()} ]" })
-  }
-
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
 }
 
 class BitCastInst(name: String, val castee: Value, toTy: Type) : Instruction(toTy, name) {
-  private val fromTy = castee.type
-  override fun toString(): String {
-    return "%$name = bitcast $fromTy ${castee.toOperand()} to $type"
-  }
-
+  val fromTy = castee.type
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
 }
 
 class ZExtInst(name: String, val originalVal: Value, toTy: Type) : Instruction(toTy, name) {
-  override fun toString(): String {
-    return "%$name = zext ${originalVal.type} ${originalVal.toOperand()} to $type"
-  }
-
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
