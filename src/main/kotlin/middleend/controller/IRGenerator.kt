@@ -27,12 +27,12 @@ class IRGenerator : ASTVisitor() {
     scopeManger.addLast(curr.scope)
     val globalScope = curr.scope
 
-    /** class definitions */
+    // iterate class definition
     for ((className, classMd) in globalScope.classes) {
       val localScope = classMd.classScope
       val structType = TypeFactory.getStructType(classMd)
 
-      /** create the concrete struct directly, instead of reference, which is done in elsewhere */
+      // create the concrete struct directly, instead of reference, which is done in elsewhere
       topModule.setStruct("class.$className", structType)
 
       for ((funcName, funcMd) in localScope.methods) {
@@ -53,7 +53,7 @@ class IRGenerator : ASTVisitor() {
         )
       }
 
-      /** create implicit constructor */
+      // create implicit constructor
       if (!classMd.hasCustomCtor) {
         val ctor = topModule.getFunc("${className}.new")!!
         val entryBlock = BasicBlock("entry")
@@ -63,7 +63,7 @@ class IRGenerator : ASTVisitor() {
       }
     }
 
-    /** function definitions */
+    // function definitions
     for ((funcName, funcMd) in globalScope.funcs) {
       val funcType = TypeFactory.getFuncType(funcMd)
       topModule.setFunc(
@@ -76,7 +76,7 @@ class IRGenerator : ASTVisitor() {
       )
     }
 
-    /** builtin function declarations */
+    // builtin function declarations
     for ((funcName, funcMd) in BuiltinScope.funcs) {
       val funcType = TypeFactory.getFuncType(funcMd)
       topModule.setBuiltinFunc(
@@ -104,7 +104,7 @@ class IRGenerator : ASTVisitor() {
 
     curr.block.accept(this)
 
-    /** to check if there is a need to init global variable in main function */
+    // to check if there is a need to init global variable in main function
     if (initBlock.instList.size > 0) {
       IRBuilder.resetInsertBlock(initFunc!!.blockList.last())
       IRBuilder.createRetVoid()

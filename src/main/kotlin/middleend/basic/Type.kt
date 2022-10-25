@@ -7,7 +7,7 @@ import frontend.metadata.TypeMd
 const val pointerNumBits = 64
 
 /**
- * TypeFactory is the only way to create a type, and there is no other way.
+ * TypeFactory is the only way to create a type, and there is no other legal way to create a type.
  * Type manufactured by TypeFactory is unique, as long as two types are semantically the same, they are the same object.
  * This obeys to the LLVM rule.
  */
@@ -139,7 +139,6 @@ object TypeFactory {
   }
 }
 
-/// All constructors inside type and its subclasses are forbidden.
 abstract class Type {
   abstract fun getNumBits(): Int
 
@@ -159,6 +158,11 @@ data class VoidType(val uselessName: String = "void") : Type() {
   }
 }
 
+/**
+ * IntType is the type of integer.
+ * For convenience, the bool type is also regarded as integer type.
+ * @param numOfBits stands for the number of bits of this integer type.
+ */
 data class IntType(val numOfBits: Int) : Type() {
   override fun getNumBits(): Int {
     return numOfBits
@@ -251,7 +255,6 @@ class StructType(val structName: String) : Type() {
 
 }
 
-/// It would be guaranteed that the funcName is always unchanged.
 data class FuncType(val funcName: String, val argList: List<Type>, val result: Type) : Type() {
   constructor(funcMd: FuncMd) : this(
     funcMd.funcName,
@@ -274,6 +277,9 @@ data class FuncType(val funcName: String, val argList: List<Type>, val result: T
   }
 }
 
+/**
+ * LabelType is actually the type of BasicBlock.
+ */
 data class LabelType(val labelName: String) : Type() {
   override fun getNumBits(): Int {
     return 0

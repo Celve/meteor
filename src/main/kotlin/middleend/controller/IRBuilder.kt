@@ -76,6 +76,9 @@ object IRBuilder {
     }
   }
 
+  /**
+   * This function is especially used for converting i8 bool to i1 bool.
+   */
   fun checki8Toi1(value: Value): Value {
     return if (value.type != TypeFactory.getIntType(1)) {
       createTrunc("tobool", value, TypeFactory.getIntType(1))
@@ -84,6 +87,9 @@ object IRBuilder {
     }
   }
 
+  /**
+   * This function is especially used for converting i1 bool to i8 bool.
+   */
   fun checki1Toi8(value: Value): Value {
     return if (value.type == TypeFactory.getIntType(1)) {
       createZExt("frombool", value, TypeFactory.getIntType(8))

@@ -6,6 +6,11 @@ import backend.helper.Utils
 import middleend.basic.*
 import middleend.pass.IRVisitor
 
+/**
+ * ASMGenerator generate assembly code from IR.
+ * In this stage, there is no an idea called callee-save or caller-save, because all registers in used are virtual registers.
+ * This convention only takes effect when we actually use all kinds of the physical register.
+ */
 class ASMGenerator : IRVisitor() {
   var module: ASMModule? = null
   private val regFactory = RegFactory()

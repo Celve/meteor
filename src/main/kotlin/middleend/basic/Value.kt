@@ -1,12 +1,12 @@
 package middleend.basic
 
-/// Value is the basic class of almost all classes in LLVM IR design.
-/// One value is defined formally in an instruction.
-/// In order to have good readability, all values including temporary values should be named in a specified way.
-/// For a unique valueName determined in scopeManager, following constraints would be guaranteed:
-/// Because valueName is unique, valueName.suffix must be unique.
-/// Everytime a valueName is added into symbolTable, it must have a suffix, which is different forms of symbol.
-/// If we want to find the original symbol, we remove the suffix to get it.
+/**
+ * Value is the basic class of almost all classes in LLVM IR design.
+ * One value is defined formally in an instruction.
+ * By definition, every LLVM Value should have its distinct name.
+ * In this project, this constraint is achieved by using a map to store all values, which is ValueSymbolTable.
+ * @see middleend.helper.ValueSymbolTable
+ */
 open class Value(val type: Type, var name: String? = null) {
   val userList: MutableList<User> = mutableListOf()
 
@@ -14,7 +14,9 @@ open class Value(val type: Type, var name: String? = null) {
     return "%${name ?: "unnamed"}"
   }
 
-  /// This function is bidirectional.
+  /**
+   * This function is bidirectional. When user is added, its useeList would be updated, too.
+   */
   fun addUser(user: User) {
     userList.add(user)
     user.useeList.add(this)

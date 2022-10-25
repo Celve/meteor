@@ -10,6 +10,7 @@ import backend.helper.RegFactory
  * For every virtual register, we allocate a space for it on stack.
  * When we need to use it, we load it from stack to a physical register.
  * After we have use it, we store it back to stack.
+ * Besides, in this stage, the only register caller has to preserve is ra, in order to jump back.
  */
 class ASMAllocator : ASMVisitor() {
   private var vir2Offset = hashMapOf<VirReg, Int>()

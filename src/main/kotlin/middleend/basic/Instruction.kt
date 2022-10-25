@@ -116,7 +116,9 @@ class CallInst(name: String?, val funcType: FuncType, val args: List<Value>) :
   }
 }
 
-//<result> = getelementptr inbounds [<#elements> x <type>], [<#elements> x <type>]* <variable>, i32 0, i32 <index>
+/**
+ * Form: <result> = getelementptr inbounds [<#elements> x <type>], [<#elements> x <type>]* <variable>, i32 <index>, i32 <offset>
+ */
 class GetElementPtrInst(val op: String, name: String, val ptr: Value, val index: Value, val offset: ConstantInt?) :
   Instruction(
     when (op) {
