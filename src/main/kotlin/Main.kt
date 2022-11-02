@@ -1,6 +1,7 @@
 import backend.controller.ASMGenerator
-import backend.pass.ASMAllocator
 import backend.pass.ASMEmit
+import backend.pass.ASMRegisterAllocator
+import backend.pass.ASMStackAllocator
 import frontend.ast.controller.ASTBuilder
 import frontend.ast.controller.AntlrErrorListener
 import frontend.ast.node.ProgNode
@@ -39,17 +40,21 @@ fun main(args: Array<String>) {
   middleend.visit(builderRoot)
 
   val irEmit = IREmit()
-  irEmit.visit(middleend.topModule)
+//  irEmit.visit(middleend.topModule)
 
   val backend = ASMGenerator()
-//  backend.visit(middleend.topModule)
+  backend.visit(middleend.topModule)
 
   val asmEmit = ASMEmit()
 //  asmEmit.visit(backend.module!!)
 
-  val asmAllocator = ASMAllocator()
+  val asmAllocator = ASMStackAllocator()
 //  asmAllocator.visit(backend.module!!)
 
-//  asmEmit.visit(asmAllocator.module)
+//  asmEmit.visit(backend.module!!)
+
+  val registerAllocator = ASMRegisterAllocator()
+  registerAllocator.visit(backend.module!!)
+  asmEmit.visit(backend.module!!)
 }
 

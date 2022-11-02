@@ -4,7 +4,7 @@ import frontend.metadata.ClassMd
 import frontend.metadata.FuncMd
 import frontend.metadata.TypeMd
 
-const val pointerNumBits = 64
+const val pointerNumBits = 32
 
 /**
  * TypeFactory is the only way to create a type, and there is no other legal way to create a type.

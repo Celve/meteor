@@ -2,9 +2,15 @@ package backend.basic
 
 import backend.helper.Utils
 
-abstract class Register
+abstract class Register {
+  abstract fun getRegId(): Int
+}
 
 data class VirReg(val id: Int) : Register() {
+  override fun getRegId(): Int {
+    return id
+  }
+
   override fun toString(): String {
     return "v$id"
   }
@@ -12,6 +18,10 @@ data class VirReg(val id: Int) : Register() {
 
 data class PhyReg(val id: Int) : Register() {
   constructor(abi: String) : this(Utils.getPhyRegId(abi))
+
+  override fun getRegId(): Int {
+    return id
+  }
 
   override fun toString(): String {
     return when (id) {
@@ -47,9 +57,13 @@ data class PhyReg(val id: Int) : Register() {
       29 -> "t4"
       30 -> "t5"
       31 -> "t6"
-      else -> "zero"
+      else -> "error"
     }
   }
 }
 
-class GloReg : Register()
+object RegInfo {
+  val callerSavedRegList = ((0..6).map { "t$it" } + (0..7).map { "a$it" } + "ra").map { Utils.getPhyRegId(it) }
+  val calleeSavedRegList = ((0..11).map { "s$it" }).map { Utils.getPhyRegId(it) }
+  val assignableRegList = calleeSavedRegList + callerSavedRegList
+}

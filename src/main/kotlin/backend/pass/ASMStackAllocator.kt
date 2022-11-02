@@ -11,26 +11,38 @@ import backend.helper.RegFactory
  * When we need to use it, we load it from stack to a physical register.
  * After we have use it, we store it back to stack.
  * Besides, in this stage, the only register caller has to preserve is ra, in order to jump back.
+ * Its functionality is broken due to the introduction of new stack frame memory system, please fix it.
  */
-class ASMAllocator : ASMVisitor() {
+class ASMStackAllocator : ASMVisitor() {
   private var vir2Offset = hashMapOf<VirReg, Int>()
-  private val regFactory = RegFactory()
+  private var regFactory = RegFactory()
   private var stackAlloca = 0
   private var limitedStackAlloca = 0
-  val module = ASMModule()
+  private val newModule = ASMModule()
 
   override fun visit(module: ASMModule) {
+    regFactory = module.regFactory
     module.globalPtr.forEach { it.value.accept(this) }
     module.funcList.forEach { it.accept(this) }
+    module.funcList = newModule.funcList
+    module.globalPtr = newModule.globalPtr
   }
 
   override fun visit(globalPtr: ASMGlobalPointer) {
-    module.addGlobalPtr(globalPtr.name, globalPtr)
+    newModule.addGlobalPtr(globalPtr.name, globalPtr)
   }
 
   override fun visit(func: ASMFunc) {
+    // because ra's consistency is necessary in function call
+    // therefore even if we allocate variable on stack, we have to maintain it
+    val raVirReg = regFactory.newVirReg()
+    ASMBuilder.setInsertPointBefore(func.blockList.first().instList.first())
+    ASMBuilder.createMvInst(raVirReg, regFactory.getPhyReg("ra"))
+    ASMBuilder.setInsertPointBefore(func.blockList.first().instList.last())
+    ASMBuilder.createMvInst(regFactory.getPhyReg("ra"), raVirReg)
+
     val newFunc = ASMFunc(func.name)
-    module.addFunc(newFunc)
+    newModule.addFunc(newFunc)
     ASMBuilder.setCurrentFunc(newFunc)
     regFactory.position = func
 
@@ -62,7 +74,12 @@ class ASMAllocator : ASMVisitor() {
     return if (pendingReg is PhyReg) {
       pendingReg
     } else {
-      ASMBuilder.createLoadInst(4, phyReg, Immediate(getOffset(pendingReg as VirReg)), regFactory.getPhyReg("sp"))
+      ASMBuilder.createLoadInst(
+        4,
+        phyReg,
+        DeterminedImmediate(getOffset(pendingReg as VirReg)),
+        regFactory.getPhyReg("sp")
+      )
       phyReg
     }
   }
@@ -77,7 +94,7 @@ class ASMAllocator : ASMVisitor() {
 
   private fun supplementAsRd(pendingReg: Register, phyReg: PhyReg) {
     if (pendingReg is VirReg) {
-      ASMBuilder.createStoreInst(4, phyReg, Immediate(getOffset(pendingReg)), regFactory.getPhyReg("sp"))
+      ASMBuilder.createStoreInst(4, phyReg, DeterminedImmediate(getOffset(pendingReg)), regFactory.getPhyReg("sp"))
     }
   }
 
@@ -120,7 +137,7 @@ class ASMAllocator : ASMVisitor() {
   override fun visit(inst: ASMArithiInst) {
     if (inst.rs == PhyReg("sp") && inst.rd == PhyReg("sp")) {
       val spReg = regFactory.getPhyReg("sp")
-      ASMBuilder.createArithiInst("addi", spReg, spReg, Immediate(limitedStackAlloca))
+      ASMBuilder.createArithiInst("addi", spReg, spReg, DeterminedImmediate(limitedStackAlloca))
       limitedStackAlloca = -limitedStackAlloca
     } else if (inst.rs == PhyReg("sp")) {
       // this case would never occur, due to the optimization of the generator
@@ -145,7 +162,7 @@ class ASMAllocator : ASMVisitor() {
 
   override fun visit(inst: ASMCallInst) {
     // FIXME: this is buggy because the builtin func is generated every single time
-    ASMBuilder.createCallInst(module.getFunc(inst.label.name) ?: ASMFunc(inst.label.name))
+    ASMBuilder.createCallInst(newModule.getFunc(inst.label.name) ?: ASMFunc(inst.label.name))
   }
 
   override fun visit(inst: ASMLiInst) {
@@ -170,7 +187,7 @@ class ASMAllocator : ASMVisitor() {
   }
 
   override fun visit(inst: ASMCmpzInst) {
-    val rsReg = replaceWithAsRs(inst.rs1, regFactory.getPhyReg("t0"))
+    val rsReg = replaceWithAsRs(inst.rs, regFactory.getPhyReg("t0"))
     val rdReg = replaceWithAsRd(inst.rd, regFactory.getPhyReg("t1"))
     ASMBuilder.createCmpzInst(inst.op, rdReg, rsReg)
     supplementAsRd(inst.rd, rdReg)

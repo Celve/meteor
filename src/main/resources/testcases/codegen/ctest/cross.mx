@@ -1,0 +1,23 @@
+/*
+Test Package: Codegen
+Author: Celve
+Time: 2022-10-21
+Intention: Test the cross function register allocation, but I currently fail.
+Input:
+=== input ===
+=== end ===
+Output:
+=== output ===
+=== end ===
+ExitCode: 0
+InstLimit: -1
+Origin Package: None
+*/
+int triple_sum(int a, int b, int c) {
+  return a + b + c;
+}
+
+int main() {
+  int a = 1, b = 2, c = 3, d = 4, e = 5, f = 6, g = 7, h = 8;
+  (a + b) + (c + d) + (e + f) + (g + h);
+}

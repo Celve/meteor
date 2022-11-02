@@ -13,10 +13,10 @@ import middleend.pass.IRVisitor
  */
 class ASMGenerator : IRVisitor() {
   var module: ASMModule? = null
-  private val regFactory = RegFactory()
+  private var regFactory = RegFactory()
   private var value2Reg = hashMapOf<Value, Register>() // this mapping is only for virtual register
   private var reg2Value = hashMapOf<Register, Value>() // this mapping is only for virtual register
-  private var value2Offset = hashMapOf<Value, Int>() // this mapping is only for space allocated on stack
+  private var value2Offset = hashMapOf<Value, Immediate>() // this mapping is only for space allocated on stack
   private var block2ExtraPhiInstList =
     hashMapOf<ASMBlock, MutableList<Pair<Register, Value>>>() // this mapping is only for phi inst
 
@@ -31,7 +31,7 @@ class ASMGenerator : IRVisitor() {
   /**
    * @param offset is the offset from the stack pointer, representing a allocated space on stack
    */
-  fun linkValAndOffset(value: Value, offset: Int) {
+  fun linkValAndOffset(value: Value, offset: Immediate) {
     value2Offset[value] = offset
   }
 
@@ -43,13 +43,13 @@ class ASMGenerator : IRVisitor() {
   fun getRegOfValue(value: Value): Register? {
     return if (value is ConstantInt) {
       val virReg = regFactory.newVirReg()
-      ASMBuilder.createLiInst(virReg, Immediate(value.value))
+      ASMBuilder.createLiInst(virReg, DeterminedImmediate(value.value))
       virReg
     } else if (value is ConstantNull) {
       val virReg = regFactory.newVirReg()
       ASMBuilder.createLiInst(
         virReg,
-        Immediate(0)
+        DeterminedImmediate(0)
       ) // FIXME: I don't know whether it is correct, for convenience, I use 0 to represent null
       virReg
     } else if (value is GlobalVariable || value is ConstantStr) {
@@ -61,12 +61,13 @@ class ASMGenerator : IRVisitor() {
     }
   }
 
-  fun getOffsetOfValue(value: Value): Int? {
+  fun getOffsetOfValue(value: Value): Immediate? {
     return value2Offset[value]
   }
 
   override fun visit(topModule: TopModule) {
     module = ASMModule()
+    regFactory = module!!.regFactory
 
     // FIXME: The whole process doesn't take care of the global variable
     topModule.globalVar.forEach { it.value.accept(this) }
@@ -102,6 +103,7 @@ class ASMGenerator : IRVisitor() {
 
   override fun visit(func: Func) {
     val asmFunc = ASMFunc(func.name!!)
+    asmFunc.argsNum = func.argList.size
     ASMBuilder.setCurrentFunc(asmFunc)
     module!!.funcList.add(asmFunc)
     regFactory.position = asmFunc
@@ -122,7 +124,7 @@ class ASMGenerator : IRVisitor() {
     // preserve the stack pointer
     ASMBuilder.setInsertPointBefore(asmFunc.blockList.first().instList.first())
     val spReg = regFactory.getPhyReg("sp")
-    ASMBuilder.createArithiInst("addi", spReg, spReg, Immediate(-asmFunc.stackAlloca))
+    ASMBuilder.createArithiInst("addi", spReg, spReg, -asmFunc.stackFrame.newAllocaSpace())
     ASMBuilder.setInsertBlock(asmFunc.blockList.last())
   }
 
@@ -138,7 +140,7 @@ class ASMGenerator : IRVisitor() {
       ASMBuilder.setInsertPointBefore(asmBlock.firstBrInstOrNull()!!)
       block2ExtraPhiInstList[asmBlock]!!.forEach {
         if (it.second is ConstantInt) {
-          ASMBuilder.createLiInst(it.first, Immediate((it.second as ConstantInt).value))
+          ASMBuilder.createLiInst(it.first, DeterminedImmediate((it.second as ConstantInt).value))
         } else {
           ASMBuilder.createMvInst(it.first, value2Reg[it.second]!!)
         }
@@ -149,30 +151,41 @@ class ASMGenerator : IRVisitor() {
 
   override fun visit(inst: AllocaInst) {
     val func = ASMBuilder.getCurrentFunc()
-    linkValAndOffset(inst, func.stackAlloca)
-    func.stackAlloca += inst.getAllocatedSize()
+    linkValAndOffset(inst, func.stackFrame.newLocalVariable())
+//    func.stackAlloca += inst.getAllocatedSize()
+//    func.stackAlloca += 4
   }
 
   override fun visit(inst: CallInst) {
     // there is not a concept of caller save in virtual register
+    val func = ASMBuilder.getCurrentFunc()
     for ((index, arg) in inst.args.withIndex()) { // TODO: I don't know what to do when too many args
-      ASMBuilder.createMvInst(regFactory.getPhyReg(10 + index), getRegOfValue(arg)!!, "mv args")
+      if (index <= 7) {
+        ASMBuilder.createMvInst(regFactory.getPhyReg(10 + index), getRegOfValue(arg)!!)
+      } else {
+        ASMBuilder.createStoreInst(
+          arg.type.getAlign(),
+          getRegOfValue(arg)!!,
+          func.stackFrame.getCalleeArgument(index - 8),
+          regFactory.getPhyReg("sp")
+        )
+      }
     }
 
     // however, we should preserve ra in this stage
-    val raVirReg = regFactory.newVirReg()
-    ASMBuilder.createMvInst(raVirReg, PhyReg("ra"))
+//    val raVirReg = regFactory.newVirReg()
+//    ASMBuilder.createMvInst(raVirReg, PhyReg("ra"))
 
     // TODO: this implementation is buggy or costy, because the builtin func is generated every single time
     ASMBuilder.createCallInst(module!!.getFunc(inst.funcType.funcName) ?: ASMFunc(inst.funcType.funcName))
     if (inst.funcType.result != TypeFactory.getVoidType()) {
       val virReg = regFactory.newVirReg()
       linkValAndReg(inst, virReg)
-      ASMBuilder.createMvInst(virReg, regFactory.getPhyReg("a0"), "mv result")
+      ASMBuilder.createMvInst(virReg, regFactory.getPhyReg("a0"))
     }
 
     // move ra back
-    ASMBuilder.createMvInst(PhyReg("ra"), raVirReg)
+//    ASMBuilder.createMvInst(PhyReg("ra"), raVirReg)
   }
 
   override fun visit(inst: LoadInst) {
@@ -183,18 +196,16 @@ class ASMGenerator : IRVisitor() {
       ASMBuilder.createLoadInst(
         inst.type.getAlign(),
         virReg,
-        Immediate(getOffsetOfValue(inst.addr)!!),
-        regFactory.getPhyReg("sp"),
-        "load"
+        getOffsetOfValue(inst.addr)!!,
+        regFactory.getPhyReg("sp")
       )
     } else {
       // for values whose location is unknown
       ASMBuilder.createLoadInst(
         inst.type.getAlign(),
         virReg,
-        Immediate(0),
-        getRegOfValue(inst.addr)!!,
-        "load"
+        DeterminedImmediate(0),
+        getRegOfValue(inst.addr)!!
       )
     }
   }
@@ -219,7 +230,7 @@ class ASMGenerator : IRVisitor() {
       if (insertPoint != null) {
         ASMBuilder.setInsertPointBefore(insertPoint)
         if (pred.first is ConstantInt) {
-          ASMBuilder.createLiInst(reg, Immediate((pred.first as ConstantInt).value))
+          ASMBuilder.createLiInst(reg, DeterminedImmediate((pred.first as ConstantInt).value))
         } else {
           ASMBuilder.createMvInst(reg, value2Reg[pred.first]!!)
         }
@@ -267,14 +278,14 @@ class ASMGenerator : IRVisitor() {
       val elemSize = (inst.ptr.type as PointerType).pointeeTy!!.getAlign() // TODO: I don't know if it's right
       val elemSizeReg = regFactory.newVirReg()
       val indexReg = getRegOfValue(inst.index)!!
-      ASMBuilder.createLiInst(elemSizeReg, Immediate(elemSize))
+      ASMBuilder.createLiInst(elemSizeReg, DeterminedImmediate(elemSize))
       ASMBuilder.createArithInst("mul", shiftReg, elemSizeReg, indexReg)
       ASMBuilder.createArithInst("add", shiftReg, getRegOfValue(inst.ptr)!!, shiftReg)
     } else if (inst.op == "array") {
       val elemSize = ((inst.ptr.type as PointerType).pointeeTy as ArrayType).containedType.getAlign()
       val elemSizeReg = regFactory.newVirReg()
       val offsetReg = getRegOfValue(inst.offset!!)!!
-      ASMBuilder.createLiInst(elemSizeReg, Immediate(elemSize))
+      ASMBuilder.createLiInst(elemSizeReg, DeterminedImmediate(elemSize))
       ASMBuilder.createArithInst("mul", shiftReg, elemSizeReg, offsetReg)
       ASMBuilder.createArithInst("add", shiftReg, getRegOfValue(inst.ptr)!!, shiftReg)
     } else { // it must be struct
@@ -283,7 +294,7 @@ class ASMGenerator : IRVisitor() {
       val structType = (inst.ptr.type as PointerType).pointeeTy as StructType
       val elemSizeSum = structType.symbolList.take(offset).sumOf { it.second.getAlign() }
       val elemSizeSumReg = regFactory.newVirReg()
-      ASMBuilder.createLiInst(elemSizeSumReg, Immediate(elemSizeSum))
+      ASMBuilder.createLiInst(elemSizeSumReg, DeterminedImmediate(elemSizeSum))
       ASMBuilder.createArithInst("add", shiftReg, getRegOfValue(inst.ptr)!!, elemSizeSumReg)
     }
   }
@@ -308,7 +319,7 @@ class ASMGenerator : IRVisitor() {
       ASMBuilder.createStoreInst(
         inst.value.type.getAlign(),
         getRegOfValue(inst.value)!!,
-        Immediate(getOffsetOfValue(inst.addr)!!),
+        getOffsetOfValue(inst.addr)!!,
         regFactory.getPhyReg("sp"),
       )
     } else {
@@ -316,7 +327,7 @@ class ASMGenerator : IRVisitor() {
       ASMBuilder.createStoreInst(
         inst.value.type.getAlign(),
         getRegOfValue(inst.value)!!,
-        Immediate(0),
+        DeterminedImmediate(0),
         getRegOfValue(inst.addr)!!,
       )
     }
@@ -337,7 +348,7 @@ class ASMGenerator : IRVisitor() {
       "sle" -> {
         val relayVirReg = regFactory.newVirReg()
         ASMBuilder.createCmpInst("slt", relayVirReg, rhsReg, lhsReg)
-        ASMBuilder.createArithiInst("xori", virReg, relayVirReg, Immediate(1))
+        ASMBuilder.createArithiInst("xori", virReg, relayVirReg, DeterminedImmediate(1))
       }
 
       "sgt" -> {
@@ -347,7 +358,7 @@ class ASMGenerator : IRVisitor() {
       "sge" -> {
         val relayVirReg = regFactory.newVirReg()
         ASMBuilder.createCmpInst("slt", relayVirReg, lhsReg, rhsReg)
-        ASMBuilder.createArithiInst("xori", virReg, relayVirReg, Immediate(1))
+        ASMBuilder.createArithiInst("xori", virReg, relayVirReg, DeterminedImmediate(1))
       }
 
       "eq" -> {
@@ -368,8 +379,9 @@ class ASMGenerator : IRVisitor() {
     if (inst.retVal != null) {
       ASMBuilder.createMvInst(regFactory.getPhyReg("a0"), getRegOfValue(inst.retVal)!!)
     }
-    val stackAlloca = ASMBuilder.getCurrentFunc().stackAlloca
-    ASMBuilder.createArithiInst("addi", PhyReg("sp"), PhyReg("sp"), Immediate(stackAlloca))
+//    val stackAlloca = ASMBuilder.getCurrentFunc().stackAlloca
+    val func = ASMBuilder.getCurrentFunc()
+    ASMBuilder.createArithiInst("addi", PhyReg("sp"), PhyReg("sp"), func.stackFrame.newAllocaSpace())
     ASMBuilder.createRet()
   }
 }

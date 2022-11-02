@@ -9,8 +9,10 @@ import backend.controller.ASMVisitor
  */
 class ASMFunc(name: String) : Label(name) {
   val blockList = mutableListOf<ASMBlock>()
+  var argsNum = 0
   var usedVirRegNum = 0
   var stackAlloca = 0
+  val stackFrame = StackFrame()
 
   /**
    * @param pureName refers to the name of block without any prefix

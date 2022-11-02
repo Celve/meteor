@@ -4,6 +4,7 @@ import backend.basic.ASMFunc
 import backend.basic.PhyReg
 import backend.basic.VirReg
 
+
 class RegFactory {
   var virRegId = 0
   val id2Vir = hashMapOf<Int, VirReg>()
@@ -30,5 +31,9 @@ class RegFactory {
       id2Phy[id] = PhyReg(id)
     }
     return id2Phy[id]!!
+  }
+
+  fun getVirReg(id: Int): VirReg? {
+    return id2Vir[id]
   }
 }

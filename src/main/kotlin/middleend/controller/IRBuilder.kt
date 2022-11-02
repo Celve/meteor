@@ -9,6 +9,7 @@ object IRBuilder {
   private var point: Instruction? = null
   private var returnBlock: BasicBlock? = null
   private var vst = ValueSymbolTable()
+  private var isBefore = false
 
   fun setCurrentFunc(newFunc: Func) {
     func = newFunc
@@ -59,12 +60,15 @@ object IRBuilder {
     point = inst
     block = inst.parent
     func = block!!.parent
+    isBefore = true
   }
 
   fun setInsertPointAfter(inst: Instruction) {
     block = inst.parent
     func = block!!.parent
-    point = block!!.instList[inst.getIndexAtBlock() + 1]
+//    point = block!!.instList[inst.getIndexAtBlock() + 1]
+    point = inst
+    isBefore = false
   }
 
   private fun insertInstBeforeInsertPoint(inst: Instruction) {
@@ -72,7 +76,11 @@ object IRBuilder {
       inst.insertAtTheTailOf(block!!)
     } else {
       val index = point!!.getIndexAtBlock()
-      inst.insertAtIndexOf(block!!, index)
+      if (isBefore) {
+        inst.insertAtIndexOf(block!!, index)
+      } else {
+        inst.insertAtIndexOf(block!!, index + 1)
+      }
     }
   }
 

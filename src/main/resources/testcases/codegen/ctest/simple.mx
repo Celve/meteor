@@ -1,0 +1,20 @@
+/*
+Test Package: Codegen
+Author: Celve
+Time: 2022-10-21
+Intention: Test the cross function register allocation
+Input:
+=== input ===
+=== end ===
+Output:
+=== output ===
+3
+=== end ===
+ExitCode: 0
+InstLimit: -1
+Origin Package: None
+*/
+int main() {
+  int a = 1, b = 2;
+  printlnInt(a + b);
+}

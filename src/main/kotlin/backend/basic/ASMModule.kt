@@ -1,8 +1,11 @@
 package backend.basic
 
+import backend.helper.RegFactory
+
 class ASMModule {
-  val funcList = mutableListOf<ASMFunc>()
+  var funcList = mutableListOf<ASMFunc>()
   var globalPtr = hashMapOf<String, ASMGlobalPointer>()
+  val regFactory = RegFactory()
 
   fun addFunc(func: ASMFunc) {
     funcList.add(func)

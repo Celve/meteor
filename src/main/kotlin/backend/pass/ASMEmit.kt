@@ -140,7 +140,7 @@ class ASMEmit : ASMVisitor() {
   }
 
   override fun visit(inst: ASMCmpzInst) {
-    print("\t${inst.op} ${inst.rd}, ${inst.rs1}")
+    print("\t${inst.op} ${inst.rd}, ${inst.rs}")
     printPs(inst.comment)
   }
 }
