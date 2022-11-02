@@ -45,6 +45,8 @@ class ASMRegisterAllocator : ASMVisitor() {
   /** a stack that holds temporary registers which is currently deleted from graph */
   val selectedStack = ArrayDeque<Register>()
 
+  val rewrittenNodes = hashSetOf<Register>()
+
   /**
    * The following three are used for coalescing, especially.
    * All moves, also, could be divided into five categories.
@@ -93,6 +95,7 @@ class ASMRegisterAllocator : ASMVisitor() {
   var originVirRegNum = 0 // it would be updated in visit(module)
   var asmModule = ASMModule() // it would be updated in visit(module)
   var asmFunc = ASMFunc("initial") // it would be updated in visit(func)
+  var raVirReg: VirReg? = null
 
   override fun visit(module: ASMModule) {
     regFactory = module.regFactory
@@ -106,10 +109,14 @@ class ASMRegisterAllocator : ASMVisitor() {
     val exitBlock = asmFunc.blockList.last()
     for (reg in listOf(1) + RegInfo.calleeSavedRegList) {
       val virReg = regFactory.newVirReg()
+      val phyReg = regFactory.getPhyReg(reg)
+      if (reg == 1) {
+        raVirReg = virReg
+      }
       ASMBuilder.setInsertPointBefore(entryBlock.instList[1])
-      ASMBuilder.createMvInst(virReg, regFactory.getPhyReg(reg))
+      ASMBuilder.createMvInst(virReg, phyReg)
       ASMBuilder.setInsertPointBefore(exitBlock.instList[exitBlock.instList.size - 2])
-      ASMBuilder.createMvInst(regFactory.getPhyReg(reg), virReg)
+      ASMBuilder.createMvInst(phyReg, virReg)
     }
   }
 
@@ -251,11 +258,13 @@ class ASMRegisterAllocator : ASMVisitor() {
       }
     }
 //    for (func in asmModule.funcList) {
-//      for (block in func.blockList) {
-//        println("$block's liveInSet: ${block.liveInSet}")
-//        println("$block's liveOutSet: ${block.liveOutSet}")
-//        println("$block's succList: ${block.succList}")
-//      }
+//    for (block in asmFunc.blockList) {
+//      println("$block's liveInSet: ${block.liveInSet}")
+//      println("$block's liveOutSet: ${block.liveOutSet}")
+//      println("$block's useSet: ${block.useSet}")
+//      println("$block's defSet: ${block.defSet}")
+//      println("$block's succList: ${block.succList}")
+//    }
 //    }
   }
 
@@ -519,7 +528,7 @@ class ASMRegisterAllocator : ASMVisitor() {
 
   private fun selectSpilledWithHeuristic(candidates: MutableList<Register>): Register? {
     // this heuristic is bad, because it doesn't consider context of the register
-    return candidates.find { it is VirReg && it.id < originVirRegNum }
+    return candidates.find { it is VirReg && !rewrittenNodes.contains(it) }
   }
 
   private fun selectColorWithHeuristic(candidate: HashSet<Int>): Int {
@@ -572,8 +581,13 @@ class ASMRegisterAllocator : ASMVisitor() {
 //    }
     for (spilled in spilledNodes) {
 //      println("$spilled is rewritten")
+      rewrittenNodes.add(spilled)
       // allocate memory on stack
-      val offset = asmFunc.stackFrame.newSavedRegister()
+      val offset = if (spilled == raVirReg) {
+        asmFunc.stackFrame.newReturnAddress()
+      } else {
+        asmFunc.stackFrame.newSavedRegister()
+      }
 
       // create store for def, load for use
       for (block in asmFunc.blockList) {
@@ -603,7 +617,8 @@ class ASMRegisterAllocator : ASMVisitor() {
       }
     }
 //    val emit = ASMEmit()
-//    emit.visit(asmModule)
+//    emit.visit(asmFunc)
+//    println(adjList.getValue(regFactory.getVirReg(123)!!))
 //    Thread.sleep(1000)
   }
 
@@ -612,6 +627,7 @@ class ASMRegisterAllocator : ASMVisitor() {
   }
 
   override fun visit(func: ASMFunc) {
+//    println(func)
     asmFunc = func
     processCalleeSaved()
     originVirRegNum = regFactory.virRegId

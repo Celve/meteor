@@ -76,7 +76,8 @@ def test_single_file(filename):
             print(Colors.BOLD + Colors.FAIL +
                   "Runtime Error {}".format(exit_code) + Colors.ENDC)
             return 0
-    elif os.system("diff -B --strip-trailing-cr --ignore-all-space debug/answer.txt debug/output.txt > debug/diff.txt"):
+    elif os.system(
+            "diff -w -B --strip-trailing-cr --ignore-all-space debug/answer.txt debug/output.txt > debug/diff.txt"):
         print(Colors.BOLD + Colors.FAIL + "Wrong Answer" + Colors.ENDC)
         if enumerate_count("debug/output.txt") > 50:
             print(Colors.BOLD + Colors.FAIL + "Output too long" + Colors.ENDC)

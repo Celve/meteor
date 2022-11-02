@@ -19,6 +19,7 @@ class ASMGenerator : IRVisitor() {
   private var value2Offset = hashMapOf<Value, Immediate>() // this mapping is only for space allocated on stack
   private var block2ExtraPhiInstList =
     hashMapOf<ASMBlock, MutableList<Pair<Register, Value>>>() // this mapping is only for phi inst
+  private var allocaInstNum = 0
 
   /**
    * @param reg should be a virtual register
@@ -116,7 +117,13 @@ class ASMGenerator : IRVisitor() {
     for ((index, arg) in func.argList.withIndex()) {
       val virReg = regFactory.newVirReg()
       linkValAndReg(arg, virReg)
-      ASMBuilder.createMvInst(virReg, regFactory.getPhyReg(index + 10))
+      if (index <= 7) {
+        ASMBuilder.createMvInst(virReg, regFactory.getPhyReg(index + 10))
+      } else {
+        val offset = asmFunc.stackFrame.newAllocaSpace() + (index - 8) * 4
+        ASMBuilder.createLoadInst(arg.type.getAlign(), virReg, offset, regFactory.getPhyReg("sp"))
+
+      }
     }
 
     func.blockList.forEach { it.accept(this) }
@@ -151,7 +158,16 @@ class ASMGenerator : IRVisitor() {
 
   override fun visit(inst: AllocaInst) {
     val func = ASMBuilder.getCurrentFunc()
-    linkValAndOffset(inst, func.stackFrame.newLocalVariable())
+    if (++allocaInstNum <= func.argsNum) {
+      if (allocaInstNum <= 8) {
+        linkValAndOffset(inst, func.stackFrame.newCallerArgument())
+      } else {
+        // this might lead to an assignment to address in another function's stack frame
+        linkValAndOffset(inst, func.stackFrame.newAllocaSpace() + (allocaInstNum - 9) * 4)
+      }
+    } else {
+      linkValAndOffset(inst, func.stackFrame.newLocalVariable())
+    }
 //    func.stackAlloca += inst.getAllocatedSize()
 //    func.stackAlloca += 4
   }

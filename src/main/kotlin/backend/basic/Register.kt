@@ -57,7 +57,7 @@ data class PhyReg(val id: Int) : Register() {
       29 -> "t4"
       30 -> "t5"
       31 -> "t6"
-      else -> "error"
+      else -> "error($id)"
     }
   }
 }

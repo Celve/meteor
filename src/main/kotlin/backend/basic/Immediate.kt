@@ -9,6 +9,7 @@ data class UndeterminedImmediate(
   val stackFrame: StackFrame,
   val hierarchy: OffsetType,
   val id: Int,
+  val delta: Int = 0,
   val sign: Int = 1
 ) : Immediate() {
   fun get(): DeterminedImmediate {
@@ -22,12 +23,20 @@ data class UndeterminedImmediate(
           OffsetType.LOCAL_VARIABLE -> (calleeArgumentId + id) * 4
           OffsetType.CALLEE_ARGUMENT -> id * 4
         }
-      }.times(sign)
+      }.plus(delta).times(sign)
     )
   }
 
   operator fun unaryMinus(): UndeterminedImmediate {
-    return UndeterminedImmediate(stackFrame, hierarchy, id, -sign)
+    return UndeterminedImmediate(stackFrame, hierarchy, id, delta, -sign)
+  }
+
+  operator fun plus(operand: Int): UndeterminedImmediate {
+    return UndeterminedImmediate(stackFrame, hierarchy, id, delta + operand * sign, sign)
+  }
+
+  override fun toString(): String {
+    return "$hierarchy-$id"
   }
 }
 

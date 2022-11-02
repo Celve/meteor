@@ -1,6 +1,7 @@
 package backend.basic
 
 import backend.controller.ASMVisitor
+import kotlin.math.min
 
 /**
  * Reference to LLVM Value, ASMInst should like instruction in LLVM, is a value, which is called Register here.
@@ -234,7 +235,7 @@ class ASMCmpiInst(val op: String, var rs1: Register, val imm: DeterminedImmediat
 
 class ASMCallInst(val label: Label, comment: String) : ASMInst(comment) {
   override fun getRs(): List<Register> {
-    return listOf(PhyReg("ra")) + (0 until (label as ASMFunc).argsNum).map { PhyReg(10 + it) }
+    return listOf(PhyReg("ra")) + (0 until min(8, (label as ASMFunc).argsNum)).map { PhyReg(10 + it) }
 //    return RegInfo.callerSavedRegList.map { PhyReg(it) }
 //    return listOf(PhyReg("ra"))
   }
