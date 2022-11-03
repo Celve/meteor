@@ -46,7 +46,7 @@ class ASMStackAllocator : ASMVisitor() {
     ASMBuilder.setCurrentFunc(newFunc)
     regFactory.position = func
 
-    func.blockList.forEach { newFunc.addBlock(ASMBlock(it.pureName, newFunc)) }
+    func.blockList.forEach { newFunc.addBlock(ASMBlock(it.pureName, newFunc, it.executionFrequency)) }
 
     vir2Offset = hashMapOf()
     stackAlloca = func.stackAlloca + func.usedVirRegNum * 4

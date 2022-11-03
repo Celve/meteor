@@ -46,6 +46,7 @@ class ASMEmit : ASMVisitor() {
   }
 
   override fun visit(block: ASMBlock) {
+//    println("execution frequency: ${block.executionFrequency}")
     println("${block.name}: ")
     block.instList.forEach { it.accept(this) }
     println("")

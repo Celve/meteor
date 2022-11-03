@@ -6,6 +6,10 @@ class LoopManager {
   private val continueBlockStack = ArrayDeque<BasicBlock>()
   private val breakBlockStack = ArrayDeque<BasicBlock>()
 
+  fun getNestedLoopsNum(): Int {
+    return continueBlockStack.size
+  }
+
   fun addLast(continueBlock: BasicBlock, breakBlock: BasicBlock) {
     continueBlockStack.addLast(continueBlock)
     breakBlockStack.addLast(breakBlock)

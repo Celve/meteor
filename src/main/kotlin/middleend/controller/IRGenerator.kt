@@ -10,6 +10,7 @@ import middleend.basic.*
 import middleend.helper.LoopManager
 import middleend.helper.Utils
 import middleend.helper.ValueSymbolTable
+import kotlin.math.pow
 
 class IRGenerator : ASTVisitor() {
   private val scopeManger = ScopeManager()
@@ -56,7 +57,7 @@ class IRGenerator : ASTVisitor() {
       // create implicit constructor
       if (!classMd.hasCustomCtor) {
         val ctor = topModule.getFunc("${className}.new")!!
-        val entryBlock = BasicBlock("entry")
+        val entryBlock = BasicBlock("entry", 1)
         IRBuilder.setCurrentFunc(ctor)
         IRBuilder.setInsertBlock(entryBlock)
         IRBuilder.createRetVoid()
@@ -99,7 +100,7 @@ class IRGenerator : ASTVisitor() {
     val initFuncName = "_global_variable_init"
     initFunc = Func(initFuncName, FuncType(initFuncName, listOf(), TypeFactory.getVoidType()), listOf())
 
-    val initBlock = BasicBlock("entry")
+    val initBlock = BasicBlock("entry", 1)
     initBlock.insertAtTheTailOf(initFunc!!)
 
     curr.block.accept(this)
@@ -150,7 +151,7 @@ class IRGenerator : ASTVisitor() {
     IRBuilder.setCurrentFunc(func)
     func.vst.addAll(topModule)
 
-    val entryBlock = BasicBlock("entry")
+    val entryBlock = BasicBlock("entry", 1)
     IRBuilder.setInsertBlock(entryBlock)
 
     /** it must contain only one arg, which should be the "this" pointer */
@@ -162,7 +163,7 @@ class IRGenerator : ASTVisitor() {
     curr.funcBlock?.accept(this)
 
     if (!IRBuilder.getInsertBlock()!!.hasTerminator()) {
-      val returnBlock = BasicBlock("return")
+      val returnBlock = BasicBlock("return", 1)
       IRBuilder.createBr(returnBlock)
       IRBuilder.setInsertBlock(returnBlock)
       IRBuilder.createRetVoid()
@@ -183,7 +184,7 @@ class IRGenerator : ASTVisitor() {
     /** avoid conflicts with global value */
     val funcType = func.type as FuncType
 
-    val entryBlock = BasicBlock("entry")
+    val entryBlock = BasicBlock("entry", 1)
     IRBuilder.setInsertBlock(entryBlock)
 
     /** setup for parameters */
@@ -215,7 +216,7 @@ class IRGenerator : ASTVisitor() {
       }
     }
 
-    val returnBlock = BasicBlock("return")
+    val returnBlock = BasicBlock("return", 1)
     IRBuilder.setReturnBlock(returnBlock)
     IRBuilder.resetInsertBlock(returnBlock)
     if (funcType.result != TypeFactory.getVoidType()) {
@@ -277,10 +278,12 @@ class IRGenerator : ASTVisitor() {
   }
 
   override fun visit(curr: ForSuiteNode) {
-    val condBlock = BasicBlock("for.cond")
-    val incBlock = BasicBlock("for.inc")
-    val bodyBlock = BasicBlock("for.body")
-    val endBlock = BasicBlock("for.end")
+    val nestedLoopsNum = loopManager.getNestedLoopsNum() + 1
+    val executionFrequency = 10.0.pow(nestedLoopsNum).toInt()
+    val condBlock = BasicBlock("for.cond", executionFrequency)
+    val incBlock = BasicBlock("for.inc", executionFrequency)
+    val bodyBlock = BasicBlock("for.body", executionFrequency)
+    val endBlock = BasicBlock("for.end", executionFrequency)
 
     scopeManger.addLast(curr.initScope)
     loopManager.addLast(incBlock, endBlock)
@@ -313,9 +316,11 @@ class IRGenerator : ASTVisitor() {
   }
 
   override fun visit(curr: WhileSuiteNode) {
-    val condBlock = BasicBlock("while.cond")
-    val bodyBlock = BasicBlock("while.body")
-    val endBlock = BasicBlock("while.end")
+    val nestedLoopsNum = loopManager.getNestedLoopsNum() + 1
+    val executionFrequency = 10.0.pow(nestedLoopsNum).toInt()
+    val condBlock = BasicBlock("while.cond", executionFrequency)
+    val bodyBlock = BasicBlock("while.body", executionFrequency)
+    val endBlock = BasicBlock("while.end", executionFrequency)
 
     scopeManger.addLast(curr.scope)
     loopManager.addLast(condBlock, endBlock)
@@ -338,9 +343,12 @@ class IRGenerator : ASTVisitor() {
   override fun visit(curr: CondSuiteNode) {
     curr.cond.accept(this)
 
-    val endBlock = BasicBlock("if.end")
-    val thenBlock = BasicBlock("if.then")
-    val elseBlock: BasicBlock? = if (curr.elseDo != null) BasicBlock("if.else") else null
+    val nestedLoopsNum = loopManager.getNestedLoopsNum()
+    val executionFrequency =
+      10.0.pow(nestedLoopsNum).toInt() // according to EAC, it should be divided by the number of branches
+    val endBlock = BasicBlock("if.end", executionFrequency)
+    val thenBlock = BasicBlock("if.then", executionFrequency)
+    val elseBlock: BasicBlock? = if (curr.elseDo != null) BasicBlock("if.else", executionFrequency) else null
     if (curr.elseDo != null) {
       IRBuilder.createBr(curr.cond.value!!, thenBlock, elseBlock!!)
     } else {
@@ -444,7 +452,7 @@ class IRGenerator : ASTVisitor() {
     return bitcast
   }
 
-  private fun mallocArray(currType: PointerType, arraySizeList: List<Value>): Value {
+  private fun mallocArray(currType: PointerType, arraySizeList: List<Value>, count: Int = 0): Value {
     val arraySize = arraySizeList.first()
     val containedType = currType.pointeeTy!!
 
@@ -483,9 +491,11 @@ class IRGenerator : ASTVisitor() {
     /** the start point is the last element of array, which iterate until the addr before the first element */
     val startPoint = IRBuilder.createGEP("ptr", "arrayidx", extendedArray, arraySize, null)
     val previousBlock = IRBuilder.getInsertBlock()!!
-    val condBlock = BasicBlock("while.cond")
-    val bodyBlock = BasicBlock("while.body")
-    val endBlock = BasicBlock("while.end")
+    val nestedLoopsNum = loopManager.getNestedLoopsNum() + count + 1
+    val executionFrequency = 10.0.pow(nestedLoopsNum).toInt()
+    val condBlock = BasicBlock("while.cond", executionFrequency)
+    val bodyBlock = BasicBlock("while.body", executionFrequency)
+    val endBlock = BasicBlock("while.end", executionFrequency)
 
     /** a small optimization by using phi instruction */
     IRBuilder.createBr(condBlock)
@@ -500,7 +510,8 @@ class IRGenerator : ASTVisitor() {
     IRBuilder.createBr(cond, bodyBlock, endBlock)
 
     IRBuilder.setInsertBlock(bodyBlock)
-    val subArray = mallocArray(currType.pointeeTy as PointerType, arraySizeList.subList(1, arraySizeList.size))
+    val subArray =
+      mallocArray(currType.pointeeTy as PointerType, arraySizeList.subList(1, arraySizeList.size), count + 1)
     IRBuilder.createStore(subArray, phiInst)
 
     val nextElement = IRBuilder.createGEP(
@@ -779,7 +790,9 @@ class IRGenerator : ASTVisitor() {
   }
 
   override fun visit(curr: LogicalOrExprNode) {
-    val endBlock = BasicBlock("lor.end")
+    val nestedLoopsNum = loopManager.getNestedLoopsNum()
+    val executionFrequency = 10.0.pow(nestedLoopsNum).toInt()
+    val endBlock = BasicBlock("lor.end", executionFrequency)
     val candidates: MutableList<Pair<Value, BasicBlock>> = mutableListOf()
     val size = curr.exprs.size
     for ((index, expr) in curr.exprs.withIndex()) {
@@ -798,7 +811,7 @@ class IRGenerator : ASTVisitor() {
       if (index == size - 1) {
         IRBuilder.createBr(endBlock)
       } else {
-        val rhsBlock = BasicBlock(if (index != size - 2) "lor.lhs.false" else "lor.rhs")
+        val rhsBlock = BasicBlock(if (index != size - 2) "lor.lhs.false" else "lor.rhs", executionFrequency)
         IRBuilder.createBr(expr.value!!, endBlock, rhsBlock)
         IRBuilder.setInsertBlock(rhsBlock)
       }
@@ -808,7 +821,9 @@ class IRGenerator : ASTVisitor() {
   }
 
   override fun visit(curr: LogicalAndExprNode) {
-    val endBlock = BasicBlock("land.end")
+    val nestedLoopsNum = loopManager.getNestedLoopsNum()
+    val executionFrequency = 10.0.pow(nestedLoopsNum).toInt()
+    val endBlock = BasicBlock("land.end", executionFrequency)
     val candidates: MutableList<Pair<Value, BasicBlock>> = mutableListOf()
     val size = curr.exprs.size
     for ((index, expr) in curr.exprs.withIndex()) {
@@ -827,7 +842,7 @@ class IRGenerator : ASTVisitor() {
       if (index == size - 1) {
         IRBuilder.createBr(endBlock)
       } else {
-        val rhsBlock = BasicBlock(if (index != size - 2) "land.lhs.true" else "land.rhs")
+        val rhsBlock = BasicBlock(if (index != size - 2) "land.lhs.true" else "land.rhs", executionFrequency)
         IRBuilder.createBr(expr.value!!, rhsBlock, endBlock)
         IRBuilder.setInsertBlock(rhsBlock)
       }

@@ -110,7 +110,7 @@ class ASMGenerator : IRVisitor() {
     regFactory.position = asmFunc
     value2Offset = hashMapOf()
 
-    func.blockList.forEach { asmFunc.addBlock(ASMBlock(it.name!!, asmFunc)) }
+    func.blockList.forEach { asmFunc.addBlock(ASMBlock(it.name!!, asmFunc, it.executionFrequency)) }
 
     // move args to a0, a1, ...
     ASMBuilder.setInsertBlock(asmFunc.blockList.first())
