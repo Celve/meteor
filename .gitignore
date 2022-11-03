@@ -52,3 +52,4 @@ venv/
 
 ### Others ###
 debug/
+src/main/resources/testcases/codegen/test.mx
