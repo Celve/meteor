@@ -110,16 +110,17 @@ class SemanticChecker : ASTVisitor() {
   override fun visit(curr: ForSuiteNode) {
     scopeManager.addLast(curr.initScope)
     curr.init?.accept(this)
+
     if (curr.cond != null) {
       curr.cond.accept(this)
       if (!curr.cond.type!!.isBool()) {
         throw SemanticException(curr.pos, "Conditional expression should be bool")
       }
     }
+
     curr.inc?.accept(this)
 
     scopeManager.addLast(curr.bodyScope)
-
     curr.body.accept(this)
 
     scopeManager.removeLast()
@@ -168,7 +169,7 @@ class SemanticChecker : ASTVisitor() {
         )
         val returnType = recentFunc.returnType
 
-        if (returnType == null) { // check for lambda expr only
+        if (returnType == null) { // check for lambda expr only, because lambda's return type is undetermined
           recentFunc.returnType = if (curr.expr == null) { // this allows the origin value in scopeManager to be changed
             scopeManager.first().getFuncType("void")
           } else {
@@ -393,8 +394,6 @@ class SemanticChecker : ASTVisitor() {
           }
           // all binary operators require the opposite to be the same for int and bool
           if (!lhs.matchesWith(rhs!!)) {
-            println(lhs)
-            println(rhs)
             throw SemanticException(curr.pos, "Type don't match")
           }
           lhs = TypeMd(scopeManager.first().getClass("bool")!!, 0)

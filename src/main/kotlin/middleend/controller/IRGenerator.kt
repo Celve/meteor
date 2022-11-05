@@ -46,11 +46,7 @@ class IRGenerator : ASTVisitor() {
 
         topModule.setFunc(
           "$className.$funcName",
-          Func(
-            "$className.$funcName",
-            TypeFactory.getFuncType(funcMd, classMd),
-            args
-          )
+          Func("$className.$funcName", TypeFactory.getFuncType(funcMd, classMd), args)
         )
       }
 
@@ -69,11 +65,7 @@ class IRGenerator : ASTVisitor() {
       val funcType = TypeFactory.getFuncType(funcMd)
       topModule.setFunc(
         funcName,
-        Func(
-          funcName,
-          funcType,
-          funcMd.argList.map { Value(TypeFactory.getAnyType(it.second), it.first) }
-        )
+        Func(funcName, funcType, funcMd.argList.map { Value(TypeFactory.getAnyType(it.second), it.first) })
       )
     }
 
@@ -82,11 +74,7 @@ class IRGenerator : ASTVisitor() {
       val funcType = TypeFactory.getFuncType(funcMd)
       topModule.setBuiltinFunc(
         funcName,
-        Func(
-          funcName,
-          funcType,
-          funcMd.argList.map { Value(TypeFactory.getAnyType(it.second)) }
-        )
+        Func(funcName, funcType, funcMd.argList.map { Value(TypeFactory.getAnyType(it.second)) })
       )
     }
 

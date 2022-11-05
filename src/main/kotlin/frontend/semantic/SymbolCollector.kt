@@ -42,18 +42,14 @@ class SymbolCollector : ASTVisitor() {
       if (it is ClassDefNode) {
         it.accept(this)
 
-        // in the case that it doesn't have a initial constructor
+        // in the case that it doesn't have an initial constructor
         val scope = it.classMd.classScope
         if (!scope.testFunc("new")) {
           scope.setFunc("new", FuncMd("new", listOf(), globalScope.getFuncType("void")))
         }
       }
     }
-    for (it in curr.children) {
-      if (it is FuncDefNode) {
-        it.accept(this)
-      }
-    }
+    curr.children.filterIsInstance<FuncDefNode>().forEach { it.accept(this) }
   }
 
   override fun visit(curr: FuncBlockNode) {
