@@ -186,9 +186,9 @@ class ASMRegisterAllocator : ASMVisitor() {
     executionFrequency.clear()
   }
 
-  private fun main() {
+  private fun graphColoring() {
     initialize()
-    analyzeLiveness()
+    livenessAnalysis()
     build()
     makeWorklist()
     do {
@@ -208,7 +208,7 @@ class ASMRegisterAllocator : ASMVisitor() {
 
     if (spilledNodes.isNotEmpty()) {
       rewriteProgram()
-      main()
+      graphColoring()
     }
   }
 
@@ -231,7 +231,7 @@ class ASMRegisterAllocator : ASMVisitor() {
 
   }
 
-  private fun analyzeLiveness() {
+  private fun livenessAnalysis() {
     // initialization
     // because the function would be rewritten if a spill occurs, which means that we have to rebuild it every single time
     for (block in asmFunc.blockList) {
@@ -297,7 +297,6 @@ class ASMRegisterAllocator : ASMVisitor() {
         // connect the two overlapped live ranges only in the latter's definition
         lives.addAll(defs)
         defs.flatMap { first -> lives.map { second -> first to second } }.forEach { addEdge(it.first, it.second) }
-
 
         // set up initial
         initial.addAll(defs.filterIsInstance<VirReg>())
@@ -436,9 +435,8 @@ class ASMRegisterAllocator : ASMVisitor() {
     var u = getAlias(mv.rs)
     var v = getAlias(mv.rd)
 
-    // swap u, v
     if (v is PhyReg) {
-      u = v.also { v = u }
+      u = v.also { v = u } // swap u, v
     }
 
     if (u == v) { // I think this case occurs when there are redundant mv
@@ -519,7 +517,7 @@ class ASMRegisterAllocator : ASMVisitor() {
 
   private fun freeze() {
 //    println("[freeze]")
-    val frozen = freezeWorklist.firstOrNull() ?: return
+    val frozen = freezeWorklist.firstOrNull() ?: return // could be optimized
     freezeWorklist.remove(frozen)
     simplifyWorklist.add(frozen)
     freezeMoves(frozen)
@@ -527,7 +525,7 @@ class ASMRegisterAllocator : ASMVisitor() {
 
   private fun freezeMoves(u: Register) {
     for (mv in nodeMoves(u)) {
-      val v = if (getAlias(mv.rs) == u) {
+      val v = if (getAlias(mv.rs) == getAlias(u)) {
         getAlias(mv.rd)
       } else {
         getAlias(mv.rs)
@@ -558,12 +556,10 @@ class ASMRegisterAllocator : ASMVisitor() {
   }
 
   private fun selectColorWithHeuristic(reg: Register, candidate: HashSet<Int>): Int {
-    return if (crossCallNodes.contains(reg)) { // it's hard to fit in the final round, therefore I have to modify selectSpilledWithHeuristic
-      candidate.find { it in RegInfo.calleeSavedRegList }
-        ?: candidate.first()
+    return if (crossCallNodes.contains(reg)) {
+      candidate.find { it in RegInfo.calleeSavedRegList } ?: candidate.first()
     } else {
-      candidate.find { it in RegInfo.callerSavedRegList }
-        ?: candidate.first()
+      candidate.find { it in RegInfo.callerSavedRegList } ?: candidate.first()
     }
   }
 
@@ -588,7 +584,7 @@ class ASMRegisterAllocator : ASMVisitor() {
       selectedStack.removeLast()
       val okColors = RegInfo.assignableRegList.toHashSet()
       adjList.getValue(top).map { getAlias(it) }.filter { it is PhyReg || coloredNodes.contains(it) }
-        .forEach { okColors.remove(color.getValue(it)) }
+        .forEach { okColors.remove(color.getValue(it)) } // remove adjacent existed color
       if (okColors.isEmpty()) {
         spilledNodes.add(top)
       } else {
@@ -662,7 +658,7 @@ class ASMRegisterAllocator : ASMVisitor() {
 //      val asmEmit = ASMEmit()
 //      asmEmit.visit(asmFunc)
 //    }
-    main()
+    graphColoring()
 //    println("degree: $degree")
     colorInstructions()
     eliminateUselessMv()
