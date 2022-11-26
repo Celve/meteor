@@ -9,7 +9,6 @@ import frontend.utils.ScopeManager
 import middleend.basic.*
 import middleend.helper.LoopManager
 import middleend.helper.Utils
-import middleend.helper.ValueSymbolTable
 import kotlin.math.pow
 
 class IRGenerator : ASTVisitor() {
@@ -17,7 +16,7 @@ class IRGenerator : ASTVisitor() {
   private val loopManager = LoopManager()
   val topModule = TopModule()
   private var initFunc: Func? = null
-  private val globalVst = ValueSymbolTable()
+  private var strCnt = 0
 
   override fun visit(curr: ProgNode) {
     /**
@@ -267,11 +266,11 @@ class IRGenerator : ASTVisitor() {
 
   override fun visit(curr: ForSuiteNode) {
     val nestedLoopsNum = loopManager.getNestedLoopsNum() + 1
-    val executionFrequency = 10.0.pow(nestedLoopsNum).toInt()
-    val condBlock = BasicBlock("for.cond", executionFrequency)
-    val incBlock = BasicBlock("for.inc", executionFrequency)
-    val bodyBlock = BasicBlock("for.body", executionFrequency)
-    val endBlock = BasicBlock("for.end", executionFrequency)
+    val execFreq = 10.0.pow(nestedLoopsNum).toInt()
+    val condBlock = BasicBlock("for.cond", execFreq)
+    val incBlock = BasicBlock("for.inc", execFreq)
+    val bodyBlock = BasicBlock("for.body", execFreq)
+    val endBlock = BasicBlock("for.end", execFreq)
 
     scopeManger.addLast(curr.initScope)
     loopManager.addLast(incBlock, endBlock)
@@ -305,10 +304,10 @@ class IRGenerator : ASTVisitor() {
 
   override fun visit(curr: WhileSuiteNode) {
     val nestedLoopsNum = loopManager.getNestedLoopsNum() + 1
-    val executionFrequency = 10.0.pow(nestedLoopsNum).toInt()
-    val condBlock = BasicBlock("while.cond", executionFrequency)
-    val bodyBlock = BasicBlock("while.body", executionFrequency)
-    val endBlock = BasicBlock("while.end", executionFrequency)
+    val execFreq = 10.0.pow(nestedLoopsNum).toInt()
+    val condBlock = BasicBlock("while.cond", execFreq)
+    val bodyBlock = BasicBlock("while.body", execFreq)
+    val endBlock = BasicBlock("while.end", execFreq)
 
     scopeManger.addLast(curr.scope)
     loopManager.addLast(condBlock, endBlock)
@@ -332,11 +331,11 @@ class IRGenerator : ASTVisitor() {
     curr.cond.accept(this)
 
     val nestedLoopsNum = loopManager.getNestedLoopsNum()
-    val executionFrequency =
+    val execFreq =
       10.0.pow(nestedLoopsNum).toInt() // according to EAC, it should be divided by the number of branches
-    val endBlock = BasicBlock("if.end", executionFrequency)
-    val thenBlock = BasicBlock("if.then", executionFrequency)
-    val elseBlock: BasicBlock? = if (curr.elseDo != null) BasicBlock("if.else", executionFrequency) else null
+    val endBlock = BasicBlock("if.end", execFreq)
+    val thenBlock = BasicBlock("if.then", execFreq)
+    val elseBlock: BasicBlock? = if (curr.elseDo != null) BasicBlock("if.else", execFreq) else null
     if (curr.elseDo != null) {
       IRBuilder.createBr(curr.cond.value!!, thenBlock, elseBlock!!)
     } else {
@@ -401,7 +400,13 @@ class IRGenerator : ASTVisitor() {
 
       /** const str */
       1 -> {
-        val const = ConstantStr(curr.literal.substring(1, curr.literal.length - 1), globalVst.defineName(".str"))
+        val constName = if (strCnt == 0) {
+          ".str"
+        } else {
+          ".str.$strCnt"
+        }
+        strCnt++
+        val const = ConstantStr(curr.literal.substring(1, curr.literal.length - 1), constName)
         topModule.setConst(const.name!!, const)
         IRBuilder.createGEP("array", "str", const, ConstantInt(32, 0), ConstantInt(32, 0))
       }
@@ -480,10 +485,10 @@ class IRGenerator : ASTVisitor() {
     val startPoint = IRBuilder.createGEP("ptr", "arrayidx", extendedArray, arraySize, null)
     val previousBlock = IRBuilder.getInsertBlock()!!
     val nestedLoopsNum = loopManager.getNestedLoopsNum() + count + 1
-    val executionFrequency = 10.0.pow(nestedLoopsNum).toInt()
-    val condBlock = BasicBlock("while.cond", executionFrequency)
-    val bodyBlock = BasicBlock("while.body", executionFrequency)
-    val endBlock = BasicBlock("while.end", executionFrequency)
+    val execFreq = 10.0.pow(nestedLoopsNum).toInt()
+    val condBlock = BasicBlock("while.cond", execFreq)
+    val bodyBlock = BasicBlock("while.body", execFreq)
+    val endBlock = BasicBlock("while.end", execFreq)
 
     /** a small optimization by using phi instruction */
     IRBuilder.createBr(condBlock)
@@ -779,8 +784,8 @@ class IRGenerator : ASTVisitor() {
 
   override fun visit(curr: LogicalOrExprNode) {
     val nestedLoopsNum = loopManager.getNestedLoopsNum()
-    val executionFrequency = 10.0.pow(nestedLoopsNum).toInt()
-    val endBlock = BasicBlock("lor.end", executionFrequency)
+    val execFreq = 10.0.pow(nestedLoopsNum).toInt()
+    val endBlock = BasicBlock("lor.end", execFreq)
     val candidates: MutableList<Pair<Value, BasicBlock>> = mutableListOf()
     val size = curr.exprs.size
     for ((index, expr) in curr.exprs.withIndex()) {
@@ -799,7 +804,7 @@ class IRGenerator : ASTVisitor() {
       if (index == size - 1) {
         IRBuilder.createBr(endBlock)
       } else {
-        val rhsBlock = BasicBlock(if (index != size - 2) "lor.lhs.false" else "lor.rhs", executionFrequency)
+        val rhsBlock = BasicBlock(if (index != size - 2) "lor.lhs.false" else "lor.rhs", execFreq)
         IRBuilder.createBr(expr.value!!, endBlock, rhsBlock)
         IRBuilder.setInsertBlock(rhsBlock)
       }
@@ -810,8 +815,8 @@ class IRGenerator : ASTVisitor() {
 
   override fun visit(curr: LogicalAndExprNode) {
     val nestedLoopsNum = loopManager.getNestedLoopsNum()
-    val executionFrequency = 10.0.pow(nestedLoopsNum).toInt()
-    val endBlock = BasicBlock("land.end", executionFrequency)
+    val execFreq = 10.0.pow(nestedLoopsNum).toInt()
+    val endBlock = BasicBlock("land.end", execFreq)
     val candidates: MutableList<Pair<Value, BasicBlock>> = mutableListOf()
     val size = curr.exprs.size
     for ((index, expr) in curr.exprs.withIndex()) {
@@ -830,7 +835,7 @@ class IRGenerator : ASTVisitor() {
       if (index == size - 1) {
         IRBuilder.createBr(endBlock)
       } else {
-        val rhsBlock = BasicBlock(if (index != size - 2) "land.lhs.true" else "land.rhs", executionFrequency)
+        val rhsBlock = BasicBlock(if (index != size - 2) "land.lhs.true" else "land.rhs", execFreq)
         IRBuilder.createBr(expr.value!!, rhsBlock, endBlock)
         IRBuilder.setInsertBlock(rhsBlock)
       }
