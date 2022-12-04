@@ -16,7 +16,17 @@ class IRGenerator : ASTVisitor() {
   private val loopManager = LoopManager()
   val topModule = TopModule()
   private var initFunc: Func? = null
-  private var strCnt = 0
+  private var counter = hashMapOf<String, Int>().withDefault { 0 }
+
+  private fun renameOp(name: String): String {
+    val ver = counter.getValue(name)
+    counter[name] = ver + 1
+    return if (ver == 0) {
+      name
+    } else {
+      "$name$ver"
+    }
+  }
 
   override fun visit(curr: ProgNode) {
     /**
@@ -101,7 +111,7 @@ class IRGenerator : ASTVisitor() {
       val mainFunc = topModule.getFunc("main")!!
       val mainEntryBlock = mainFunc.blockList.first()
       IRBuilder.setInsertPointBefore(mainEntryBlock.instList.first())
-      IRBuilder.createCall(initFunc!!.funcType, listOf())
+      IRBuilder.createCall(null, initFunc!!.funcType, listOf())
     }
 
     scopeManger.removeLast()
@@ -160,6 +170,8 @@ class IRGenerator : ASTVisitor() {
   }
 
   override fun visit(curr: FuncDefNode) {
+    counter = hashMapOf<String, Int>().withDefault { 0 } // init counter
+
     scopeManger.addLast(curr.funcMd)
     val innerScope = scopeManger.last() as FuncScope
     val recentClass = scopeManger.getRecentClass()
@@ -194,21 +206,21 @@ class IRGenerator : ASTVisitor() {
     }
 
     /** setup for the return value */
-    if (funcType.result != TypeFactory.getVoidType()) {
-      val addrSuffixed = "retaddr"
-      val allocaInst = IRBuilder.createAlloca(addrSuffixed, funcType.result)
+    if (funcType.resultType != TypeFactory.getVoidType()) {
+      val addrSuffixed = ".ret.addr"
+      val allocaInst = IRBuilder.createAlloca(addrSuffixed, funcType.resultType)
       innerScope.setValue(addrSuffixed, allocaInst)
-      if (funcName == "main") {
-        IRBuilder.createStore(ConstantInt(32, 0), allocaInst)
-      }
+//      if (funcName == "main") {
+//        IRBuilder.createStore(ConstantInt(32, 0), allocaInst)
+//      }
     }
 
     val returnBlock = BasicBlock("return", 1)
     IRBuilder.setReturnBlock(returnBlock)
     IRBuilder.resetInsertBlock(returnBlock)
-    if (funcType.result != TypeFactory.getVoidType()) {
-      val addrSuffixed = "retaddr"
-      val valSuffixed = "retval"
+    if (funcType.resultType != TypeFactory.getVoidType()) {
+      val addrSuffixed = ".ret.addr"
+      val valSuffixed = ".ret"
       val loadInst = IRBuilder.createLoad(valSuffixed, innerScope.getValue(addrSuffixed)!!)
       IRBuilder.createRet(loadInst)
     } else {
@@ -224,6 +236,17 @@ class IRGenerator : ASTVisitor() {
 
     // don't forget to push the return block into block list
     IRBuilder.setInsertBlock(returnBlock)
+
+    // init int values
+//    IRBuilder.setInsertPointAfter(entryBlock.instList[entryBlock.getLastAllocaInstIndex()])
+//    entryBlock.instList
+//      .filterIsInstance<AllocaInst>().filter { it.varType is IntType }
+//      .filter {
+//         for arguments, they should not be assigned with 0
+//        val original = it.name!!.substringBeforeLast('.')
+//        !func.argList.any { it.name == original }
+//      }
+//      .forEach { IRBuilder.createStore(ConstantInt(it.type.getNumBits(), 0), it) }
 
     scopeManger.removeLast()
   }
@@ -246,6 +269,7 @@ class IRGenerator : ASTVisitor() {
           assign.second!!.accept(this)
           IRBuilder.createStore(assign.second!!.value!!, ptr)
         } else if (type is PointerType) {
+          // temporarily disable it
           IRBuilder.createStore(ConstantNull(), ptr)
         }
       }
@@ -368,7 +392,7 @@ class IRGenerator : ASTVisitor() {
       "return" -> {
         if (curr.expr != null) {
           curr.expr.accept(this)
-          IRBuilder.createStore(curr.expr.value!!, scopeManger.last().getValue("retaddr")!!)
+          IRBuilder.createStore(curr.expr.value!!, scopeManger.last().getValue(".ret.addr")!!)
         }
         IRBuilder.createBr(IRBuilder.getReturnBlock()!!)
       }
@@ -400,15 +424,9 @@ class IRGenerator : ASTVisitor() {
 
       /** const str */
       1 -> {
-        val constName = if (strCnt == 0) {
-          ".str"
-        } else {
-          ".str.$strCnt"
-        }
-        strCnt++
-        val const = ConstantStr(curr.literal.substring(1, curr.literal.length - 1), constName)
+        val const = ConstantStr(curr.literal.substring(1, curr.literal.length - 1), renameOp(".str"))
         topModule.setConst(const.name!!, const)
-        IRBuilder.createGEP("array", "str", const, ConstantInt(32, 0), ConstantInt(32, 0))
+        IRBuilder.createGEP("array", ".strl", const, ConstantInt(32, 0), ConstantInt(32, 0))
       }
 
       /** identifier */
@@ -434,11 +452,11 @@ class IRGenerator : ASTVisitor() {
   private fun mallocElem(currType: Type): Value {
     val elemByteNum = ConstantInt(32, currType.getAlign())
     val malloc = topModule.getBuiltinFunc("_malloc")!!
-    val call = IRBuilder.createCall(malloc.funcType, listOf(elemByteNum))
-    val bitcast = IRBuilder.createBitCast("bitcast", call, TypeFactory.getPtrType(currType))
+    val call = IRBuilder.createCall(renameOp(".malloc"), malloc.funcType, listOf(elemByteNum))
+    val bitcast = IRBuilder.createBitCast(renameOp(".bitcast"), call, TypeFactory.getPtrType(currType))
     if (currType is StructType) {
       val initFunc = topModule.getFunc(currType.getRealStructName() + ".new")!!
-      IRBuilder.createCall(initFunc.funcType, listOf(bitcast))
+      IRBuilder.createCall(null, initFunc.funcType, listOf(bitcast))
     } else {
       TODO("Not yet implemented")
     }
@@ -452,29 +470,29 @@ class IRGenerator : ASTVisitor() {
     /** due to the size(), an extra space is needed to store the size of the array, which is right before the array */
     val pureArrayByteNum =
       IRBuilder.createBinary(
-        "mul",
+        renameOp(".mul"),
         "mul",
         arraySize,
         ConstantInt(32, containedType.getAlign())
       )
     val extendedArrayByteNum =
       IRBuilder.createBinary(
-        "add",
+        renameOp(".add"),
         "add",
         pureArrayByteNum,
         ConstantInt(32, containedType.getAlign())
       )
 
     val malloc = topModule.getBuiltinFunc("_malloc")!!
-    val createdSpace = IRBuilder.createCall(malloc.funcType, listOf(extendedArrayByteNum))
-    val extendedArray = IRBuilder.createBitCast("bitcast", createdSpace, currType)
+    val createdSpace = IRBuilder.createCall(renameOp(".malloc"), malloc.funcType, listOf(extendedArrayByteNum))
+    val extendedArray = IRBuilder.createBitCast(renameOp(".bitcast"), createdSpace, currType)
     val arraySizeAddr = if (extendedArray.type == TypeFactory.getPtrType("int")) {
       extendedArray
     } else {
-      IRBuilder.createBitCast("bitcast", extendedArray, TypeFactory.getPtrType("int"))
+      IRBuilder.createBitCast(renameOp(".bitcast"), extendedArray, TypeFactory.getPtrType("int"))
     }
     IRBuilder.createStore(arraySize, arraySizeAddr)
-    val pureArray = IRBuilder.createGEP("ptr", "arrayidx", extendedArray, ConstantInt(32, 1), null)
+    val pureArray = IRBuilder.createGEP("ptr", renameOp(".array.addr"), extendedArray, ConstantInt(32, 1), null)
 
     /** there is no need to recurse more, because the size of arraySizeList indicates the remainder of dimension */
     if (arraySizeList.size == 1) {
@@ -482,7 +500,7 @@ class IRGenerator : ASTVisitor() {
     }
 
     /** the start point is the last element of array, which iterate until the addr before the first element */
-    val startPoint = IRBuilder.createGEP("ptr", "arrayidx", extendedArray, arraySize, null)
+    val startPoint = IRBuilder.createGEP("ptr", renameOp(".array.addr"), extendedArray, arraySize, null)
     val previousBlock = IRBuilder.getInsertBlock()!!
     val nestedLoopsNum = loopManager.getNestedLoopsNum() + count + 1
     val execFreq = 10.0.pow(nestedLoopsNum).toInt()
@@ -499,7 +517,7 @@ class IRGenerator : ASTVisitor() {
       mutableListOf(Pair(startPoint, previousBlock))
     )
 
-    val cond = IRBuilder.createCmp("cmp", "ne", phiInst, extendedArray)
+    val cond = IRBuilder.createCmp(renameOp(".cmp"), "ne", phiInst, extendedArray)
     IRBuilder.createBr(cond, bodyBlock, endBlock)
 
     IRBuilder.setInsertBlock(bodyBlock)
@@ -509,12 +527,12 @@ class IRGenerator : ASTVisitor() {
 
     val nextElement = IRBuilder.createGEP(
       "ptr",
-      "arrayidx",
+      renameOp(".array.addr"),
       phiInst,
       ConstantInt(32, -1),
       null
     )
-    phiInst.preds.add(Pair(nextElement, bodyBlock))
+    phiInst.predList.add(Pair(nextElement, bodyBlock))
     IRBuilder.createBr(condBlock)
 
     IRBuilder.setInsertBlock(endBlock)
@@ -542,12 +560,14 @@ class IRGenerator : ASTVisitor() {
       val callee = topModule.getFunc("${recentClass.className}.${curr.funcName}")!!
       val thisPtr = scopeManger.last().getValue("this")!!
       curr.value = IRBuilder.createCall(
+        if (callee.funcType.resultType is VoidType) null else renameOp(".call"),
         callee.funcType,
         listOf(thisPtr) + curr.argList.map { it.accept(this); it.value!! }
       )
     } else {
       val callee = topModule.getFunc(curr.funcName) ?: topModule.getBuiltinFunc(curr.funcName)!!
       curr.value = IRBuilder.createCall(
+        if (callee.funcType.resultType is VoidType) null else renameOp(".call"),
         callee.funcType,
         curr.argList.map { it.accept(this); it.value!! })
     }
@@ -558,18 +578,20 @@ class IRGenerator : ASTVisitor() {
     curr.value = if (curr.expr.type!!.isArray()) {
       /** for array, it has only one method called size() */
       assert(curr.method == "size")
-      val arraySizeAddr = IRBuilder.createGEP("ptr", "arraysize.addr", curr.expr.value!!, ConstantInt(32, -1), null)
+      val arraySizeAddr =
+        IRBuilder.createGEP("ptr", renameOp(".arraysize.addr"), curr.expr.value!!, ConstantInt(32, -1), null)
       val finalInst = if (arraySizeAddr.type != TypeFactory.getPtrType("int")) {
-        IRBuilder.createBitCast("bitcast", arraySizeAddr, TypeFactory.getPtrType("int"))
+        IRBuilder.createBitCast(renameOp(".bitcast"), arraySizeAddr, TypeFactory.getPtrType("int"))
       } else {
         arraySizeAddr
       }
-      IRBuilder.createLoad("arraysize", finalInst)
+      IRBuilder.createLoad(renameOp(".arraysize"), finalInst)
     } else {
       /** for others, it might be custom method or builtin method */
       val callee = topModule.getFunc("${curr.expr.type!!.cl.className}.${curr.method}")
         ?: topModule.getBuiltinFunc("_${curr.expr.type!!.cl.className}_${curr.method}")!!
       IRBuilder.createCall(
+        if (callee.funcType.resultType is VoidType) null else renameOp(".call"),
         callee.funcType,
         listOf(curr.expr.value!!) + curr.argList.map { it.accept(this); it.value!! })
     }
@@ -593,8 +615,8 @@ class IRGenerator : ASTVisitor() {
   override fun visit(curr: ArrayAccessNode) {
     curr.array.accept(this)
     curr.index.accept(this)
-    val ptr = IRBuilder.createGEP("ptr", "elem.addr", curr.array.value!!, curr.index.value!!, null)
-    curr.value = IRBuilder.createLoad("elem", ptr)
+    val ptr = IRBuilder.createGEP("ptr", renameOp(".elem.addr"), curr.array.value!!, curr.index.value!!, null)
+    curr.value = IRBuilder.createLoad(renameOp(".elem"), ptr)
   }
 
   private fun getIdsNameAndItsPtr(curr: AtomNode): Pair<String, Value> {
@@ -633,7 +655,7 @@ class IRGenerator : ASTVisitor() {
       is ArrayAccessNode -> {
         curr.array.accept(this)
         curr.index.accept(this)
-        Pair("elem", IRBuilder.createGEP("ptr", "elem.addr", curr.array.value!!, curr.index.value!!, null))
+        Pair("elem", IRBuilder.createGEP("ptr", renameOp(".elem.addr"), curr.array.value!!, curr.index.value!!, null))
       }
 
       is MemberAccessNode -> {
@@ -660,9 +682,10 @@ class IRGenerator : ASTVisitor() {
   override fun visit(curr: SuffixExprNode) {
     val op = Utils.unaryOpToStr(curr.op)
     val (varName, varPtr) = getVarsNameAndItsPtr(curr.expr)
-    curr.expr.value = IRBuilder.createLoad(varName, varPtr)
+    val loadInst = IRBuilder.createLoad(varName, varPtr)
+    curr.expr.value = IRBuilder.createBinary(".ori", "add", loadInst, ConstantInt(32, 0))
     val binaryInst = IRBuilder.createBinary(
-      op,
+      renameOp(".$op"),
       if (op == "inc") "add" else "sub",
       curr.expr.value!!,
       ConstantInt(32, 1)
@@ -680,7 +703,7 @@ class IRGenerator : ASTVisitor() {
         val (varName, varPtr) = getVarsNameAndItsPtr(curr.expr)
         curr.expr.value = IRBuilder.createLoad(varName, varPtr)
         val binaryInst = IRBuilder.createBinary(
-          op,
+          renameOp(".$op"),
           if (op == "inc") "add" else "sub",
           curr.expr.value!!,
           ConstantInt(32, 1)
@@ -697,7 +720,7 @@ class IRGenerator : ASTVisitor() {
       "-" -> {
         curr.expr.accept(this)
         IRBuilder.createBinary(
-          op,
+          renameOp(".$op"),
           "sub",
           ConstantInt(32, 0),
           curr.expr.value!!
@@ -707,7 +730,7 @@ class IRGenerator : ASTVisitor() {
       "~" -> {
         curr.expr.accept(this)
         IRBuilder.createBinary(
-          op,
+          renameOp(".$op"),
           "xor",
           curr.expr.value!!,
           ConstantInt(32, -1)
@@ -718,7 +741,7 @@ class IRGenerator : ASTVisitor() {
       else -> {
         curr.expr.accept(this)
         IRBuilder.createBinary(
-          op,
+          renameOp(".$op"),
           "xor",
           IRBuilder.checki8Toi1(curr.expr.value!!),
           ConstantInt(1, 1)
@@ -741,9 +764,9 @@ class IRGenerator : ASTVisitor() {
           val op = Utils.binaryOpToStr(curr.ops[index - 1])
           lhs = if (lhs.type is PointerType && rhs.type is PointerType) {
             val func = topModule.getBuiltinFunc("_string_concat")!!
-            IRBuilder.createCall(func.funcType, listOf(lhs, rhs))
+            IRBuilder.createCall(renameOp(".call"), func.funcType, listOf(lhs, rhs))
           } else {
-            IRBuilder.createBinary(op, op, lhs, rhs)
+            IRBuilder.createBinary(renameOp(".$op"), op, lhs, rhs)
           }
         }
         lhs
@@ -759,7 +782,7 @@ class IRGenerator : ASTVisitor() {
             continue
           }
           val op = Utils.binaryOpToStr(curr.ops[index - 1])
-          lhs = IRBuilder.createBinary(op, op, lhs, rhs)
+          lhs = IRBuilder.createBinary(renameOp(".$op"), op, lhs, rhs)
         }
         lhs
       }
@@ -775,7 +798,7 @@ class IRGenerator : ASTVisitor() {
             continue
           }
           val op = Utils.binaryOpToStr(curr.ops[index - 1])
-          lhs = IRBuilder.createCmp("cmp", op, lhs, rhs!!)
+          lhs = IRBuilder.createCmp(renameOp(".cmp"), op, lhs, rhs!!)
         }
         lhs
       }
@@ -810,7 +833,7 @@ class IRGenerator : ASTVisitor() {
       }
     }
     IRBuilder.setInsertBlock(endBlock)
-    curr.value = IRBuilder.createPhi("phi", TypeFactory.getIntType(1), candidates)
+    curr.value = IRBuilder.createPhi(renameOp(".phi"), TypeFactory.getIntType(1), candidates)
   }
 
   override fun visit(curr: LogicalAndExprNode) {
@@ -841,7 +864,7 @@ class IRGenerator : ASTVisitor() {
       }
     }
     IRBuilder.setInsertBlock(endBlock)
-    curr.value = IRBuilder.createPhi("phi", TypeFactory.getIntType(1), candidates)
+    curr.value = IRBuilder.createPhi(renameOp(".phi"), TypeFactory.getIntType(1), candidates)
   }
 
   override fun visit(curr: AssignExprNode) {

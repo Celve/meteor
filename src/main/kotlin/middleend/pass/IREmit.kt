@@ -13,7 +13,7 @@ class IREmit : IRVisitor() {
     )
 
     for ((_, func) in topModule.builtinFunc) {
-      println("declare ${func.funcType.result} @${func.name}(${func.argList.joinToString(", ") { it.type.toString() }})")
+      println("declare ${func.funcType.resultType} @${func.name}(${func.argList.joinToString(", ") { it.type.toString() }})")
     }
     println()
 
@@ -44,7 +44,7 @@ class IREmit : IRVisitor() {
   }
 
   override fun visit(func: Func) {
-    println("define ${func.funcType.result} @${func.name}(${func.argList.joinToString(", ") { "${it.type} %${it.name}" }}) {")
+    println("define ${func.funcType.resultType} @${func.name}(${func.argList.joinToString(", ") { "${it.type} %${it.name}" }}) {")
     for (block in func.blockList) {
       block.accept(this)
       if (block != func.blockList.last()) {
@@ -52,6 +52,7 @@ class IREmit : IRVisitor() {
       }
     }
     println("}")
+    println()
   }
 
   override fun visit(block: BasicBlock) {
@@ -69,7 +70,7 @@ class IREmit : IRVisitor() {
   override fun visit(inst: CallInst) {
     val prefix: String = if (inst.name == null) "" else "%${inst.name} = "
     val argList = inst.funcType.argList.zip(inst.args).joinToString(", ") { "${it.first} ${it.second}" }
-    println("${prefix}call ${inst.funcType.result} @${inst.funcType.funcName}($argList)")
+    println("${prefix}call ${inst.funcType.resultType} @${inst.funcType.funcName}($argList)")
   }
 
   override fun visit(inst: LoadInst) {
@@ -81,11 +82,11 @@ class IREmit : IRVisitor() {
   }
 
   override fun visit(inst: PhiInst) {
-    println("%${inst.name} = phi ${inst.type} ".plus(inst.preds.joinToString(", ") { "[ ${it.first}, ${it.second} ]" }))
+    println("%${inst.name} = phi ${inst.type} ".plus(inst.predList.joinToString(", ") { "[ ${it.first}, ${it.second} ]" }))
   }
 
   override fun visit(inst: BinaryInst) {
-    println("%${inst.name} = ${inst.op} ${inst.type} ${inst.lhs}, ${inst.rhs}")
+    println("%${inst.name} = ${inst.op} ${inst.type} ${inst.rs}, ${inst.rt}")
   }
 
   override fun visit(inst: BranchInst) {
@@ -112,7 +113,7 @@ class IREmit : IRVisitor() {
   }
 
   override fun visit(inst: StoreInst) {
-    val lhsTy = if (inst.value.type is PointerType && inst.value.type.pointeeTy == null) {
+    val lhsTy = if (inst.value.type is PointerType && (inst.value.type as PointerType).pointeeTy == null) {
       (inst.addr.type as PointerType).pointeeTy
     } else {
       inst.value.type
@@ -121,7 +122,7 @@ class IREmit : IRVisitor() {
   }
 
   override fun visit(inst: CmpInst) {
-    println("%${inst.name} = icmp ${inst.cond} ${inst.lhs.type} ${inst.lhs}, ${inst.rhs}")
+    println("%${inst.name} = icmp ${inst.cond} ${inst.rs.type} ${inst.rs}, ${inst.rt}")
   }
 
   override fun visit(inst: ReturnInst) {

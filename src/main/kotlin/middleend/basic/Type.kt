@@ -255,7 +255,7 @@ class StructType(val structName: String) : Type() {
 
 }
 
-data class FuncType(val funcName: String, val argList: List<Type>, val result: Type) : Type() {
+data class FuncType(val funcName: String, val argList: List<Type>, val resultType: Type) : Type() {
   constructor(funcMd: FuncMd) : this(
     funcMd.funcName,
     funcMd.argList.map { TypeFactory.getAnyType(it.second) },
@@ -273,7 +273,7 @@ data class FuncType(val funcName: String, val argList: List<Type>, val result: T
   }
 
   override fun toString(): String {
-    return "(${argList.joinToString(",") { it.toString() }}) -> $result"
+    return "(${argList.joinToString(",") { it.toString() }}) -> $resultType"
   }
 }
 

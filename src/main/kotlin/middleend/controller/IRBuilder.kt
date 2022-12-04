@@ -1,19 +1,17 @@
 package middleend.controller
 
 import middleend.basic.*
-import middleend.helper.ValueSymbolTable
 
 object IRBuilder {
   private var func: Func? = null
   private var block: BasicBlock? = null
   private var point: Instruction? = null
   private var returnBlock: BasicBlock? = null
-  private var vst = ValueSymbolTable()
   private var isBefore = false
+  private val name2Version = hashMapOf<String, Int>().withDefault { 0 }
 
   fun setCurrentFunc(newFunc: Func) {
     func = newFunc
-    vst = newFunc.vst
     returnBlock = null
   }
 
@@ -22,16 +20,25 @@ object IRBuilder {
   }
 
   fun getCurrentFuncReturnType(): Type {
-    return func!!.funcType.result
+    return func!!.funcType.resultType
+  }
+
+  fun renameBlock(block: BasicBlock) {
+    val version = name2Version.getValue(block.name!!)
+    name2Version[block.name!!] = version + 1
+    if (version != 0) {
+      block.name = "${block.name}.$version"
+    }
   }
 
   /**
    * This function is used to register and set a block in IR builder.
    */
   fun setInsertBlock(newBlock: BasicBlock) {
-    vst.insertValue(newBlock)
     block = newBlock
+    renameBlock(newBlock)
     block!!.insertAtTheTailOf(func!!)
+    point = null
   }
 
   /**
@@ -107,17 +114,15 @@ object IRBuilder {
   }
 
   fun createAlloca(result: String, type: Type): Value {
-    val allocaInst = AllocaInst(vst.defineName(result), type)
+    val allocaInst = AllocaInst(result, type)
     val allocaBlock = func!!.blockList.first()
     allocaInst.insertAtIndexOf(allocaBlock, allocaBlock.getLastAllocaInstIndex() + 1)
-    vst.reinsertValue(allocaInst)
     return allocaInst
   }
 
   fun createLoad(result: String, ptr: Value): Value {
-    val loadInst = LoadInst(vst.defineName(result), ptr)
+    val loadInst = LoadInst(result, ptr)
     insertInstBeforeInsertPoint(loadInst)
-    vst.reinsertValue(loadInst)
 
     loadInst.addUsee(ptr)
 
@@ -125,9 +130,8 @@ object IRBuilder {
   }
 
   fun createBinary(result: String, op: String, lhs: Value, rhs: Value): Value {
-    val binaryInst = BinaryInst(vst.defineName(result), op, lhs, rhs)
+    val binaryInst = BinaryInst(result, op, lhs, rhs)
     insertInstBeforeInsertPoint(binaryInst)
-    vst.reinsertValue(binaryInst)
 
     binaryInst.addUsee(lhs)
     binaryInst.addUsee(rhs)
@@ -145,10 +149,9 @@ object IRBuilder {
     return storeInst
   }
 
-  fun createCmp(result: String, cond: String, lhs: Value, rhs: Value): CmpInst {
-    val cmpInst = CmpInst(vst.defineName(result), CmpInst.Cond.valueOf(cond), lhs, rhs)
+  fun createCmp(name: String, cond: String, lhs: Value, rhs: Value): CmpInst {
+    val cmpInst = CmpInst(name, CmpInst.Cond.valueOf(cond), lhs, rhs)
     insertInstBeforeInsertPoint(cmpInst)
-    vst.reinsertValue(cmpInst)
 
     cmpInst.addUsee(lhs)
     cmpInst.addUsee(rhs)
@@ -157,9 +160,8 @@ object IRBuilder {
   }
 
   fun createTrunc(result: String, originalVal: Value, toTy: Type): TruncInst {
-    val truncInst = TruncInst(vst.defineName(result), originalVal, toTy)
+    val truncInst = TruncInst(result, originalVal, toTy)
     insertInstBeforeInsertPoint(truncInst)
-    vst.reinsertValue(truncInst)
 
     truncInst.addUsee(originalVal)
 
@@ -182,26 +184,24 @@ object IRBuilder {
   fun createBr(trueBlock: BasicBlock): BranchInst {
     val brInst = BranchInst(null, trueBlock, null)
     insertInstBeforeInsertPoint(brInst)
+
+    // build control flow graph
+    block!!.addNext(trueBlock)
+    trueBlock.addPrev(block!!)
+
     return brInst
   }
 
-  fun createCall(funcType: FuncType, args: List<Value>): CallInst { // TODO: how about call others
-    val callInst = if (funcType.result is VoidType) {
-      CallInst(null, funcType, args)
-    } else {
-      val tempInst = CallInst(vst.defineName("call"), funcType, args)
-      vst.reinsertValue(tempInst)
-      tempInst
-    }
+  fun createCall(name: String?, funcType: FuncType, args: List<Value>): CallInst { // TODO: how about call others
+    val callInst = CallInst(name, funcType, args)
     insertInstBeforeInsertPoint(callInst)
     args.forEach { it.addUser(callInst) }
     return callInst
   }
 
   fun createGEP(op: String, name: String, value: Value, index: Value, offset: ConstantInt?): GetElementPtrInst {
-    val gepInst = GetElementPtrInst(op, vst.defineName(name), value, index, offset)
+    val gepInst = GetElementPtrInst(op, name, value, index, offset)
     insertInstBeforeInsertPoint(gepInst)
-    vst.reinsertValue(gepInst)
 
     gepInst.addUsee(value)
 
@@ -213,6 +213,12 @@ object IRBuilder {
 //    brInst.insertAtTheTailOf(block!!)
     insertInstBeforeInsertPoint(brInst)
 
+    // build control flow graph
+    block!!.addNext(trueBlock)
+    trueBlock.addPrev(block!!)
+    block!!.addNext(falseBlock)
+    falseBlock.addPrev(block!!)
+
     brInst.addUsee(cond)
     brInst.addUsee(trueBlock)
     brInst.addUsee(falseBlock)
@@ -221,10 +227,9 @@ object IRBuilder {
   }
 
   fun createPhi(name: String, type: Type, candidates: MutableList<Pair<Value, BasicBlock>>): PhiInst {
-    val phiInst = PhiInst(vst.defineName(name), type, candidates)
+    val phiInst = PhiInst(name, type, candidates)
 //    phiInst.insertAtTheTailOf(block!!)
     insertInstBeforeInsertPoint(phiInst)
-    vst.reinsertValue(phiInst)
 
     candidates.forEach { phiInst.addUsee(it.first) }
     candidates.forEach { phiInst.addUsee(it.second) }
@@ -233,10 +238,9 @@ object IRBuilder {
   }
 
   fun createBitCast(name: String, castee: Value, toTy: Type): BitCastInst {
-    val bitCallInst = BitCastInst(vst.defineName(name), castee, toTy)
+    val bitCallInst = BitCastInst(name, castee, toTy)
 //    bitCallInst.insertAtTheTailOf(block!!)
     insertInstBeforeInsertPoint(bitCallInst)
-    vst.reinsertValue(bitCallInst)
 
     bitCallInst.addUsee(castee)
 
@@ -244,9 +248,8 @@ object IRBuilder {
   }
 
   fun createZExt(name: String, castee: Value, toTy: Type): ZExtInst {
-    val zextInst = ZExtInst(vst.defineName(name), castee, toTy)
+    val zextInst = ZExtInst(name, castee, toTy)
     insertInstBeforeInsertPoint(zextInst)
-    vst.reinsertValue(zextInst)
 
     zextInst.addUsee(castee)
 

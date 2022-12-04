@@ -36,11 +36,26 @@ abstract class Instruction(type: Type, name: String? = null) : User(type, name) 
     throw Exception("cannot find instruction in its parent basic block")
   }
 
+  open fun collectUses(): List<Value> {
+    return listOf()
+  }
+
+  abstract fun apply(applier: (Value) -> Value)
+
   abstract fun accept(irVisitor: IRVisitor)
 }
 
-class BinaryInst(name: String, val op: String, val lhs: Value, val rhs: Value) :
-  Instruction(lhs.type, name) {
+class BinaryInst(name: String, val op: String, var rs: Value, var rt: Value) :
+  Instruction(rs.type, name) {
+
+  override fun collectUses(): List<Value> {
+    return listOf(rs, rt)
+  }
+
+  override fun apply(applier: (Value) -> Value) {
+    rs = applier(rs)
+    rt = applier(rt)
+  }
 
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
@@ -52,54 +67,114 @@ class AllocaInst(name: String, val varType: Type) : Instruction(TypeFactory.getP
     return varType.getAlign()
   }
 
-  override fun accept(irVisitor: IRVisitor) {
-    irVisitor.visit(this)
-  }
-}
-
-class LoadInst(name: String, val addr: Value) : Instruction(Utils.getPointee(addr.type), name) {
-  init {
-    addr.addUser(this)
-  }
+  override fun apply(applier: (Value) -> Value) {}
 
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
 }
 
-class StoreInst(val value: Value, val addr: Value) : Instruction(TypeFactory.getVoidType()) {
+class LoadInst(name: String, var addr: Value) : Instruction(Utils.getPointee(addr.type), name) {
+  override fun collectUses(): List<Value> {
+    return listOf(addr)
+  }
+
+  override fun apply(applier: (Value) -> Value) {
+    addr = applier(addr)
+  }
+
+  override fun accept(irVisitor: IRVisitor) {
+    irVisitor.visit(this)
+  }
+}
+
+class StoreInst(var value: Value, var addr: Value) : Instruction(TypeFactory.getVoidType()) {
+  override fun collectUses(): List<Value> {
+    return listOf(value, addr)
+  }
+
+  override fun apply(applier: (Value) -> Value) {
+    value = applier(value)
+    addr = applier(addr)
+  }
+
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
 }
 
 
-class CmpInst(name: String, val cond: Cond, val lhs: Value, val rhs: Value) :
+class CmpInst(name: String, val cond: Cond, var rs: Value, var rt: Value) :
   Instruction(TypeFactory.getIntType(1), name) {
   enum class Cond {
     eq, ne, ugt, uge, ult, ule, sgt, sge, slt, sle,
   }
 
+  override fun collectUses(): List<Value> {
+    return listOf(rs, rt)
+  }
+
+  override fun apply(applier: (Value) -> Value) {
+    rs = applier(rs)
+    rt = applier(rt)
+  }
+
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
 }
 
-class TruncInst(name: String, val originalVal: Value, val toTy: Type) :
+class TruncInst(name: String, var originalVal: Value, val toTy: Type) :
   Instruction(toTy, name) {
+  override fun collectUses(): List<Value> {
+    return listOf(originalVal)
+  }
+
+  override fun apply(applier: (Value) -> Value) {
+    originalVal = applier(originalVal)
+  }
+
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
 }
 
-class ReturnInst(type: Type, val retVal: Value?) : Instruction(type) {
+class ReturnInst(type: Type, var retVal: Value?) : Instruction(type) {
+  override fun collectUses(): List<Value> {
+    return if (retVal == null) {
+      listOf()
+    } else {
+      listOf(retVal!!) // make sure that retVal could not be assigned to null
+    }
+  }
+
+  override fun apply(applier: (Value) -> Value) {
+    if (retVal != null) {
+      retVal = applier(retVal!!)
+    }
+  }
+
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
 }
 
-class BranchInst(val cond: Value?, val trueBlock: BasicBlock, val falseBlock: BasicBlock?) :
+class BranchInst(var cond: Value?, val trueBlock: BasicBlock, val falseBlock: BasicBlock?) :
   Instruction(TypeFactory.getVoidType()) {
+  override fun collectUses(): List<Value> {
+    return if (cond == null) {
+      listOf()
+    } else {
+      listOf(cond!!)
+    }
+  }
+
+  override fun apply(applier: (Value) -> Value) {
+    if (cond != null) {
+      cond = applier(cond!!)
+    }
+  }
+
   override fun isTerminator(): Boolean {
     return true
   }
@@ -109,8 +184,16 @@ class BranchInst(val cond: Value?, val trueBlock: BasicBlock, val falseBlock: Ba
   }
 }
 
-class CallInst(name: String?, val funcType: FuncType, val args: List<Value>) :
-  Instruction(funcType.result, name) {
+class CallInst(name: String?, val funcType: FuncType, var args: List<Value>) :
+  Instruction(funcType.resultType, name) {
+  override fun collectUses(): List<Value> {
+    return args
+  }
+
+  override fun apply(applier: (Value) -> Value) {
+    args = args.map { applier(it) }
+  }
+
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
@@ -119,7 +202,7 @@ class CallInst(name: String?, val funcType: FuncType, val args: List<Value>) :
 /**
  * Form: <result> = getelementptr inbounds [<#elements> x <type>], [<#elements> x <type>]* <variable>, i32 <index>, i32 <offset>
  */
-class GetElementPtrInst(val op: String, name: String, val ptr: Value, val index: Value, val offset: ConstantInt?) :
+class GetElementPtrInst(val op: String, name: String, var ptr: Value, var index: Value, var offset: ConstantInt?) :
   Instruction(
     when (op) {
       "struct" -> TypeFactory.getPtrType((Utils.getPointee(ptr.type) as StructType).symbolList[(offset as ConstantInt).value].second)
@@ -128,6 +211,21 @@ class GetElementPtrInst(val op: String, name: String, val ptr: Value, val index:
       else -> throw Exception("the operation is forbidden")
     }, name
   ) {
+  override fun collectUses(): List<Value> {
+    return if (offset == null) {
+      listOf(ptr, index)
+    } else {
+      listOf(ptr, index, offset!!)
+    }
+  }
+
+  override fun apply(applier: (Value) -> Value) {
+    ptr = applier(ptr)
+    index = applier(index)
+    if (offset != null) {
+      offset = applier(offset!!) as ConstantInt
+    }
+  }
 
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
@@ -135,23 +233,48 @@ class GetElementPtrInst(val op: String, name: String, val ptr: Value, val index:
 }
 
 /**
- * @param preds: it might come from latter blocks, therefore it's allowed to be modified later
+ * @param predList: it might come from latter blocks, therefore it's allowed to be modified later
  */
-class PhiInst(name: String, type: Type, val preds: MutableList<Pair<Value, BasicBlock>>) :
+class PhiInst(name: String, type: Type, var predList: MutableList<Pair<Value, BasicBlock>>) :
   Instruction(type, name) {
+  override fun collectUses(): List<Value> {
+    return predList.map { it.first }
+  }
+
+  override fun apply(applier: (Value) -> Value) {
+    predList = predList.map { Pair(applier(it.first), it.second) }.toMutableList()
+  }
+
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
 }
 
-class BitCastInst(name: String, val castee: Value, toTy: Type) : Instruction(toTy, name) {
+class BitCastInst(name: String, var castee: Value, toTy: Type) : Instruction(toTy, name) {
   val fromTy = castee.type
+
+  override fun collectUses(): List<Value> {
+    return listOf(castee)
+  }
+
+  override fun apply(applier: (Value) -> Value) {
+    castee = applier(castee)
+  }
+
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
 }
 
-class ZExtInst(name: String, val originalVal: Value, toTy: Type) : Instruction(toTy, name) {
+class ZExtInst(name: String, var originalVal: Value, toTy: Type) : Instruction(toTy, name) {
+  override fun collectUses(): List<Value> {
+    return listOf(originalVal)
+  }
+
+  override fun apply(applier: (Value) -> Value) {
+    originalVal = applier(originalVal)
+  }
+
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }

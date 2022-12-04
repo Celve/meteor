@@ -117,9 +117,9 @@ class ASMGenerator : IRVisitor() {
     for ((index, arg) in func.argList.withIndex()) {
       val virReg = regFactory.newVirReg()
       linkValAndReg(arg, virReg)
-      if (index <= 7) {
+      if (index <= 7) { // only first 8 args are passed by registers
         ASMBuilder.createMvInst(virReg, regFactory.getPhyReg(index + 10))
-      } else {
+      } else { // the others are passed by stack
         val offset = asmFunc.stackFrame.newAllocaSpace() + (index - 8) * 4
         ASMBuilder.createLoadInst(arg.type.getAlign(), virReg, offset, regFactory.getPhyReg("sp"))
 
@@ -194,7 +194,7 @@ class ASMGenerator : IRVisitor() {
 
     // TODO: this implementation is buggy or costy, because the builtin func is generated every single time
     ASMBuilder.createCallInst(module!!.getFunc(inst.funcType.funcName) ?: ASMFunc(inst.funcType.funcName))
-    if (inst.funcType.result != TypeFactory.getVoidType()) {
+    if (inst.funcType.resultType != TypeFactory.getVoidType()) {
       val virReg = regFactory.newVirReg()
       linkValAndReg(inst, virReg)
       ASMBuilder.createMvInst(virReg, regFactory.getPhyReg("a0"))
@@ -240,7 +240,7 @@ class ASMGenerator : IRVisitor() {
     linkValAndReg(inst, reg)
 
     // add mv to a particular virtual register in each predicated block to implement the phi inst
-    for (pred in inst.preds) {
+    for (pred in inst.predList) {
       val predBlock = func.getBlockByPureName(pred.second.name!!)!!
       val insertPoint = predBlock.firstBrInstOrNull()
       if (insertPoint != null) {
@@ -268,8 +268,8 @@ class ASMGenerator : IRVisitor() {
     ASMBuilder.createArithInst(
       inst.op,
       virReg,
-      getRegOfValue(inst.lhs)!!,
-      getRegOfValue(inst.rhs)!!
+      getRegOfValue(inst.rs)!!,
+      getRegOfValue(inst.rt)!!
     )
   }
 
@@ -352,8 +352,8 @@ class ASMGenerator : IRVisitor() {
   override fun visit(inst: CmpInst) {
     val virReg = regFactory.newVirReg()
     linkValAndReg(inst, virReg)
-    val lhsReg = getRegOfValue(inst.lhs)!!
-    val rhsReg = getRegOfValue(inst.rhs)!!
+    val lhsReg = getRegOfValue(inst.rs)!!
+    val rhsReg = getRegOfValue(inst.rt)!!
 
     // due to the limitation of RISC-V, implementations of some comparisons should be done with help of others
     when (inst.cond.name) {
@@ -393,7 +393,7 @@ class ASMGenerator : IRVisitor() {
 
   override fun visit(inst: ReturnInst) {
     if (inst.retVal != null) {
-      ASMBuilder.createMvInst(regFactory.getPhyReg("a0"), getRegOfValue(inst.retVal)!!)
+      ASMBuilder.createMvInst(regFactory.getPhyReg("a0"), getRegOfValue(inst.retVal!!)!!)
     }
 //    val stackAlloca = ASMBuilder.getCurrentFunc().stackAlloca
     val func = ASMBuilder.getCurrentFunc()

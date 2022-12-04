@@ -10,6 +10,14 @@ package middleend.basic
 open class Value(val type: Type, var name: String? = null) {
   val userList: MutableList<User> = mutableListOf()
 
+  fun isDef(): Boolean {
+    return name != null
+  }
+
+  open fun isConst(): Boolean {
+    return false
+  }
+
   override fun toString(): String {
     return "%${name ?: "unnamed"}"
   }
@@ -20,5 +28,10 @@ open class Value(val type: Type, var name: String? = null) {
   fun addUser(user: User) {
     userList.add(user)
     user.useeList.add(this)
+  }
+
+  fun removeUser(user: User) {
+    user.useeList.remove(this)
+    userList.remove(user)
   }
 }

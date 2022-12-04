@@ -8,21 +8,19 @@ import middleend.pass.IRVisitor
  */
 class BasicBlock(name: String, val executionFrequency: Int) : Value(TypeFactory.getLabelType(name), name) {
   var parent: Func? = null
-  val instList: MutableList<Instruction> = mutableListOf()
-  private var terminated: Boolean = false
+  var instList: MutableList<Instruction> = mutableListOf()
+  val prevBlockList = mutableListOf<BasicBlock>()
+  val nextBlockList = mutableListOf<BasicBlock>()
 
   fun hasTerminator(): Boolean {
-    return terminated
+    return instList.isNotEmpty() && instList.last().isTerminator()
   }
 
   fun addInst(index: Int, inst: Instruction) {
-    if (terminated && index >= instList.size - 1) {
-      return
+    if (hasTerminator() && index >= instList.size) {
+      throw Exception("basicblock has been terminated")
     }
     instList.add(index, inst)
-    if (inst.isTerminator()) {
-      terminated = true
-    }
   }
 
   fun getIndexInFunc(): Int {
@@ -56,6 +54,14 @@ class BasicBlock(name: String, val executionFrequency: Int) : Value(TypeFactory.
   fun insertAtIndex(func: Func, index: Int) {
     func.addBasicBlockAtIndex(index, this)
     parent = func
+  }
+
+  fun addPrev(prevBlock: BasicBlock) {
+    prevBlockList.add(prevBlock)
+  }
+
+  fun addNext(nextBlock: BasicBlock) {
+    nextBlockList.add(nextBlock)
   }
 
   fun accept(visitor: IRVisitor) {

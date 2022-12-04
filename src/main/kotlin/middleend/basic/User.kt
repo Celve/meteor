@@ -9,4 +9,9 @@ open class User(type: Type, name: String? = null) : Value(type, name) {
     value.userList.add(this)
     useeList.add(value)
   }
+
+  fun removeUsee(value: Value) {
+    value.userList.remove(this)
+    useeList.remove(value)
+  }
 }
