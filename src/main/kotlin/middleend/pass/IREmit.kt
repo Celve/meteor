@@ -21,8 +21,8 @@ class IREmit : IRVisitor() {
       println("%${structType.structName} = type { ${structType.symbolList.joinToString(", ") { it.second.toString() }} }\n")
     }
 
-    topModule.globalVar.forEach { it.value.accept(this) }
-    if (topModule.globalVar.size >= 1) {
+    topModule.name2Addr.forEach { it.value.accept(this) }
+    if (topModule.name2Addr.size >= 1) {
       println()
     }
 

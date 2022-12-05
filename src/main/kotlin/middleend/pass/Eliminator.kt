@@ -34,13 +34,31 @@ class Eliminator : IRVisitor() {
     // collect alloca
     // eliminate instruction with load and store to alloca
     val addr2Value = hashMapOf<Instruction, BinaryInst>()
-
     val entryBlock = func.blockList.first()
-    val allocaInstList = entryBlock.instList.filterIsInstance<AllocaInst>().filter { it.varType is IntType }.toSet()
+
+    val allocaInstList =
+      entryBlock.instList
+        .filterIsInstance<AllocaInst>()
+        .filter { it.varType is IntType }
+        .toSet()
+
     allocaInstList.forEach { eliminateInst(it) }
-    allocaInstList.forEach {
-      addr2Value[it] = BinaryInst(it.name!!.substringBeforeLast("."), "add", ConstantInt(32, 0), ConstantInt(32, 0))
-    } // extract its true name
+
+    for (inst in allocaInstList) {
+      val original = inst.name!!.substringBeforeLast(".")
+      addr2Value[inst] =
+        BinaryInst(
+          inst.name!!.substringBeforeLast("."),
+          "add",
+          if (!func.argList.any { it.name!! == original }) {
+            ConstantInt(inst.varType.getNumBits(), 0)
+          } else {
+            func.argList.find { it.name!! == original }!!
+          },
+          ConstantInt(inst.varType.getNumBits(), 0)
+        )
+    }
+
     entryBlock.instList = entryBlock.instList.map { addr2Value[it] ?: it }.toMutableList()
 
     for (block in func.blockList) {

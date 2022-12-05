@@ -89,6 +89,20 @@ class DomTree(val func: Func?) {
       }
     }
 
+    // remove unused blocks
+    val removingBlocks = func.blockList.subtract(visitedSet)
+    func.blockList.removeAll(removingBlocks)
+    for (block in removingBlocks) {
+      for (prevBlock in block.prevBlockList) {
+        prevBlock.removeNext(block)
+        block.removePrev(block)
+      }
+      for (nextBlock in block.nextBlockList) {
+        nextBlock.removePrev(block)
+        block.removeNext(block)
+      }
+    }
+
     for (block in blockListInPostorder) {
       if (block.prevBlockList.size >= 2) {
         for (prevBlock in block.prevBlockList) {

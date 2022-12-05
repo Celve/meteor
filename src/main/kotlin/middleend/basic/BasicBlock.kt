@@ -60,8 +60,16 @@ class BasicBlock(name: String, val executionFrequency: Int) : Value(TypeFactory.
     prevBlockList.add(prevBlock)
   }
 
+  fun removePrev(prevBlock: BasicBlock) {
+    prevBlockList.remove(prevBlock)
+  }
+
   fun addNext(nextBlock: BasicBlock) {
     nextBlockList.add(nextBlock)
+  }
+
+  fun removeNext(nextBlock: BasicBlock) {
+    nextBlockList.remove(nextBlock)
   }
 
   fun accept(visitor: IRVisitor) {

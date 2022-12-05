@@ -98,7 +98,7 @@ class SSAConstructor : IRVisitor() {
     globals.clear()
 
     // add global and intial local variables
-    module!!.globalVar.forEach { it.value.accept(this) }
+    module!!.name2Addr.forEach { it.value.accept(this) }
     module!!.constStr.forEach { it.value.accept(this) }
     func.argList.forEach { renameValue(it) }
 
@@ -111,7 +111,11 @@ class SSAConstructor : IRVisitor() {
       for (inst in block.instList) {
         if (inst !is PhiInst) { // ignore manually added phi
           globals.addAll(
-            inst.collectUses().filterIsInstance<Instruction>().map { it.name!! }.filter { !varKillSet.contains(it) })
+            inst.collectUses()
+              .filterIsInstance<Instruction>()
+              .filter { it !is PhiInst } // still ignore manually added instruction
+              .map { it.name!! }
+              .filter { !varKillSet.contains(it) })
         }
         if (inst.isDef()) { // namely it's definition
           varKillSet.add(inst.name!!)

@@ -71,7 +71,7 @@ class ASMGenerator : IRVisitor() {
     regFactory = module!!.regFactory
 
     // FIXME: The whole process doesn't take care of the global variable
-    topModule.globalVar.forEach { it.value.accept(this) }
+    topModule.name2Addr.forEach { it.value.accept(this) }
     topModule.constStr.forEach { it.value.accept(this) }
     topModule.funcList.forEach { it.value.accept(this) }
   }

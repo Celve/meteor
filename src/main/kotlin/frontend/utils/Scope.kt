@@ -9,15 +9,15 @@ import middleend.basic.Value
 // it could register var, class, or func, determined by the block's property
 // scopes form a tree in scope manager
 open class Scope(var parent: Scope?) {
-  val namedValues: HashMap<String, Value> = hashMapOf()
+  val name2Addr: HashMap<String, Value> = hashMapOf()
 
   // to get every variable a unique name
-  fun getValue(name: String): Value? {
-    return namedValues[name] ?: parent?.getValue(name)
+  fun getAddr(name: String): Value? {
+    return name2Addr[name] ?: parent?.getAddr(name)
   }
 
-  fun setValue(name: String, value: Value) {
-    namedValues[name] = value
+  fun setAddr(name: String, value: Value) {
+    name2Addr[name] = value
   }
 
   open fun setVar(name: String, type: TypeMd) {
