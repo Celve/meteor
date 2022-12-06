@@ -6,7 +6,7 @@ import middleend.pass.IRVisitor
  * BasicBlock is used for holding instruction in LLVM IR.
  * A BasicBlock is a sequence of instructions, terminated by a terminator instruction.
  */
-class BasicBlock(name: String, val executionFrequency: Int) : Value(TypeFactory.getLabelType(name), name) {
+class BasicBlock(name: String, val execFreq: Int) : Value(TypeFactory.getLabelType(name), name) {
   var parent: Func? = null
   var instList: MutableList<Instruction> = mutableListOf()
   val prevBlockList = mutableListOf<BasicBlock>()
@@ -56,23 +56,35 @@ class BasicBlock(name: String, val executionFrequency: Int) : Value(TypeFactory.
     parent = func
   }
 
-  fun addPrev(prevBlock: BasicBlock) {
+  fun addPrevBlock(prevBlock: BasicBlock) {
     prevBlockList.add(prevBlock)
   }
 
-  fun removePrev(prevBlock: BasicBlock) {
+  fun removePrevBlock(prevBlock: BasicBlock) {
     prevBlockList.remove(prevBlock)
   }
 
-  fun addNext(nextBlock: BasicBlock) {
+  fun addNextBlock(nextBlock: BasicBlock) {
     nextBlockList.add(nextBlock)
   }
 
-  fun removeNext(nextBlock: BasicBlock) {
+  fun removeNextBlock(nextBlock: BasicBlock) {
     nextBlockList.remove(nextBlock)
   }
 
   fun accept(visitor: IRVisitor) {
     visitor.visit(this)
+  }
+
+  companion object {
+    fun link(src: BasicBlock, dst: BasicBlock) {
+      src.addNextBlock(dst)
+      dst.addPrevBlock(src)
+    }
+
+    fun unlink(src: BasicBlock, dst: BasicBlock) {
+      src.removeNextBlock(dst)
+      dst.removePrevBlock(src)
+    }
   }
 }

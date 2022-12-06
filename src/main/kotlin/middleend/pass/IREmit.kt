@@ -134,4 +134,8 @@ class IREmit : IRVisitor() {
       }
     )
   }
+
+  override fun visit(inst: PCopyInst) {
+    println("pcopy ".plus(inst.assignmentList.joinToString(", ") { "[ ${it.first} = ${it.second} ]" }))
+  }
 }

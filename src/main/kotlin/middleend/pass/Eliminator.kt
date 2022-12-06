@@ -141,4 +141,8 @@ class Eliminator : IRVisitor() {
   override fun visit(inst: ReturnInst) {
     TODO("Not yet implemented")
   }
+
+  override fun visit(inst: PCopyInst) {
+    TODO("Not yet implemented")
+  }
 }

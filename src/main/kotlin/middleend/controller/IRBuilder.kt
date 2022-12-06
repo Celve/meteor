@@ -186,8 +186,8 @@ object IRBuilder {
     insertInstBeforeInsertPoint(brInst)
 
     // build control flow graph
-    block!!.addNext(trueBlock)
-    trueBlock.addPrev(block!!)
+    block!!.addNextBlock(trueBlock)
+    trueBlock.addPrevBlock(block!!)
 
     return brInst
   }
@@ -214,10 +214,10 @@ object IRBuilder {
     insertInstBeforeInsertPoint(brInst)
 
     // build control flow graph
-    block!!.addNext(trueBlock)
-    trueBlock.addPrev(block!!)
-    block!!.addNext(falseBlock)
-    falseBlock.addPrev(block!!)
+    block!!.addNextBlock(trueBlock)
+    trueBlock.addPrevBlock(block!!)
+    block!!.addNextBlock(falseBlock)
+    falseBlock.addPrevBlock(block!!)
 
     brInst.addUsee(cond)
     brInst.addUsee(trueBlock)

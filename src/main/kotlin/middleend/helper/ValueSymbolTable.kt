@@ -3,6 +3,7 @@ package middleend.helper
 import middleend.basic.TopModule
 import middleend.basic.Value
 
+// deprecated
 class ValueSymbolTable {
   private val nameToVersion: HashMap<String, Int> = hashMapOf()
   private val nameToValue: HashMap<String, Value> = hashMapOf()

@@ -159,7 +159,7 @@ class ReturnInst(type: Type, var retVal: Value?) : Instruction(type) {
   }
 }
 
-class BranchInst(var cond: Value?, val trueBlock: BasicBlock, val falseBlock: BasicBlock?) :
+class BranchInst(var cond: Value?, var trueBlock: BasicBlock, var falseBlock: BasicBlock?) :
   Instruction(TypeFactory.getVoidType()) {
   override fun collectUses(): List<Value> {
     return if (cond == null) {
@@ -273,6 +273,27 @@ class ZExtInst(name: String, var originalVal: Value, toTy: Type) : Instruction(t
 
   override fun apply(applier: (Value) -> Value) {
     originalVal = applier(originalVal)
+  }
+
+  override fun accept(irVisitor: IRVisitor) {
+    irVisitor.visit(this)
+  }
+}
+
+class PCopyInst : Instruction(TypeFactory.getVoidType(), null) {
+  // the first is rd, and the second is rs
+  var assignmentList = mutableListOf<Pair<Value, Value>>()
+
+  fun addAssignment(rd: Value, rs: Value) {
+    assignmentList.add(Pair(rd, rs))
+  }
+
+  override fun collectUses(): List<Value> {
+    return assignmentList.map { it.second }
+  }
+
+  override fun apply(applier: (Value) -> Value) {
+    assignmentList = assignmentList.map { Pair(it.first, applier(it.second)) }.toMutableList()
   }
 
   override fun accept(irVisitor: IRVisitor) {

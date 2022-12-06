@@ -94,12 +94,12 @@ class DomTree(val func: Func?) {
     func.blockList.removeAll(removingBlocks)
     for (block in removingBlocks) {
       for (prevBlock in block.prevBlockList) {
-        prevBlock.removeNext(block)
-        block.removePrev(block)
+        prevBlock.removeNextBlock(block)
+        block.removePrevBlock(block)
       }
       for (nextBlock in block.nextBlockList) {
-        nextBlock.removePrev(block)
-        block.removeNext(block)
+        nextBlock.removePrevBlock(block)
+        block.removeNextBlock(block)
       }
     }
 

@@ -13,6 +13,7 @@ import middleend.controller.IRGenerator
 import middleend.pass.Eliminator
 import middleend.pass.IREmit
 import middleend.pass.SSAConstructor
+import middleend.pass.SSADestructor
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import java.io.FileInputStream
@@ -52,10 +53,13 @@ fun main(args: Array<String>) {
   val ssaConstructor = SSAConstructor()
   ssaConstructor.visit(middleend.topModule)
 
-  irEmit.visit(middleend.topModule)
+  val ssaDestructor = SSADestructor()
+  ssaDestructor.visit(middleend.topModule)
+
+//  irEmit.visit(middleend.topModule)
 
   val backend = ASMGenerator()
-//  backend.visit(middleend.topModule)
+  backend.visit(middleend.topModule)
 
   val asmEmit = ASMEmit()
 //  asmEmit.visit(backend.module!!)
@@ -66,7 +70,7 @@ fun main(args: Array<String>) {
 //  asmEmit.visit(backend.module!!)
 
   val registerAllocator = ASMRegisterAllocator()
-//  registerAllocator.visit(backend.module!!)
-//  asmEmit.visit(backend.module!!)
+  registerAllocator.visit(backend.module!!)
+  asmEmit.visit(backend.module!!)
 }
 

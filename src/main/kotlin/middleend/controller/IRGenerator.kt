@@ -8,6 +8,7 @@ import frontend.utils.GlobalScope
 import frontend.utils.ScopeManager
 import middleend.basic.*
 import middleend.helper.LoopManager
+import middleend.helper.SymbolTable
 import middleend.helper.Utils
 import kotlin.math.pow
 
@@ -16,26 +17,15 @@ class IRGenerator : ASTVisitor() {
   private val loopManager = LoopManager()
   val topModule = TopModule()
   private var initFunc: Func? = null
-  private var localCounter = mutableMapOf<String, Int>().withDefault { 0 }
-  private var globalCounter = mutableMapOf<String, Int>().withDefault { 0 }
-
-  private fun rename(name: String, counter: MutableMap<String, Int>): String {
-    val pureName = name.replace("\\d+$".toRegex(), "") // remove tail number
-    val ver = counter.getValue(pureName)
-    counter[pureName] = ver + 1
-    return if (ver == 0) {
-      pureName
-    } else {
-      "$pureName$ver"
-    }
-  }
+  private var localSymbolTable = SymbolTable()
+  private var globalSymbolTable = SymbolTable()
 
   private fun renameStr(name: String): String {
-    return rename(name, globalCounter)
+    return globalSymbolTable.rename(name)
   }
 
   private fun renameOp(name: String): String {
-    return rename(name, localCounter)
+    return localSymbolTable.rename(name)
   }
 
   override fun visit(curr: ProgNode) {
@@ -180,7 +170,7 @@ class IRGenerator : ASTVisitor() {
   }
 
   override fun visit(curr: FuncDefNode) {
-    localCounter = hashMapOf<String, Int>().withDefault { 0 } // init counter
+    localSymbolTable.clear()
 
     scopeManger.addLast(curr.funcMd)
     val innerScope = scopeManger.last() as FuncScope
@@ -190,6 +180,7 @@ class IRGenerator : ASTVisitor() {
     val func = topModule.getFunc(funcName)!!
     IRBuilder.setCurrentFunc(func)
     func.vst.addAll(topModule)
+    localSymbolTable = func.symbolTable
     /** avoid conflicts with global value */
     val funcType = func.type as FuncType
 

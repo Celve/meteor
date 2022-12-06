@@ -1,6 +1,19 @@
 package backend.helper
 
 object Utils {
+  fun calculate(op: String, rs: Int, rt: Int): Int {
+    return when (op) {
+      "add" -> rs + rt
+      "sub" -> rs - rt
+      "mul" -> rs * rt
+      "sdiv" -> rs / rt
+      "srem" -> rs % rt
+      "shl" -> rs shl rt
+      "ashr" -> rs shr rt
+      else -> throw Exception("Unknown op: $op")
+    }
+  }
+
   fun getPhyRegId(abi: String): Int {
     return when (abi) {
       "zero" -> 0

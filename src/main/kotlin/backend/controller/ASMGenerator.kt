@@ -14,8 +14,7 @@ import middleend.pass.IRVisitor
 class ASMGenerator : IRVisitor() {
   var module: ASMModule? = null
   private var regFactory = RegFactory()
-  private var value2Reg = hashMapOf<Value, Register>() // this mapping is only for virtual register
-  private var reg2Value = hashMapOf<Register, Value>() // this mapping is only for virtual register
+  private var value2Reg = hashMapOf<String, Register>() // this mapping is only for virtual register
   private var value2Offset = hashMapOf<Value, Immediate>() // this mapping is only for space allocated on stack
   private var block2ExtraPhiInstList =
     hashMapOf<ASMBlock, MutableList<Pair<Register, Value>>>() // this mapping is only for phi inst
@@ -25,8 +24,7 @@ class ASMGenerator : IRVisitor() {
    * @param reg should be a virtual register
    */
   fun linkValAndReg(value: Value, reg: Register) {
-    value2Reg[value] = reg
-    reg2Value[reg] = value
+    value2Reg[value.name!!] = reg
   }
 
   /**
@@ -58,7 +56,17 @@ class ASMGenerator : IRVisitor() {
       ASMBuilder.createLaInst(virReg, module!!.getGlobalPtr(value.name!!))
       virReg
     } else {
-      value2Reg[value]
+      value2Reg[value.name!!]
+    }
+  }
+
+  fun getRegOfInst(inst: Instruction): Register {
+    return if (value2Reg.contains(inst.name!!)) {
+      value2Reg[inst.name!!]!!
+    } else {
+      val virReg = regFactory.newVirReg()
+      linkValAndReg(inst, virReg)
+      virReg
     }
   }
 
@@ -101,7 +109,6 @@ class ASMGenerator : IRVisitor() {
     newGlobalVar.addEmit(Directive(".size", listOf(newGlobalVar.name, constStr.str.length.toString())))
   }
 
-
   override fun visit(func: Func) {
     val asmFunc = ASMFunc(func.name!!)
     asmFunc.argsNum = func.argList.size
@@ -110,7 +117,7 @@ class ASMGenerator : IRVisitor() {
     regFactory.position = asmFunc
     value2Offset = hashMapOf()
 
-    func.blockList.forEach { asmFunc.addBlock(ASMBlock(it.name!!, asmFunc, it.executionFrequency)) }
+    func.blockList.forEach { asmFunc.addBlock(ASMBlock(it.name!!, asmFunc, it.execFreq)) }
 
     // move args to a0, a1, ...
     ASMBuilder.setInsertBlock(asmFunc.blockList.first())
@@ -149,7 +156,7 @@ class ASMGenerator : IRVisitor() {
         if (it.second is ConstantInt) {
           ASMBuilder.createLiInst(it.first, DeterminedImmediate((it.second as ConstantInt).value))
         } else {
-          ASMBuilder.createMvInst(it.first, value2Reg[it.second]!!)
+          ASMBuilder.createMvInst(it.first, value2Reg[it.second.name!!]!!)
         }
       }
       block2ExtraPhiInstList.remove(asmBlock)
@@ -205,8 +212,7 @@ class ASMGenerator : IRVisitor() {
   }
 
   override fun visit(inst: LoadInst) {
-    val virReg = regFactory.newVirReg()
-    linkValAndReg(inst, virReg)
+    val virReg = getRegOfInst(inst)
     if (getOffsetOfValue(inst.addr) != null) {
       // for values that are allocated on stack
       ASMBuilder.createLoadInst(
@@ -228,49 +234,37 @@ class ASMGenerator : IRVisitor() {
 
   override fun visit(inst: BitCastInst) {
     // I think it's useless, only usage is to refer it
-    val virReg = regFactory.newVirReg()
+    val virReg = getRegOfInst(inst)
     ASMBuilder.createMvInst(virReg, getRegOfValue(inst.castee)!!)
-    linkValAndReg(inst, virReg)
   }
 
   override fun visit(inst: PhiInst) {
-    val func = ASMBuilder.getCurrentFunc()
-    val block = ASMBuilder.getInsertBlock()
-    val reg = regFactory.newVirReg()
-    linkValAndReg(inst, reg)
-
-    // add mv to a particular virtual register in each predicated block to implement the phi inst
-    for (pred in inst.predList) {
-      val predBlock = func.getBlockByPureName(pred.second.name!!)!!
-      val insertPoint = predBlock.firstBrInstOrNull()
-      if (insertPoint != null) {
-        ASMBuilder.setInsertPointBefore(insertPoint)
-        if (pred.first is ConstantInt) {
-          ASMBuilder.createLiInst(reg, DeterminedImmediate((pred.first as ConstantInt).value))
-        } else {
-          ASMBuilder.createMvInst(reg, value2Reg[pred.first]!!)
-        }
-      } else {
-        // due to the insert order, the pred block may not have been visited
-        // therefore it's necessary to maintain a list of undone phi inst for each block
-        val extraPhiInstList = block2ExtraPhiInstList.getOrDefault(predBlock, mutableListOf())
-        extraPhiInstList.add(Pair(reg, pred.first))
-        block2ExtraPhiInstList[predBlock] = extraPhiInstList
-      }
-    }
-
-    ASMBuilder.setInsertBlock(block)
+    throw Exception("Phi-instruction should not occur")
   }
 
   override fun visit(inst: BinaryInst) {
-    val virReg = regFactory.newVirReg()
-    linkValAndReg(inst, virReg)
-    ASMBuilder.createArithInst(
-      inst.op,
-      virReg,
-      getRegOfValue(inst.rs)!!,
-      getRegOfValue(inst.rt)!!
-    )
+    val virReg = getRegOfInst(inst)
+    val rs = inst.rs
+    val rt = inst.rt
+
+    // rs, rt = reg, imm or rs, rt = reg, reg or rs, rt = imm, imm
+    if (rs is ConstantInt && rt is ConstantInt) {
+      ASMBuilder.createLiInst(virReg, DeterminedImmediate(Utils.calculate(inst.op, rs.value, rt.value)))
+    } else if (rt is ConstantInt && inst.op != "sdiv" && inst.op != "srem" && inst.op != "sub" && inst.op != "mul") { // can be optimized more
+      ASMBuilder.createArithiInst(
+        "${inst.op}i",
+        virReg,
+        getRegOfValue(rs)!!,
+        DeterminedImmediate(rt.value)
+      )
+    } else {
+      ASMBuilder.createArithInst(
+        inst.op,
+        virReg,
+        getRegOfValue(rs)!!,
+        getRegOfValue(rt)!!
+      )
+    }
   }
 
   override fun visit(inst: BranchInst) {
@@ -278,7 +272,7 @@ class ASMGenerator : IRVisitor() {
     if (inst.cond == null) { // unconditional br
       ASMBuilder.createJInst(func.getBlockByPureName(inst.trueBlock.name!!)!!)
     } else { // conditional br
-      val condReg = value2Reg[inst.cond]!!
+      val condReg = value2Reg[inst.cond!!.name!!]!!
       val trueBlock = func.getBlockByPureName(inst.trueBlock.name!!)!!
       val falseBlock = func.getBlockByPureName(inst.falseBlock!!.name!!)!!
       ASMBuilder.createBzInst("bnez", condReg, trueBlock)
@@ -287,45 +281,48 @@ class ASMGenerator : IRVisitor() {
   }
 
   override fun visit(inst: GetElementPtrInst) {
-    val shiftReg = regFactory.newVirReg()
-    linkValAndReg(inst, shiftReg)
-    if (inst.op == "ptr") {
-      // it's a pointer to an array
-      val elemSize = (inst.ptr.type as PointerType).pointeeTy!!.getAlign() // TODO: I don't know if it's right
-      val elemSizeReg = regFactory.newVirReg()
-      val indexReg = getRegOfValue(inst.index)!!
-      ASMBuilder.createLiInst(elemSizeReg, DeterminedImmediate(elemSize))
-      ASMBuilder.createArithInst("mul", shiftReg, elemSizeReg, indexReg)
-      ASMBuilder.createArithInst("add", shiftReg, getRegOfValue(inst.ptr)!!, shiftReg)
-    } else if (inst.op == "array") {
-      val elemSize = ((inst.ptr.type as PointerType).pointeeTy as ArrayType).containedType.getAlign()
-      val elemSizeReg = regFactory.newVirReg()
-      val offsetReg = getRegOfValue(inst.offset!!)!!
-      ASMBuilder.createLiInst(elemSizeReg, DeterminedImmediate(elemSize))
-      ASMBuilder.createArithInst("mul", shiftReg, elemSizeReg, offsetReg)
-      ASMBuilder.createArithInst("add", shiftReg, getRegOfValue(inst.ptr)!!, shiftReg)
-    } else { // it must be struct
-      // the calculation of offset of struct is to add them up
-      val offset = inst.offset!!.value
-      val structType = (inst.ptr.type as PointerType).pointeeTy as StructType
-      val elemSizeSum = structType.symbolList.take(offset).sumOf { it.second.getAlign() }
-      val elemSizeSumReg = regFactory.newVirReg()
-      ASMBuilder.createLiInst(elemSizeSumReg, DeterminedImmediate(elemSizeSum))
-      ASMBuilder.createArithInst("add", shiftReg, getRegOfValue(inst.ptr)!!, elemSizeSumReg)
+    val shiftReg = getRegOfInst(inst)
+    when (inst.op) {
+      "ptr" -> {
+        // it's a pointer to an array
+        val elemSize = (inst.ptr.type as PointerType).pointeeTy!!.getAlign() // TODO: I don't know if it's right
+        val elemSizeReg = regFactory.newVirReg()
+        val indexReg = getRegOfValue(inst.index)!!
+        ASMBuilder.createLiInst(elemSizeReg, DeterminedImmediate(elemSize))
+        ASMBuilder.createArithInst("mul", shiftReg, elemSizeReg, indexReg)
+        ASMBuilder.createArithInst("add", shiftReg, getRegOfValue(inst.ptr)!!, shiftReg)
+      }
+
+      "array" -> {
+        val elemSize = ((inst.ptr.type as PointerType).pointeeTy as ArrayType).containedType.getAlign()
+        val elemSizeReg = regFactory.newVirReg()
+        val offsetReg = getRegOfValue(inst.offset!!)!!
+        ASMBuilder.createLiInst(elemSizeReg, DeterminedImmediate(elemSize))
+        ASMBuilder.createArithInst("mul", shiftReg, elemSizeReg, offsetReg)
+        ASMBuilder.createArithInst("add", shiftReg, getRegOfValue(inst.ptr)!!, shiftReg)
+      }
+
+      else -> { // it must be struct
+        // the calculation of offset of struct is to add them up
+        val offset = inst.offset!!.value
+        val structType = (inst.ptr.type as PointerType).pointeeTy as StructType
+        val elemSizeSum = structType.symbolList.take(offset).sumOf { it.second.getAlign() }
+        val elemSizeSumReg = regFactory.newVirReg()
+        ASMBuilder.createLiInst(elemSizeSumReg, DeterminedImmediate(elemSizeSum))
+        ASMBuilder.createArithInst("add", shiftReg, getRegOfValue(inst.ptr)!!, elemSizeSumReg)
+      }
     }
   }
 
   override fun visit(inst: ZExtInst) {
     // it's useless too, at least in Mx*
-    val virReg = regFactory.newVirReg()
-    linkValAndReg(inst, virReg)
+    val virReg = getRegOfInst(inst)
     ASMBuilder.createMvInst(virReg, getRegOfValue(inst.originalVal)!!)
   }
 
   override fun visit(inst: TruncInst) {
     // it's useless too, at least in Mx*
-    val virReg = regFactory.newVirReg()
-    linkValAndReg(inst, virReg)
+    val virReg = getRegOfInst(inst)
     ASMBuilder.createMvInst(virReg, getRegOfValue(inst.originalVal)!!)
   }
 
@@ -350,8 +347,7 @@ class ASMGenerator : IRVisitor() {
   }
 
   override fun visit(inst: CmpInst) {
-    val virReg = regFactory.newVirReg()
-    linkValAndReg(inst, virReg)
+    val virReg = getRegOfInst(inst)
     val lhsReg = getRegOfValue(inst.rs)!!
     val rhsReg = getRegOfValue(inst.rt)!!
 
@@ -399,5 +395,9 @@ class ASMGenerator : IRVisitor() {
     val func = ASMBuilder.getCurrentFunc()
     ASMBuilder.createArithiInst("addi", PhyReg("sp"), PhyReg("sp"), func.stackFrame.newAllocaSpace())
     ASMBuilder.createRet()
+  }
+
+  override fun visit(inst: PCopyInst) {
+    TODO("Not yet implemented")
   }
 }

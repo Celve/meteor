@@ -86,7 +86,12 @@ object ASMBuilder {
   }
 
   fun createArithiInst(op: String, rd: Register, rs1: Register, imm: Immediate, comment: String = "") {
-    val arithiInst = ASMArithiInst(op, rd, imm, rs1, comment)
+    val newOp = when (op) {
+      "shli" -> "slli"
+      "ashri" -> "srai"
+      else -> op
+    }
+    val arithiInst = ASMArithiInst(newOp, rd, imm, rs1, comment)
     insertInst(arithiInst)
   }
 
