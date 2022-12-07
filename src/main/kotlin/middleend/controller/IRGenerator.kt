@@ -17,14 +17,14 @@ class IRGenerator : ASTVisitor() {
   private val loopManager = LoopManager()
   val topModule = TopModule()
   private var initFunc: Func? = null
-  private var localSymbolTable = SymbolTable()
-  private var globalSymbolTable = SymbolTable()
+  private var localSymbolTable = SymbolTable("")
+  private var globalSymbolTable = SymbolTable("")
 
-  private fun renameStr(name: String): String {
+  private fun renameGlobal(name: String): String {
     return globalSymbolTable.rename(name)
   }
 
-  private fun renameOp(name: String): String {
+  private fun renameLocal(name: String): String {
     return localSymbolTable.rename(name)
   }
 
@@ -62,7 +62,7 @@ class IRGenerator : ASTVisitor() {
       // create implicit constructor
       if (!classMd.hasCustomCtor) {
         val ctor = topModule.getFunc("${className}.new")!!
-        val entryBlock = BasicBlock("entry", 1)
+        val entryBlock = BasicBlock(renameLocal("entry"), 1)
         IRBuilder.setCurrentFunc(ctor)
         IRBuilder.setInsertBlock(entryBlock)
         IRBuilder.createRetVoid()
@@ -97,7 +97,7 @@ class IRGenerator : ASTVisitor() {
     val initFuncName = "_global_variable_init"
     initFunc = Func(initFuncName, FuncType(initFuncName, listOf(), TypeFactory.getVoidType()), listOf())
 
-    val initBlock = BasicBlock("entry", 1)
+    val initBlock = BasicBlock(renameLocal("entry"), 1)
     initBlock.insertAtTheTailOf(initFunc!!)
 
     curr.block.accept(this)
@@ -146,21 +146,20 @@ class IRGenerator : ASTVisitor() {
     val func = topModule.getFunc(funcName)!!
     val innerScope = scopeManger.last()
     IRBuilder.setCurrentFunc(func)
-    func.vst.addAll(topModule)
+    localSymbolTable = func.symbolTable
 
-    val entryBlock = BasicBlock("entry", 1)
+    val entryBlock = BasicBlock(renameLocal("entry"), 1)
     IRBuilder.setInsertBlock(entryBlock)
 
     /** it must contain only one arg, which should be the "this" pointer */
     assert(func.argList.size == 1 && func.argList.first().name == "this")
     val arg = func.argList.first()
-    func.vst.insertValue(arg)
     innerScope.setAddr("this", arg)
 
     curr.funcBlock?.accept(this)
 
     if (!IRBuilder.getInsertBlock()!!.hasTerminator()) {
-      val returnBlock = BasicBlock("return", 1)
+      val returnBlock = BasicBlock(renameLocal("return"), 1)
       IRBuilder.createBr(returnBlock)
       IRBuilder.setInsertBlock(returnBlock)
       IRBuilder.createRetVoid()
@@ -179,18 +178,19 @@ class IRGenerator : ASTVisitor() {
     val funcName = if (recentClass != null) "${recentClass.className}.${innerScope.funcName}" else innerScope.funcName
     val func = topModule.getFunc(funcName)!!
     IRBuilder.setCurrentFunc(func)
-    func.vst.addAll(topModule)
     localSymbolTable = func.symbolTable
+
     /** avoid conflicts with global value */
+    localSymbolTable.counter.putAll(topModule.globalVarMap.map { it.key to 1 })
+    
     val funcType = func.type as FuncType
 
-    val entryBlock = BasicBlock("entry", 1)
+    val entryBlock = BasicBlock(renameLocal("entry"), 1)
     IRBuilder.setInsertBlock(entryBlock)
 
     /** setup for parameters */
     if (func.argList.isNotEmpty()) {
       for (arg in func.argList) {
-        func.vst.insertValue(arg)
         /**
          * This pointer should be inserted into method's value symbol table and scope, in order to retrieve it.
          * And there is no need to alloca and load it like other args.
@@ -199,7 +199,7 @@ class IRGenerator : ASTVisitor() {
           innerScope.setAddr("this", arg)
           continue
         }
-        val allocaInst = IRBuilder.createAlloca("${renameOp(arg.name!!)}.addr", arg.type)
+        val allocaInst = IRBuilder.createAlloca("${renameLocal(arg.name!!)}.addr", arg.type)
         innerScope.setAddr(arg.name!!, allocaInst)
         IRBuilder.createStore(arg, allocaInst)
       }
@@ -214,7 +214,7 @@ class IRGenerator : ASTVisitor() {
 //      }
     }
 
-    val returnBlock = BasicBlock("return", 1)
+    val returnBlock = BasicBlock(renameLocal("return"), 1)
     IRBuilder.setReturnBlock(returnBlock)
     IRBuilder.resetInsertBlock(returnBlock)
     if (funcType.resultType != TypeFactory.getVoidType()) {
@@ -259,7 +259,7 @@ class IRGenerator : ASTVisitor() {
     if (innerScope !is GlobalScope) {
       /** if it is a local variable */
       for (assign in curr.assigns) {
-        val ptr = IRBuilder.createAlloca("${renameOp(assign.first)}.addr", type)
+        val ptr = IRBuilder.createAlloca("${renameLocal(assign.first)}.addr", type)
         innerScope.setAddr(assign.first, ptr)
         if (assign.second != null) {
           assign.second!!.accept(this)
@@ -273,7 +273,7 @@ class IRGenerator : ASTVisitor() {
       /** is a global variable */
       IRBuilder.resetInsertBlock(initFunc!!.blockList.last())
       for (assign in curr.assigns) {
-        val gloVarPtr = GlobalVariable(assign.first, TypeFactory.getPtrType(type)) // no conflict might occur
+        val gloVarPtr = GlobalVariable("${assign.first}.addr", TypeFactory.getPtrType(type)) // no conflict might occur
         topModule.setGlobalAddr(assign.first, gloVarPtr)
         if (assign.second != null) {
           assign.second!!.accept(this)
@@ -286,10 +286,10 @@ class IRGenerator : ASTVisitor() {
   override fun visit(curr: ForSuiteNode) {
     val nestedLoopsNum = loopManager.getNestedLoopsNum() + 1
     val execFreq = 10.0.pow(nestedLoopsNum).toInt()
-    val condBlock = BasicBlock("for.cond", execFreq)
-    val incBlock = BasicBlock("for.inc", execFreq)
-    val bodyBlock = BasicBlock("for.body", execFreq)
-    val endBlock = BasicBlock("for.end", execFreq)
+    val condBlock = BasicBlock(renameLocal("for.cond"), execFreq)
+    val incBlock = BasicBlock(renameLocal("for.inc"), execFreq)
+    val bodyBlock = BasicBlock(renameLocal("for.body"), execFreq)
+    val endBlock = BasicBlock(renameLocal("for.end"), execFreq)
 
     scopeManger.addLast(curr.initScope)
     loopManager.addLast(incBlock, endBlock)
@@ -324,9 +324,9 @@ class IRGenerator : ASTVisitor() {
   override fun visit(curr: WhileSuiteNode) {
     val nestedLoopsNum = loopManager.getNestedLoopsNum() + 1
     val execFreq = 10.0.pow(nestedLoopsNum).toInt()
-    val condBlock = BasicBlock("while.cond", execFreq)
-    val bodyBlock = BasicBlock("while.body", execFreq)
-    val endBlock = BasicBlock("while.end", execFreq)
+    val condBlock = BasicBlock(renameLocal("while.cond"), execFreq)
+    val bodyBlock = BasicBlock(renameLocal("while.body"), execFreq)
+    val endBlock = BasicBlock(renameLocal("while.end"), execFreq)
 
     scopeManger.addLast(curr.scope)
     loopManager.addLast(condBlock, endBlock)
@@ -352,9 +352,9 @@ class IRGenerator : ASTVisitor() {
     val nestedLoopsNum = loopManager.getNestedLoopsNum()
     val execFreq =
       10.0.pow(nestedLoopsNum).toInt() // according to EAC, it should be divided by the number of branches
-    val endBlock = BasicBlock("if.end", execFreq)
-    val thenBlock = BasicBlock("if.then", execFreq)
-    val elseBlock: BasicBlock? = if (curr.elseDo != null) BasicBlock("if.else", execFreq) else null
+    val endBlock = BasicBlock(renameLocal("if.end"), execFreq)
+    val thenBlock = BasicBlock(renameLocal("if.then"), execFreq)
+    val elseBlock: BasicBlock? = if (curr.elseDo != null) BasicBlock(renameLocal("if.else"), execFreq) else null
     if (curr.elseDo != null) {
       IRBuilder.createBr(curr.cond.value!!, thenBlock, elseBlock!!)
     } else {
@@ -419,9 +419,9 @@ class IRGenerator : ASTVisitor() {
 
       /** const str */
       1 -> {
-        val const = ConstantStr(curr.literal.substring(1, curr.literal.length - 1), renameStr(".str"))
+        val const = ConstantStr(curr.literal.substring(1, curr.literal.length - 1), renameGlobal(".str"))
         topModule.setConst(const.name!!, const)
-        IRBuilder.createGEP("array", renameOp(".strl"), const, ConstantInt(32, 0), ConstantInt(32, 0))
+        IRBuilder.createGEP("array", renameLocal(".strl"), const, ConstantInt(32, 0), ConstantInt(32, 0))
       }
 
       /** identifier */
@@ -447,8 +447,8 @@ class IRGenerator : ASTVisitor() {
   private fun mallocElem(currType: Type): Value {
     val elemByteNum = ConstantInt(32, currType.getAlign())
     val malloc = topModule.getBuiltinFunc("_malloc")!!
-    val call = IRBuilder.createCall(renameOp(".malloc"), malloc.funcType, listOf(elemByteNum))
-    val bitcast = IRBuilder.createBitCast(renameOp(".bitcast"), call, TypeFactory.getPtrType(currType))
+    val call = IRBuilder.createCall(renameLocal(".malloc"), malloc.funcType, listOf(elemByteNum))
+    val bitcast = IRBuilder.createBitCast(renameLocal(".bitcast"), call, TypeFactory.getPtrType(currType))
     if (currType is StructType) {
       val initFunc = topModule.getFunc(currType.getRealStructName() + ".new")!!
       IRBuilder.createCall(null, initFunc.funcType, listOf(bitcast))
@@ -465,29 +465,29 @@ class IRGenerator : ASTVisitor() {
     /** due to the size(), an extra space is needed to store the size of the array, which is right before the array */
     val pureArrayByteNum =
       IRBuilder.createBinary(
-        renameOp(".mul"),
+        renameLocal(".mul"),
         "mul",
         arraySize,
         ConstantInt(32, containedType.getAlign())
       )
     val extendedArrayByteNum =
       IRBuilder.createBinary(
-        renameOp(".add"),
+        renameLocal(".add"),
         "add",
         pureArrayByteNum,
         ConstantInt(32, containedType.getAlign())
       )
 
     val malloc = topModule.getBuiltinFunc("_malloc")!!
-    val createdSpace = IRBuilder.createCall(renameOp(".malloc"), malloc.funcType, listOf(extendedArrayByteNum))
-    val extendedArray = IRBuilder.createBitCast(renameOp(".bitcast"), createdSpace, currType)
+    val createdSpace = IRBuilder.createCall(renameLocal(".malloc"), malloc.funcType, listOf(extendedArrayByteNum))
+    val extendedArray = IRBuilder.createBitCast(renameLocal(".bitcast"), createdSpace, currType)
     val arraySizeAddr = if (extendedArray.type == TypeFactory.getPtrType("int")) {
       extendedArray
     } else {
-      IRBuilder.createBitCast(renameOp(".bitcast"), extendedArray, TypeFactory.getPtrType("int"))
+      IRBuilder.createBitCast(renameLocal(".bitcast"), extendedArray, TypeFactory.getPtrType("int"))
     }
     IRBuilder.createStore(arraySize, arraySizeAddr)
-    val pureArray = IRBuilder.createGEP("ptr", renameOp(".array.addr"), extendedArray, ConstantInt(32, 1), null)
+    val pureArray = IRBuilder.createGEP("ptr", renameLocal(".array.addr"), extendedArray, ConstantInt(32, 1), null)
 
     /** there is no need to recurse more, because the size of arraySizeList indicates the remainder of dimension */
     if (arraySizeList.size == 1) {
@@ -495,13 +495,13 @@ class IRGenerator : ASTVisitor() {
     }
 
     /** the start point is the last element of array, which iterate until the addr before the first element */
-    val startPoint = IRBuilder.createGEP("ptr", renameOp(".array.addr"), extendedArray, arraySize, null)
+    val startPoint = IRBuilder.createGEP("ptr", renameLocal(".array.addr"), extendedArray, arraySize, null)
     val previousBlock = IRBuilder.getInsertBlock()!!
     val nestedLoopsNum = loopManager.getNestedLoopsNum() + count + 1
     val execFreq = 10.0.pow(nestedLoopsNum).toInt()
-    val condBlock = BasicBlock("while.cond", execFreq)
-    val bodyBlock = BasicBlock("while.body", execFreq)
-    val endBlock = BasicBlock("while.end", execFreq)
+    val condBlock = BasicBlock(renameLocal("while.cond"), execFreq)
+    val bodyBlock = BasicBlock(renameLocal("while.body"), execFreq)
+    val endBlock = BasicBlock(renameLocal("while.end"), execFreq)
 
     /** a small optimization by using phi instruction */
     IRBuilder.createBr(condBlock)
@@ -512,7 +512,7 @@ class IRGenerator : ASTVisitor() {
       mutableListOf(Pair(startPoint, previousBlock))
     )
 
-    val cond = IRBuilder.createCmp(renameOp(".cmp"), "ne", phiInst, extendedArray)
+    val cond = IRBuilder.createCmp(renameLocal(".cmp"), "ne", phiInst, extendedArray)
     IRBuilder.createBr(cond, bodyBlock, endBlock)
 
     IRBuilder.setInsertBlock(bodyBlock)
@@ -522,7 +522,7 @@ class IRGenerator : ASTVisitor() {
 
     val nextElement = IRBuilder.createGEP(
       "ptr",
-      renameOp(".array.addr"),
+      renameLocal(".array.addr"),
       phiInst,
       ConstantInt(32, -1),
       null
@@ -555,14 +555,14 @@ class IRGenerator : ASTVisitor() {
       val callee = topModule.getFunc("${recentClass.className}.${curr.funcName}")!!
       val thisPtr = scopeManger.last().getAddr("this")!!
       curr.value = IRBuilder.createCall(
-        if (callee.funcType.resultType is VoidType) null else renameOp(".call"),
+        if (callee.funcType.resultType is VoidType) null else renameLocal(".call"),
         callee.funcType,
         listOf(thisPtr) + curr.argList.map { it.accept(this); it.value!! }
       )
     } else {
       val callee = topModule.getFunc(curr.funcName) ?: topModule.getBuiltinFunc(curr.funcName)!!
       curr.value = IRBuilder.createCall(
-        if (callee.funcType.resultType is VoidType) null else renameOp(".call"),
+        if (callee.funcType.resultType is VoidType) null else renameLocal(".call"),
         callee.funcType,
         curr.argList.map { it.accept(this); it.value!! })
     }
@@ -574,19 +574,19 @@ class IRGenerator : ASTVisitor() {
       /** for array, it has only one method called size() */
       assert(curr.method == "size")
       val arraySizeAddr =
-        IRBuilder.createGEP("ptr", renameOp(".arraysize.addr"), curr.expr.value!!, ConstantInt(32, -1), null)
+        IRBuilder.createGEP("ptr", renameLocal(".arraysize.addr"), curr.expr.value!!, ConstantInt(32, -1), null)
       val finalInst = if (arraySizeAddr.type != TypeFactory.getPtrType("int")) {
-        IRBuilder.createBitCast(renameOp(".bitcast"), arraySizeAddr, TypeFactory.getPtrType("int"))
+        IRBuilder.createBitCast(renameLocal(".bitcast"), arraySizeAddr, TypeFactory.getPtrType("int"))
       } else {
         arraySizeAddr
       }
-      IRBuilder.createLoad(renameOp(".arraysize"), finalInst)
+      IRBuilder.createLoad(renameLocal(".arraysize"), finalInst)
     } else {
       /** for others, it might be custom method or builtin method */
       val callee = topModule.getFunc("${curr.expr.type!!.cl.className}.${curr.method}")
         ?: topModule.getBuiltinFunc("_${curr.expr.type!!.cl.className}_${curr.method}")!!
       IRBuilder.createCall(
-        if (callee.funcType.resultType is VoidType) null else renameOp(".call"),
+        if (callee.funcType.resultType is VoidType) null else renameLocal(".call"),
         callee.funcType,
         listOf(curr.expr.value!!) + curr.argList.map { it.accept(this); it.value!! })
     }
@@ -599,19 +599,19 @@ class IRGenerator : ASTVisitor() {
     val structType = pointerType.pointeeTy as StructType
     val gepInst = IRBuilder.createGEP(
       "struct",
-      renameOp("$memberName.addr"),
+      renameLocal("$memberName.addr"),
       curr.expr.value!!,
       ConstantInt(32, 0),
       ConstantInt(32, structType.getIndex(curr.member))
     )
-    curr.value = IRBuilder.createLoad(renameOp(memberName), gepInst)
+    curr.value = IRBuilder.createLoad(renameLocal(memberName), gepInst)
   }
 
   override fun visit(curr: ArrayAccessNode) {
     curr.array.accept(this)
     curr.index.accept(this)
-    val ptr = IRBuilder.createGEP("ptr", renameOp(".elem.addr"), curr.array.value!!, curr.index.value!!, null)
-    curr.value = IRBuilder.createLoad(renameOp(".elem"), ptr)
+    val ptr = IRBuilder.createGEP("ptr", renameLocal(".elem.addr"), curr.array.value!!, curr.index.value!!, null)
+    curr.value = IRBuilder.createLoad(renameLocal(".elem"), ptr)
   }
 
   private fun getIdsNameAndItsPtr(curr: AtomNode): Pair<String, Value> {
@@ -628,10 +628,10 @@ class IRGenerator : ASTVisitor() {
       val structType = topModule.getStruct("class.${recentClass.className}")
 
       Pair(
-        renameOp(memberName),
+        renameLocal(memberName),
         IRBuilder.createGEP(
           "struct",
-          renameOp("$memberName.addr"),
+          renameLocal("$memberName.addr"),
           innerScope.getAddr("this")!!,
           ConstantInt(32, 0),
           ConstantInt(32, structType.getIndex(id))
@@ -650,7 +650,10 @@ class IRGenerator : ASTVisitor() {
       is ArrayAccessNode -> {
         curr.array.accept(this)
         curr.index.accept(this)
-        Pair("elem", IRBuilder.createGEP("ptr", renameOp(".elem.addr"), curr.array.value!!, curr.index.value!!, null))
+        Pair(
+          "elem",
+          IRBuilder.createGEP("ptr", renameLocal(".elem.addr"), curr.array.value!!, curr.index.value!!, null)
+        )
       }
 
       is MemberAccessNode -> {
@@ -659,10 +662,10 @@ class IRGenerator : ASTVisitor() {
         val memberName = "$className.${curr.member}"
         val structType = topModule.getStruct("class.$className")
         Pair(
-          renameOp(memberName),
+          renameLocal(memberName),
           IRBuilder.createGEP(
             "struct",
-            renameOp("$memberName.addr"),
+            renameLocal("$memberName.addr"),
             curr.expr.value!!,
             ConstantInt(32, 0),
             ConstantInt(32, structType.getIndex(curr.member))
@@ -680,7 +683,7 @@ class IRGenerator : ASTVisitor() {
     val loadInst = IRBuilder.createLoad(varName, varPtr)
     curr.expr.value = IRBuilder.createBinary(".ori", "add", loadInst, ConstantInt(32, 0))
     val binaryInst = IRBuilder.createBinary(
-      renameOp(".$op"),
+      renameLocal(".$op"),
       if (op == "inc") "add" else "sub",
       curr.expr.value!!,
       ConstantInt(32, 1)
@@ -698,7 +701,7 @@ class IRGenerator : ASTVisitor() {
         val (varName, varPtr) = getVarsNameAndItsPtr(curr.expr)
         curr.expr.value = IRBuilder.createLoad(varName, varPtr)
         val binaryInst = IRBuilder.createBinary(
-          renameOp(".$op"),
+          renameLocal(".$op"),
           if (op == "inc") "add" else "sub",
           curr.expr.value!!,
           ConstantInt(32, 1)
@@ -715,7 +718,7 @@ class IRGenerator : ASTVisitor() {
       "-" -> {
         curr.expr.accept(this)
         IRBuilder.createBinary(
-          renameOp(".$op"),
+          renameLocal(".$op"),
           "sub",
           ConstantInt(32, 0),
           curr.expr.value!!
@@ -725,7 +728,7 @@ class IRGenerator : ASTVisitor() {
       "~" -> {
         curr.expr.accept(this)
         IRBuilder.createBinary(
-          renameOp(".$op"),
+          renameLocal(".$op"),
           "xor",
           curr.expr.value!!,
           ConstantInt(32, -1)
@@ -736,7 +739,7 @@ class IRGenerator : ASTVisitor() {
       else -> {
         curr.expr.accept(this)
         IRBuilder.createBinary(
-          renameOp(".$op"),
+          renameLocal(".$op"),
           "xor",
           IRBuilder.checki8Toi1(curr.expr.value!!),
           ConstantInt(1, 1)
@@ -759,9 +762,9 @@ class IRGenerator : ASTVisitor() {
           val op = Utils.binaryOpToStr(curr.ops[index - 1])
           lhs = if (lhs.type is PointerType && rhs.type is PointerType) {
             val func = topModule.getBuiltinFunc("_string_concat")!!
-            IRBuilder.createCall(renameOp(".call"), func.funcType, listOf(lhs, rhs))
+            IRBuilder.createCall(renameLocal(".call"), func.funcType, listOf(lhs, rhs))
           } else {
-            IRBuilder.createBinary(renameOp(".$op"), op, lhs, rhs)
+            IRBuilder.createBinary(renameLocal(".$op"), op, lhs, rhs)
           }
         }
         lhs
@@ -777,7 +780,7 @@ class IRGenerator : ASTVisitor() {
             continue
           }
           val op = Utils.binaryOpToStr(curr.ops[index - 1])
-          lhs = IRBuilder.createBinary(renameOp(".$op"), op, lhs, rhs)
+          lhs = IRBuilder.createBinary(renameLocal(".$op"), op, lhs, rhs)
         }
         lhs
       }
@@ -793,7 +796,7 @@ class IRGenerator : ASTVisitor() {
             continue
           }
           val op = Utils.binaryOpToStr(curr.ops[index - 1])
-          lhs = IRBuilder.createCmp(renameOp(".cmp"), op, lhs, rhs!!)
+          lhs = IRBuilder.createCmp(renameLocal(".cmp"), op, lhs, rhs!!)
         }
         lhs
       }
@@ -803,7 +806,7 @@ class IRGenerator : ASTVisitor() {
   override fun visit(curr: LogicalOrExprNode) {
     val nestedLoopsNum = loopManager.getNestedLoopsNum()
     val execFreq = 10.0.pow(nestedLoopsNum).toInt()
-    val endBlock = BasicBlock("lor.end", execFreq)
+    val endBlock = BasicBlock(renameLocal("lor.end"), execFreq)
     val candidates: MutableList<Pair<Value, BasicBlock>> = mutableListOf()
     val size = curr.exprs.size
     for ((index, expr) in curr.exprs.withIndex()) {
@@ -822,19 +825,19 @@ class IRGenerator : ASTVisitor() {
       if (index == size - 1) {
         IRBuilder.createBr(endBlock)
       } else {
-        val rhsBlock = BasicBlock(if (index != size - 2) "lor.lhs.false" else "lor.rhs", execFreq)
+        val rhsBlock = BasicBlock(renameLocal(if (index != size - 2) "lor.lhs.false" else "lor.rhs"), execFreq)
         IRBuilder.createBr(expr.value!!, endBlock, rhsBlock)
         IRBuilder.setInsertBlock(rhsBlock)
       }
     }
     IRBuilder.setInsertBlock(endBlock)
-    curr.value = IRBuilder.createPhi(renameOp(".phi"), TypeFactory.getIntType(1), candidates)
+    curr.value = IRBuilder.createPhi(renameLocal(".phi"), TypeFactory.getIntType(1), candidates)
   }
 
   override fun visit(curr: LogicalAndExprNode) {
     val nestedLoopsNum = loopManager.getNestedLoopsNum()
     val execFreq = 10.0.pow(nestedLoopsNum).toInt()
-    val endBlock = BasicBlock("land.end", execFreq)
+    val endBlock = BasicBlock(renameLocal("land.end"), execFreq)
     val candidates: MutableList<Pair<Value, BasicBlock>> = mutableListOf()
     val size = curr.exprs.size
     for ((index, expr) in curr.exprs.withIndex()) {
@@ -853,13 +856,13 @@ class IRGenerator : ASTVisitor() {
       if (index == size - 1) {
         IRBuilder.createBr(endBlock)
       } else {
-        val rhsBlock = BasicBlock(if (index != size - 2) "land.lhs.true" else "land.rhs", execFreq)
+        val rhsBlock = BasicBlock(renameLocal(if (index != size - 2) "land.lhs.true" else "land.rhs"), execFreq)
         IRBuilder.createBr(expr.value!!, rhsBlock, endBlock)
         IRBuilder.setInsertBlock(rhsBlock)
       }
     }
     IRBuilder.setInsertBlock(endBlock)
-    curr.value = IRBuilder.createPhi(renameOp(".phi"), TypeFactory.getIntType(1), candidates)
+    curr.value = IRBuilder.createPhi(renameLocal(".phi"), TypeFactory.getIntType(1), candidates)
   }
 
   override fun visit(curr: AssignExprNode) {

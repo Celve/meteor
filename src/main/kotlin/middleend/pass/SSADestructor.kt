@@ -5,11 +5,11 @@ import middleend.helper.SymbolTable
 
 class SSADestructor : IRVisitor() {
   var module = TopModule()
-  private var symbolTable = SymbolTable()
+  private var symbolTable = SymbolTable("")
 
   override fun visit(topModule: TopModule) {
     module = topModule
-    module.funcList.forEach { it.value.accept(this) }
+    module.funcMap.forEach { it.value.accept(this) }
   }
 
   override fun visit(globalVar: GlobalVariable) {}

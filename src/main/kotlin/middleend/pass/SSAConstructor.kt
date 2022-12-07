@@ -16,7 +16,7 @@ class SSAConstructor : IRVisitor() {
 
   override fun visit(topModule: TopModule) {
     module = topModule
-    topModule.funcList.forEach { it.value.accept(this) }
+    topModule.funcMap.forEach { it.value.accept(this) }
   }
 
   override fun visit(globalVar: GlobalVariable) {
@@ -98,8 +98,8 @@ class SSAConstructor : IRVisitor() {
     globals.clear()
 
     // add global and intial local variables
-    module!!.name2Addr.forEach { it.value.accept(this) }
-    module!!.constStr.forEach { it.value.accept(this) }
+    module!!.globalVarMap.forEach { it.value.accept(this) }
+    module!!.constStrMap.forEach { it.value.accept(this) }
     func.argList.forEach { renameValue(it) }
 
     domTree = DomTree(func)

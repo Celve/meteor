@@ -23,7 +23,7 @@ class Eliminator : IRVisitor() {
 
   override fun visit(topModule: TopModule) {
     module = topModule
-    topModule.funcList.forEach { it.value.accept(this) }
+    topModule.funcMap.forEach { it.value.accept(this) }
   }
 
   override fun visit(globalVar: GlobalVariable) {}

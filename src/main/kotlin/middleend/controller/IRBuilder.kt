@@ -23,26 +23,17 @@ object IRBuilder {
     return func!!.funcType.resultType
   }
 
-  fun renameBlock(block: BasicBlock) {
-    val version = name2Version.getValue(block.name!!)
-    name2Version[block.name!!] = version + 1
-    if (version != 0) {
-      block.name = "${block.name}.$version"
-    }
-  }
-
   /**
-   * This function is used to register and set a block in IR builder.
+   * insert a block into func's block list and switch control flow to it
    */
   fun setInsertBlock(newBlock: BasicBlock) {
     block = newBlock
-    renameBlock(newBlock)
     block!!.insertAtTheTailOf(func!!)
     point = null
   }
 
   /**
-   * This function is used for a registered block, whose name would be unique in LLVM representation.
+   * simply switch to the block without inserting
    */
   fun resetInsertBlock(newBlock: BasicBlock) {
     func = newBlock.parent
@@ -123,48 +114,30 @@ object IRBuilder {
   fun createLoad(result: String, ptr: Value): Value {
     val loadInst = LoadInst(result, ptr)
     insertInstBeforeInsertPoint(loadInst)
-
-    loadInst.addUsee(ptr)
-
     return loadInst
   }
 
   fun createBinary(result: String, op: String, lhs: Value, rhs: Value): Value {
     val binaryInst = BinaryInst(result, op, lhs, rhs)
     insertInstBeforeInsertPoint(binaryInst)
-
-    binaryInst.addUsee(lhs)
-    binaryInst.addUsee(rhs)
-
     return binaryInst
   }
 
   fun createStore(value: Value, ptr: Value): Value {
     val storeInst = StoreInst(checki1Toi8(value), ptr)
     insertInstBeforeInsertPoint(storeInst)
-
-    storeInst.addUsee(value)
-    storeInst.addUsee(ptr)
-
     return storeInst
   }
 
   fun createCmp(name: String, cond: String, lhs: Value, rhs: Value): CmpInst {
     val cmpInst = CmpInst(name, CmpInst.Cond.valueOf(cond), lhs, rhs)
     insertInstBeforeInsertPoint(cmpInst)
-
-    cmpInst.addUsee(lhs)
-    cmpInst.addUsee(rhs)
-
     return cmpInst
   }
 
   fun createTrunc(result: String, originalVal: Value, toTy: Type): TruncInst {
     val truncInst = TruncInst(result, originalVal, toTy)
     insertInstBeforeInsertPoint(truncInst)
-
-    truncInst.addUsee(originalVal)
-
     return truncInst
   }
 
@@ -177,7 +150,6 @@ object IRBuilder {
   fun createRet(value: Value): ReturnInst {
     val retInst = ReturnInst(value.type, value)
     insertInstBeforeInsertPoint(retInst)
-    retInst.addUsee(value)
     return retInst
   }
 
@@ -195,16 +167,12 @@ object IRBuilder {
   fun createCall(name: String?, funcType: FuncType, args: List<Value>): CallInst { // TODO: how about call others
     val callInst = CallInst(name, funcType, args)
     insertInstBeforeInsertPoint(callInst)
-    args.forEach { it.addUser(callInst) }
     return callInst
   }
 
   fun createGEP(op: String, name: String, value: Value, index: Value, offset: ConstantInt?): GetElementPtrInst {
     val gepInst = GetElementPtrInst(op, name, value, index, offset)
     insertInstBeforeInsertPoint(gepInst)
-
-    gepInst.addUsee(value)
-
     return gepInst
   }
 
@@ -218,11 +186,6 @@ object IRBuilder {
     trueBlock.addPrevBlock(block!!)
     block!!.addNextBlock(falseBlock)
     falseBlock.addPrevBlock(block!!)
-
-    brInst.addUsee(cond)
-    brInst.addUsee(trueBlock)
-    brInst.addUsee(falseBlock)
-
     return brInst
   }
 
@@ -230,10 +193,6 @@ object IRBuilder {
     val phiInst = PhiInst(name, type, candidates)
 //    phiInst.insertAtTheTailOf(block!!)
     insertInstBeforeInsertPoint(phiInst)
-
-    candidates.forEach { phiInst.addUsee(it.first) }
-    candidates.forEach { phiInst.addUsee(it.second) }
-
     return phiInst
   }
 
@@ -241,18 +200,12 @@ object IRBuilder {
     val bitCallInst = BitCastInst(name, castee, toTy)
 //    bitCallInst.insertAtTheTailOf(block!!)
     insertInstBeforeInsertPoint(bitCallInst)
-
-    bitCallInst.addUsee(castee)
-
     return bitCallInst
   }
 
   fun createZExt(name: String, castee: Value, toTy: Type): ZExtInst {
     val zextInst = ZExtInst(name, castee, toTy)
     insertInstBeforeInsertPoint(zextInst)
-
-    zextInst.addUsee(castee)
-
     return zextInst
   }
 }

@@ -1,16 +1,21 @@
 package middleend.helper
 
-class SymbolTable {
-  private var counter = mutableMapOf<String, Int>().withDefault { 0 }
+class SymbolTable(val limit: String) {
+  var counter = mutableMapOf<String, Int>().withDefault { 0 }
 
   fun rename(name: String): String {
-    val pureName = name.replace("\\d+$".toRegex(), "") // remove tail number
-    val ver = counter.getValue(pureName)
-    counter[pureName] = ver + 1
-    return if (ver == 0) {
-      pureName
+    val withoutVersion = name.replace("\\d+$".toRegex(), "") // remove tail number
+    val withoutLimit = if (withoutVersion.endsWith(limit)) {
+      withoutVersion.dropLast(limit.length)
     } else {
-      "$pureName$ver"
+      withoutVersion
+    }
+    val ver = counter.getValue(withoutLimit)
+    counter[withoutLimit] = ver + 1
+    return if (ver == 0) {
+      withoutLimit
+    } else {
+      "$withoutLimit$limit$ver"
     }
   }
 

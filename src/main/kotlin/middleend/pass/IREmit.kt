@@ -12,26 +12,26 @@ class IREmit : IRVisitor() {
           "target triple = \"riscv32\"\n"
     )
 
-    for ((_, func) in topModule.builtinFunc) {
+    for ((_, func) in topModule.builtinFuncMap) {
       println("declare ${func.funcType.resultType} @${func.name}(${func.argList.joinToString(", ") { it.type.toString() }})")
     }
     println()
 
-    for ((_, structType) in topModule.structType) {
+    for ((_, structType) in topModule.structTypeMap) {
       println("%${structType.structName} = type { ${structType.symbolList.joinToString(", ") { it.second.toString() }} }\n")
     }
 
-    topModule.name2Addr.forEach { it.value.accept(this) }
-    if (topModule.name2Addr.size >= 1) {
+    topModule.globalVarMap.forEach { it.value.accept(this) }
+    if (topModule.globalVarMap.size >= 1) {
       println()
     }
 
-    topModule.constStr.forEach { it.value.accept(this) }
-    if (topModule.constStr.size >= 1) {
+    topModule.constStrMap.forEach { it.value.accept(this) }
+    if (topModule.constStrMap.size >= 1) {
       println()
     }
 
-    topModule.funcList.forEach { it.value.accept(this) }
+    topModule.funcMap.forEach { it.value.accept(this) }
   }
 
   override fun visit(globalVar: GlobalVariable) {

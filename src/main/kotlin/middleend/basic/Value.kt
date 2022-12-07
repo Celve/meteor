@@ -4,8 +4,7 @@ package middleend.basic
  * Value is the basic class of almost all classes in LLVM IR design.
  * One value is defined formally in an instruction.
  * By definition, every LLVM Value should have its distinct name.
- * In this project, this constraint is achieved by using a map to store all values, which is ValueSymbolTable.
- * @see middleend.helper.ValueSymbolTable
+ * In this project, this constraint is achieved by using a map to store all values, which is SymbolTable.
  */
 open class Value(val type: Type, var name: String? = null) {
   val userList: MutableList<User> = mutableListOf()

@@ -53,6 +53,8 @@ fun main(args: Array<String>) {
   val ssaConstructor = SSAConstructor()
   ssaConstructor.visit(middleend.topModule)
 
+//  irEmit.visit(middleend.topModule)
+
   val ssaDestructor = SSADestructor()
   ssaDestructor.visit(middleend.topModule)
 
