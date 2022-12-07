@@ -10,6 +10,9 @@ object Utils {
       "srem" -> rs % rt
       "shl" -> rs shl rt
       "ashr" -> rs shr rt
+      "xor" -> rs xor rt
+      "and" -> rs and rt
+      "or" -> rs or rt
       else -> throw Exception("Unknown op: $op")
     }
   }
