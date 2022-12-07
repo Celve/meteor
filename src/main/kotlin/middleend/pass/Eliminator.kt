@@ -9,14 +9,12 @@ class Eliminator : IRVisitor() {
   var module: TopModule? = null
 
   private fun eliminateInst(inst: Instruction) {
-    inst.collectUses().forEach { it.removeUser(inst) }
   }
 
   /**
    * add user-usee relationship
    */
   private fun buildInst(inst: Instruction, block: BasicBlock): Instruction {
-    inst.collectUses().forEach { it.addUser(inst) }
     inst.parent = block
     return inst
   }
