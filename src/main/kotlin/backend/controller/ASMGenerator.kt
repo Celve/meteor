@@ -403,6 +403,10 @@ class ASMGenerator : IRVisitor() {
 
   override fun visit(inst: MvInst) {
     val virReg = getRegOfInst(inst)
-    ASMBuilder.createMvInst(virReg, getRegOfValue(inst.rs)!!)
+    if (inst.rs is ConstantInt) {
+      ASMBuilder.createLiInst(virReg, DeterminedImmediate((inst.rs as ConstantInt).value))
+    } else {
+      ASMBuilder.createMvInst(virReg, getRegOfValue(inst.rs)!!)
+    }
   }
 }
