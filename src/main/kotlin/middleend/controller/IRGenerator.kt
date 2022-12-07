@@ -182,7 +182,7 @@ class IRGenerator : ASTVisitor() {
 
     /** avoid conflicts with global value */
     localSymbolTable.counter.putAll(topModule.globalVarMap.map { it.key to 1 })
-    
+
     val funcType = func.type as FuncType
 
     val entryBlock = BasicBlock(renameLocal("entry"), 1)
@@ -209,9 +209,6 @@ class IRGenerator : ASTVisitor() {
     if (funcType.resultType != TypeFactory.getVoidType()) {
       val allocaInst = IRBuilder.createAlloca(".ret.addr", funcType.resultType)
       innerScope.setAddr(".ret", allocaInst)
-//      if (funcName == "main") {
-//        IRBuilder.createStore(ConstantInt(32, 0), allocaInst)
-//      }
     }
 
     val returnBlock = BasicBlock(renameLocal("return"), 1)
@@ -233,17 +230,6 @@ class IRGenerator : ASTVisitor() {
 
     // don't forget to push the return block into block list
     IRBuilder.setInsertBlock(returnBlock)
-
-    // init int values
-//    IRBuilder.setInsertPointAfter(entryBlock.instList[entryBlock.getLastAllocaInstIndex()])
-//    entryBlock.instList
-//      .filterIsInstance<AllocaInst>().filter { it.varType is IntType }
-//      .filter {
-//         for arguments, they should not be assigned with 0
-//        val original = it.name!!.substringBeforeLast('.')
-//        !func.argList.any { it.name == original }
-//      }
-//      .forEach { IRBuilder.createStore(ConstantInt(it.type.getNumBits(), 0), it) }
 
     scopeManger.removeLast()
   }
@@ -448,14 +434,14 @@ class IRGenerator : ASTVisitor() {
     val elemByteNum = ConstantInt(32, currType.getAlign())
     val malloc = topModule.getBuiltinFunc("_malloc")!!
     val call = IRBuilder.createCall(renameLocal(".malloc"), malloc.funcType, listOf(elemByteNum))
-    val bitcast = IRBuilder.createBitCast(renameLocal(".bitcast"), call, TypeFactory.getPtrType(currType))
+    val bitcastInst = IRBuilder.createBitCast(renameLocal(".bitcast"), call, TypeFactory.getPtrType(currType))
     if (currType is StructType) {
       val initFunc = topModule.getFunc(currType.getRealStructName() + ".new")!!
-      IRBuilder.createCall(null, initFunc.funcType, listOf(bitcast))
+      IRBuilder.createCall(null, initFunc.funcType, listOf(bitcastInst))
     } else {
       TODO("Not yet implemented")
     }
-    return bitcast
+    return bitcastInst
   }
 
   private fun mallocArray(currType: PointerType, arraySizeList: List<Value>, count: Int = 0): Value {
@@ -621,7 +607,7 @@ class IRGenerator : ASTVisitor() {
     val ptr = innerScope.getAddr(id)
 
     return if (ptr != null) {
-      Pair(ptr.name!!.substringBeforeLast('.'), ptr)
+      Pair(ptr.name!!.substringBeforeLast('.'), ptr) // remove .addr
     } else if (recentClass != null && recentClass.memberToIndex.containsKey(id)) {
       // Even though it's not in member access format, it could still be a member access when this happens in class's method definition.
       val memberName = "${recentClass.className}.$id"
@@ -651,7 +637,7 @@ class IRGenerator : ASTVisitor() {
         curr.array.accept(this)
         curr.index.accept(this)
         Pair(
-          "elem",
+          renameLocal(".elem"),
           IRBuilder.createGEP("ptr", renameLocal(".elem.addr"), curr.array.value!!, curr.index.value!!, null)
         )
       }
@@ -681,7 +667,7 @@ class IRGenerator : ASTVisitor() {
     val op = Utils.unaryOpToStr(curr.op)
     val (varName, varPtr) = getVarsNameAndItsPtr(curr.expr)
     val loadInst = IRBuilder.createLoad(varName, varPtr)
-    curr.expr.value = IRBuilder.createBinary(".ori", "add", loadInst, ConstantInt(32, 0))
+    curr.expr.value = IRBuilder.createBinary(renameLocal(".ori"), "add", loadInst, ConstantInt(32, 0))
     val binaryInst = IRBuilder.createBinary(
       renameLocal(".$op"),
       if (op == "inc") "add" else "sub",
