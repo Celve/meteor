@@ -61,20 +61,13 @@ class SSADestructor : IRVisitor() {
 
   private fun pCopy2SCopy(block: BasicBlock) {
     for (pCopyInst in block.instList.filterIsInstance<PCopyInst>()) {
-      val sCopyInstList = mutableListOf<BinaryInst>()
+      val sCopyInstList = mutableListOf<MvInst>()
       while (pCopyInst.assignmentList.any { it.first != it.second }) {
         val removedInstList = mutableListOf<PCopyInst>()
         val processedAssignmentList = mutableListOf<Pair<Value, Value>>()
         for (assignment in pCopyInst.assignmentList) {
           if (pCopyInst.assignmentList.all { it.second != assignment.first }) {
-            sCopyInstList.add(
-              BinaryInst(
-                assignment.first.name!!,
-                "add",
-                assignment.second,
-                ConstantInt(assignment.second.type.getNumBits(), 0)
-              )
-            )
+            sCopyInstList.add(MvInst(assignment.first.name!!, assignment.second))
             removedInstList.add(pCopyInst)
             processedAssignmentList.add(assignment)
           }
@@ -86,14 +79,7 @@ class SSADestructor : IRVisitor() {
           val assignment = pCopyInst.assignmentList.find { it.first != it.second }!!
           val index = pCopyInst.assignmentList.indexOf(assignment)
           val value = Value(assignment.second.type, symbolTable.rename(".temp"))
-          sCopyInstList.add(
-            BinaryInst(
-              value.name!!,
-              "add",
-              assignment.second,
-              ConstantInt(assignment.second.type.getNumBits(), 0)
-            )
-          )
+          sCopyInstList.add(MvInst(value.name!!, assignment.second))
           pCopyInst.assignmentList[index] = Pair(assignment.first, value)
         }
       }
@@ -171,6 +157,10 @@ class SSADestructor : IRVisitor() {
   }
 
   override fun visit(inst: PCopyInst) {
+    TODO("Not yet implemented")
+  }
+
+  override fun visit(inst: MvInst) {
     TODO("Not yet implemented")
   }
 }

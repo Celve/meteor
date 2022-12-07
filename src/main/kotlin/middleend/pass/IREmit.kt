@@ -138,4 +138,8 @@ class IREmit : IRVisitor() {
   override fun visit(inst: PCopyInst) {
     println("pcopy ".plus(inst.assignmentList.joinToString(", ") { "[ ${it.first} = ${it.second} ]" }))
   }
+
+  override fun visit(inst: MvInst) {
+    println("%${inst.name} = mv ${inst.type} ${inst.rs}")
+  }
 }

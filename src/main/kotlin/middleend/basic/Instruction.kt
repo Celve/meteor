@@ -300,3 +300,13 @@ class PCopyInst : Instruction(TypeFactory.getVoidType(), null) {
     irVisitor.visit(this)
   }
 }
+
+class MvInst(name: String, var rs: Value): Instruction(rs.type, name) {
+  override fun apply(applier: (Value) -> Value) {
+    rs = applier(rs)
+  }
+
+  override fun accept(irVisitor: IRVisitor) {
+    irVisitor.visit(this)
+  }
+}

@@ -215,4 +215,8 @@ class SSAConstructor : IRVisitor() {
   override fun visit(inst: PCopyInst) {
     TODO("Not yet implemented")
   }
+
+  override fun visit(inst: MvInst) {
+    TODO("Not yet implemented")
+  }
 }

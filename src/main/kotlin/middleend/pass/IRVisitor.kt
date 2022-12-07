@@ -22,4 +22,5 @@ abstract class IRVisitor {
   abstract fun visit(inst: CmpInst)
   abstract fun visit(inst: ReturnInst)
   abstract fun visit(inst: PCopyInst)
+  abstract fun visit(inst: MvInst)
 }

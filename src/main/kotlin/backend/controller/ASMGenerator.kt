@@ -400,4 +400,9 @@ class ASMGenerator : IRVisitor() {
   override fun visit(inst: PCopyInst) {
     TODO("Not yet implemented")
   }
+
+  override fun visit(inst: MvInst) {
+    val virReg = getRegOfInst(inst)
+    ASMBuilder.createMvInst(virReg, getRegOfValue(inst.rs)!!)
+  }
 }
