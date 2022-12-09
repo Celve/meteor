@@ -1,9 +1,13 @@
 package middleend.pass
 
 import middleend.basic.*
+import middleend.helper.PatternTable
 import middleend.helper.Utils
 
-object LocalValueNumbering : IRVisitor() {
+object SuperValueNumbering : IRVisitor() {
+  private val processedSet = hashSetOf<BasicBlock>()
+  private val workList = mutableListOf<BasicBlock>()
+
   override fun visit(topModule: TopModule) {
     topModule.funcMap.forEach { it.value.accept(this) }
   }
@@ -13,11 +17,16 @@ object LocalValueNumbering : IRVisitor() {
   override fun visit(constStr: ConstantStr) {}
 
   override fun visit(func: Func) {
-    func.blockList.forEach { it.accept(this) }
+    workList.add(func.getEntryBlock())
+    val emptyTable = PatternTable(null)
+    while (workList.isNotEmpty()) {
+      val block = workList.first()
+      workList.removeFirst()
+      superValueNumbering(block, emptyTable)
+    }
   }
 
-  override fun visit(block: BasicBlock) {
-    val patternMap = hashMapOf<Triple<Value, String, Value>, Instruction>()
+  private fun localValueNumbering(block: BasicBlock, patternTable: PatternTable) {
     for (inst in block.instList.filterIsInstance<BinaryInst>()) {
       val lhs = inst.getLhs()
       val rhs = inst.getRhs()
@@ -26,13 +35,31 @@ object LocalValueNumbering : IRVisitor() {
         val newInst =
           MvInst(inst.name!!, ConstantInt(inst.type.getNumBits(), Utils.calculate(inst.op, lhs.value, rhs.value)))
         block.replaceInst(inst, newInst)
-      } else if (patternMap.contains(Triple(lhs, op, rhs))) { // FIXME: temporarily ignore commute operations
-        val newInst = MvInst(inst.name!!, patternMap[Triple(lhs, op, rhs)]!!)
-        block.replaceInst(inst, newInst)
+      } else {
+        val result = patternTable.get(lhs, op, rhs)
+        if (result != null) { // FIXME: temporarily ignore commute operations
+          val newInst = MvInst(inst.name!!, result)
+          block.replaceInst(inst, newInst)
+        }
+        patternTable.add(lhs, op, rhs, inst)
       }
-      patternMap[Triple(lhs, op, rhs)] = inst
     }
   }
+
+  private fun superValueNumbering(block: BasicBlock, parentTable: PatternTable) {
+    processedSet.add(block)
+    val patternTable = PatternTable(parentTable)
+    localValueNumbering(block, patternTable)
+    block.nextBlockList.forEach {
+      if (it.prevBlockList.size == 1) {
+        superValueNumbering(it, patternTable)
+      } else if (!processedSet.contains(it)) {
+        workList.add(it)
+      }
+    }
+  }
+
+  override fun visit(block: BasicBlock) { }
 
   override fun visit(inst: AllocaInst) {
     TODO("Not yet implemented")

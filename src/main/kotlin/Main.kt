@@ -49,7 +49,7 @@ fun main(args: Array<String>) {
   val ssaConstructor = SSAConstructor()
   ssaConstructor.visit(middleend.topModule)
 
-  LocalValueNumbering.visit(middleend.topModule)
+  SuperValueNumbering.visit(middleend.topModule)
 
   IREmit.visit(middleend.topModule)
 
