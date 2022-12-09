@@ -7,7 +7,7 @@ package middleend.basic
  * In this project, this constraint is achieved by using a map to store all values, which is SymbolTable.
  */
 open class Value(val type: Type, var name: String? = null) {
-  val userList: MutableList<User> = mutableListOf()
+  var userList: MutableList<User> = mutableListOf()
 
   fun isDef(): Boolean {
     return name != null
@@ -17,20 +17,25 @@ open class Value(val type: Type, var name: String? = null) {
     return false
   }
 
+  fun substituteAll(value: Value) {
+    value.userList.addAll(userList)
+    for (user in userList) {
+      user.useeList.replaceAll { if (it === this) value else it }
+    }
+    userList.clear()
+  }
+
+  fun substituteAllExcept(value: Value, except: Set<User>) {
+    for (user in userList) {
+      if (!except.contains(user)) {
+        value.userList.add(user)
+        user.useeList.replaceAll { if (it === this) value else it }
+      }
+    }
+    userList = except.toMutableList()
+  }
+
   override fun toString(): String {
     return "%${name ?: "unnamed"}"
-  }
-
-  /**
-   * This function is bidirectional. When user is added, its useeList would be updated, too.
-   */
-  fun addUser(user: User) {
-    userList.add(user)
-    user.useeList.add(this)
-  }
-
-  fun removeUser(user: User) {
-    user.useeList.remove(this)
-    userList.remove(user)
   }
 }

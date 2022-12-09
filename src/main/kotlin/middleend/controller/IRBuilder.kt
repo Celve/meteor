@@ -153,19 +153,23 @@ object IRBuilder {
     return retInst
   }
 
-  fun createBr(trueBlock: BasicBlock): BranchInst {
-    val brInst = BranchInst(null, trueBlock, null)
-    insertInstBeforeInsertPoint(brInst)
+  fun createBr(trueBlock: BasicBlock): BranchInst? {
+    return if (!block!!.hasTerminator()) {
+      val brInst = BranchInst(trueBlock, null, null)
+      insertInstBeforeInsertPoint(brInst)
 
-    // build control flow graph
-    block!!.addNextBlock(trueBlock)
-    trueBlock.addPrevBlock(block!!)
+      // build control flow graph
+      block!!.addNextBlock(trueBlock)
+      trueBlock.addPrevBlock(block!!)
 
-    return brInst
+      brInst
+    } else {
+      null
+    }
   }
 
-  fun createCall(name: String?, funcType: FuncType, args: List<Value>): CallInst { // TODO: how about call others
-    val callInst = CallInst(name, funcType, args)
+  fun createCall(name: String?, func: Func, args: List<Value>): CallInst { // TODO: how about call others
+    val callInst = CallInst(name, func, args)
     insertInstBeforeInsertPoint(callInst)
     return callInst
   }
@@ -177,7 +181,7 @@ object IRBuilder {
   }
 
   fun createBr(cond: Value, trueBlock: BasicBlock, falseBlock: BasicBlock): BranchInst {
-    val brInst = BranchInst(checki8Toi1(cond), trueBlock, falseBlock)
+    val brInst = BranchInst(trueBlock, checki8Toi1(cond), falseBlock)
 //    brInst.insertAtTheTailOf(block!!)
     insertInstBeforeInsertPoint(brInst)
 

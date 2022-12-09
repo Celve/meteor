@@ -3,7 +3,7 @@ package middleend.pass
 import middleend.basic.*
 import middleend.helper.Utils
 
-class IREmit : IRVisitor() {
+object IREmit : IRVisitor() {
   override fun visit(topModule: TopModule) {
     println(
       "; ModuleID = 'test'\n" +
@@ -57,6 +57,7 @@ class IREmit : IRVisitor() {
 
   override fun visit(block: BasicBlock) {
     println("${block.name}:")
+    block.instList.forEach { inst -> inst.useeList.forEach { assert(it.userList.contains(inst)) } }
     for (inst in block.instList) {
       print("\t")
       inst.accept(this)
@@ -69,77 +70,85 @@ class IREmit : IRVisitor() {
 
   override fun visit(inst: CallInst) {
     val prefix: String = if (inst.name == null) "" else "%${inst.name} = "
-    val argList = inst.funcType.argList.zip(inst.args).joinToString(", ") { "${it.first} ${it.second}" }
-    println("${prefix}call ${inst.funcType.resultType} @${inst.funcType.funcName}($argList)")
+    val argList =
+      inst.getFunc().funcType.argList.zip(inst.getArgList()).joinToString(", ") { "${it.first} ${it.second}" }
+    println("${prefix}call ${inst.getFunc().funcType.resultType} @${inst.getFunc().funcType.funcName}($argList)")
   }
 
   override fun visit(inst: LoadInst) {
-    println("%${inst.name} = load ${inst.type}, ${inst.type}* ${inst.addr}, align ${inst.type.getAlign()}")
+    println("%${inst.name} = load ${inst.type}, ${inst.type}* ${inst.getAddr()}, align ${inst.type.getAlign()}")
   }
 
   override fun visit(inst: BitCastInst) {
-    println("%${inst.name} = bitcast ${inst.fromTy} ${inst.castee} to ${inst.type}")
+    println("%${inst.name} = bitcast ${inst.fromTy} ${inst.getCastee()} to ${inst.type}")
   }
 
   override fun visit(inst: PhiInst) {
-    println("%${inst.name} = phi ${inst.type} ".plus(inst.predList.joinToString(", ") { "[ ${it.first}, ${it.second} ]" }))
+    println(
+      "%${inst.name} = phi ${inst.type} ".plus(
+        inst.getPredList().joinToString(", ") { "[ ${it.first}, ${it.second} ]" })
+    )
   }
 
   override fun visit(inst: BinaryInst) {
-    println("%${inst.name} = ${inst.op} ${inst.type} ${inst.rs}, ${inst.rt}")
+    println("%${inst.name} = ${inst.op} ${inst.type} ${inst.getLhs()}, ${inst.getRhs()}")
   }
 
   override fun visit(inst: BranchInst) {
     println(
-      if (inst.cond == null) {
-        "br label ${inst.trueBlock}"
+      if (inst.getCond() == null) {
+        "br label ${inst.getTrueBlock()}"
       } else {
-        "br i1 ${inst.cond}, label ${inst.trueBlock}, label ${inst.falseBlock!!}"
+        "br i1 ${inst.getCond()}, label ${inst.getTrueBlock()}, label ${inst.getFalseBlock()!!}"
       }
     )
   }
 
   override fun visit(inst: GetElementPtrInst) {
-    val extra = if (inst.offset != null) ", i32 ${inst.offset} " else ""
-    println("%${inst.name} = getelementptr inbounds ${Utils.getPointee(inst.ptr.type)}, ${inst.ptr.type} ${inst.ptr}, i32 ${inst.index}$extra")
+    val extra = if (inst.getIndex() != null) ", i32 ${inst.getIndex()} " else ""
+    if (inst.getPtr().type !is PointerType) {
+      println(inst.getPtr())
+    }
+    println("%${inst.name} = getelementptr inbounds ${Utils.getPointee(inst.getPtr().type)}, ${inst.getPtr().type} ${inst.getPtr()}, i32 ${inst.getOffset()}$extra")
   }
 
   override fun visit(inst: ZExtInst) {
-    println("%${inst.name} = zext ${inst.originalVal.type} ${inst.originalVal} to ${inst.type}")
+    println("%${inst.name} = zext ${inst.getOriginalVal().type} ${inst.getOriginalVal()} to ${inst.type}")
   }
 
   override fun visit(inst: TruncInst) {
-    println("%${inst.name} = trunc ${inst.originalVal.type} ${inst.originalVal} to ${inst.toTy}")
+    println("%${inst.name} = trunc ${inst.getOriginalVal().type} ${inst.getOriginalVal()} to ${inst.toTy}")
   }
 
   override fun visit(inst: StoreInst) {
-    val lhsTy = if (inst.value.type is PointerType && (inst.value.type as PointerType).pointeeTy == null) {
-      (inst.addr.type as PointerType).pointeeTy
+    val lhsTy = if (inst.getValue().type is PointerType && (inst.getValue().type as PointerType).pointeeTy == null) {
+      (inst.getAddr().type as PointerType).pointeeTy
     } else {
-      inst.value.type
+      inst.getValue().type
     }
-    println("store ${lhsTy} ${inst.value}, ${inst.addr.type} ${inst.addr}, align ${inst.value.type.getAlign()}")
+    println("store $lhsTy ${inst.getValue()}, ${inst.getAddr().type} ${inst.getAddr()}, align ${inst.getValue().type.getAlign()}")
   }
 
   override fun visit(inst: CmpInst) {
-    println("%${inst.name} = icmp ${inst.cond} ${inst.rs.type} ${inst.rs}, ${inst.rt}")
+    println("%${inst.name} = icmp ${inst.cond} ${inst.getLhs().type} ${inst.getLhs()}, ${inst.getRhs()}")
   }
 
   override fun visit(inst: ReturnInst) {
     println(
-      if (inst.retVal == null) {
+      if (inst.getRetVal() == null) {
         "ret ${inst.type}"
       } else {
-        "ret ${inst.type} ${inst.retVal}"
+        "ret ${inst.type} ${inst.getRetVal()}"
       }
     )
   }
 
   override fun visit(inst: PCopyInst) {
-    println("pcopy ".plus(inst.assignmentList.joinToString(", ") { "[ ${it.first} = ${it.second} ]" }))
+    println("pcopy ".plus(inst.getAssignmentList().joinToString(", ") { "[ ${it.first} = ${it.second} ]" }))
   }
 
   override fun visit(inst: MvInst) {
-    println("%${inst.name} = mv ${inst.type} ${inst.rs}")
+    println("%${inst.name} = add ${inst.type} ${inst.getSrc()}, 0")
+//    println("%${inst.name} = mv ${inst.type} ${inst.getSrc()}")
   }
 }

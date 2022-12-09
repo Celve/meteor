@@ -1,17 +1,37 @@
 package middleend.basic
 
 open class User(type: Type, name: String? = null) : Value(type, name) {
-  val useeList: MutableList<Value> = mutableListOf()
+  var useeList: MutableList<Value> = mutableListOf()
 
-  /// This function is bidirectional.
-  /// When need to add something, use one of the two.
-  fun addUsee(value: Value) {
-    value.userList.add(this)
-    useeList.add(value)
+  fun eliminate() {
+    useeList.forEach { it.userList.remove(this) }
+    useeList.clear()
   }
 
-  fun removeUsee(value: Value) {
-    value.userList.remove(this)
-    useeList.remove(value)
+  fun replace(from: Value, to: Value) {
+    useeList.replaceAll { if (it === from) to else it }
+    from.userList.remove(this)
+    to.userList.add(this)
+  }
+
+  fun replaceAll(applier: (Value) -> Value) {
+    useeList.replaceAll {
+      it.userList.remove(this)
+      val value = applier(it)
+      value.userList.add(this)
+      value
+    }
+  }
+
+  companion object {
+    fun link(user: User, usee: Value) {
+      user.useeList.add(usee)
+      usee.userList.add(user)
+    }
+
+    fun cut(user: User, usee: Value) {
+      user.useeList.remove(usee)
+      usee.userList.remove(user)
+    }
   }
 }

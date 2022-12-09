@@ -28,10 +28,10 @@ class SSADestructor : IRVisitor() {
         val middleBlock = BasicBlock(symbolTable.rename("edge.split"), block.execFreq) // FIXME: not sure about it
 
         val branchInst = prevBlock.instList.last() as BranchInst
-        if (branchInst.trueBlock == block) {
-          branchInst.trueBlock = middleBlock
+        if (branchInst.getTrueBlock() == block) {
+          branchInst.setTrueBlock(middleBlock)
         } else {
-          branchInst.falseBlock = middleBlock
+          branchInst.setFalseBlock(middleBlock)
         }
 
         BasicBlock.unlink(prevBlock, block)
@@ -39,7 +39,7 @@ class SSADestructor : IRVisitor() {
         BasicBlock.link(middleBlock, block)
 
         middleBlock.addInst(0, pCopyInst)
-        middleBlock.addInst(1, BranchInst(null, block, null))
+        middleBlock.addInst(1, BranchInst(block, null, null))
 
         val blockList = block.parent!!.blockList
         val index = blockList.indexOf(prevBlock)
@@ -49,8 +49,8 @@ class SSADestructor : IRVisitor() {
       }
     }
     for (phiInst in block.instList.filterIsInstance<PhiInst>()) {
-      for (i in 0 until phiInst.predList.size) {
-        val (predValue, predBlock) = phiInst.predList[i]
+      for (i in 0 until phiInst.getSize()) {
+        val (predValue, predBlock) = phiInst.getPred(i)
 //        println("$alternative $predValue")
         block2PCopyInst[predBlock]!!.addAssignment(phiInst, predValue)
 //        phiInst.predList[i] = Pair(phiInst, predBlock)
@@ -62,27 +62,27 @@ class SSADestructor : IRVisitor() {
   private fun pCopy2SCopy(block: BasicBlock) {
     for (pCopyInst in block.instList.filterIsInstance<PCopyInst>()) {
       val sCopyInstList = mutableListOf<MvInst>()
-      while (pCopyInst.assignmentList.any { it.first != it.second }) {
-        val removedInstList = mutableListOf<PCopyInst>()
+      val assignmentList = pCopyInst.getAssignmentList().toMutableList()
+      while (assignmentList.any { it.first != it.second }) {
         val processedAssignmentList = mutableListOf<Pair<Value, Value>>()
-        for (assignment in pCopyInst.assignmentList) {
-          if (pCopyInst.assignmentList.all { it.second != assignment.first }) {
+        for (assignment in assignmentList) {
+          if (assignmentList.all { it.second != assignment.first }) {
             sCopyInstList.add(MvInst(assignment.first.name!!, assignment.second))
-            removedInstList.add(pCopyInst)
             processedAssignmentList.add(assignment)
           }
         }
 
-        pCopyInst.assignmentList.removeAll(processedAssignmentList)
+        assignmentList.removeAll(processedAssignmentList)
 
         if (processedAssignmentList.isEmpty()) {
-          val assignment = pCopyInst.assignmentList.find { it.first != it.second }!!
-          val index = pCopyInst.assignmentList.indexOf(assignment)
+          val assignment = assignmentList.find { it.first != it.second }!!
+          val index = assignmentList.indexOf(assignment)
           val value = Value(assignment.second.type, symbolTable.rename(".temp"))
           sCopyInstList.add(MvInst(value.name!!, assignment.second))
-          pCopyInst.assignmentList[index] = Pair(assignment.first, value)
+          pCopyInst.setAssignment(index, assignment.first, value)
         }
       }
+      pCopyInst.eliminate()
       block.instList.remove(pCopyInst)
       sCopyInstList.forEach { block.instList.add(block.instList.size - 1, it) }
     }

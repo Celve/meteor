@@ -11,7 +11,6 @@ import frontend.semantic.SemanticChecker
 import frontend.semantic.SymbolCollector
 import middleend.controller.IRGenerator
 import middleend.pass.Eliminator
-import middleend.pass.IREmit
 import middleend.pass.SSAConstructor
 import middleend.pass.SSADestructor
 import org.antlr.v4.runtime.CharStreams
@@ -42,23 +41,22 @@ fun main(args: Array<String>) {
   val middleend = IRGenerator()
   middleend.visit(builderRoot)
 
-  val irEmit = IREmit()
-//  irEmit.visit(middleend.topModule)
+//  IREmit.visit(middleend.topModule)
 
   val eliminator = Eliminator()
   eliminator.visit(middleend.topModule)
 
-//  irEmit.visit(middleend.topModule)
+//  IREmit.visit(middleend.topModule)
 
   val ssaConstructor = SSAConstructor()
   ssaConstructor.visit(middleend.topModule)
 
-//  irEmit.visit(middleend.topModule)
+//  IREmit.visit(middleend.topModule)
 
   val ssaDestructor = SSADestructor()
   ssaDestructor.visit(middleend.topModule)
 
-//  irEmit.visit(middleend.topModule)
+//  IREmit.visit(middleend.topModule)
 
   val backend = ASMGenerator()
   backend.visit(middleend.topModule)

@@ -8,17 +8,6 @@ import middleend.basic.*
 class Eliminator : IRVisitor() {
   var module: TopModule? = null
 
-  private fun eliminateInst(inst: Instruction) {
-  }
-
-  /**
-   * add user-usee relationship
-   */
-  private fun buildInst(inst: Instruction, block: BasicBlock): Instruction {
-    inst.parent = block
-    return inst
-  }
-
   override fun visit(topModule: TopModule) {
     module = topModule
     topModule.funcMap.forEach { it.value.accept(this) }
@@ -31,61 +20,66 @@ class Eliminator : IRVisitor() {
   override fun visit(func: Func) {
     // collect alloca
     // eliminate instruction with load and store to alloca
-    val addr2Value = hashMapOf<Instruction, BinaryInst>()
+    val name2Value = hashMapOf<String, Instruction>()
     val entryBlock = func.blockList.first()
 
-    val allocaInstList =
-      entryBlock.instList
-        .filterIsInstance<AllocaInst>()
-        .filter { it.varType is IntType }
-        .toSet()
+    // deal with alloca instructions
+    val replaceUserSet = entryBlock.instList
+      .filterIsInstance<AllocaInst>()
+      .filter { it.varType is IntType }
+      .map { it.userList.toSet() }
+      .foldRight(setOf<User>()) { acc, set -> acc + set }
 
-    allocaInstList.forEach { eliminateInst(it) }
-
-    for (inst in allocaInstList) {
-      val original = inst.name!!.substringBeforeLast(".")
-      addr2Value[inst] =
-        BinaryInst(
+    entryBlock.instList = entryBlock.instList.map { inst ->
+      if (inst is AllocaInst && inst.varType is IntType) {
+        val oriName = inst.name!!.substringBeforeLast(".")
+        val mvInst = MvInst(
           inst.name!!.substringBeforeLast("."),
-          "add",
-          if (!func.argList.any { it.name!! == original }) {
+          if (!func.argList.any { it.name!! == oriName }) {
             ConstantInt(inst.varType.getNumBits(), 0)
           } else {
-            func.argList.find { it.name!! == original }!!
+            func.argList.find { it.name!! == oriName }!!
           },
-          ConstantInt(inst.varType.getNumBits(), 0)
         )
-    }
+        mvInst.parent = entryBlock
+//        name2Value[oriName] = mvInst
+        inst.eliminate()
 
-    entryBlock.instList = entryBlock.instList.map { addr2Value[it] ?: it }.toMutableList()
+        mvInst
+      } else {
+        inst
+      }
+    }.toMutableList()
 
+    // deal with load and store instructions
     for (block in func.blockList) {
       // remove load & convert store into assignment
       val eliminated =
-        block.instList.filter { it is LoadInst && it.collectUses().intersect(allocaInstList).isNotEmpty() }
-      eliminated.forEach { eliminateInst(it) }
+        block.instList.filter { it is LoadInst && replaceUserSet.contains(it) }
 
       block.instList = block.instList
-        .filter { it !is LoadInst || it.collectUses().intersect(allocaInstList).isEmpty() }
-        .map {
-          if (it is StoreInst && it.collectUses().intersect(allocaInstList).isNotEmpty()) {
-            eliminateInst(it)
-            val binaryInst = buildInst(
-              BinaryInst(addr2Value[it.addr as AllocaInst]!!.name!!, "add", it.value, ConstantInt(32, 0)),
-              block
-            ) as BinaryInst
-            addr2Value[it.addr as AllocaInst] = binaryInst
+        .filter { it !is LoadInst || !replaceUserSet.contains(it) }
+        .map { inst ->
+          if (inst is StoreInst && replaceUserSet.contains(inst)) {
+            val varName = inst.getAddr().name!!.substringBeforeLast('.')
+            val mvInst = MvInst(varName, inst.getValue())
+            mvInst.parent = block // don't forget to set parent
+            name2Value[varName] = mvInst
+            inst.eliminate()
 
-            binaryInst
+            mvInst
           } else {
-            it
+            inst.replaceAll { name2Value[it.name] ?: it }
+            inst
           }
         }.toMutableList()
+
+      // eliminate after all have been done
+      eliminated.forEach { it.eliminate() }
     }
   }
 
   override fun visit(block: BasicBlock) {
-
   }
 
   override fun visit(inst: AllocaInst) {

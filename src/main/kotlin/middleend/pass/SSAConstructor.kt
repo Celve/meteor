@@ -27,10 +27,6 @@ class SSAConstructor : IRVisitor() {
     stack[constStr.name!!] = mutableListOf(constStr)
   }
 
-  private fun isRenamed(value: Value): Boolean {
-    return value.name != null && value.name!!.substringAfterLast('.').toIntOrNull() != null
-  }
-
   // modify the original name of input value
   private fun renameValue(value: Value) {
     val ver = counter.getValue(value.name!!)
@@ -44,48 +40,40 @@ class SSAConstructor : IRVisitor() {
 
   private fun getValuesOriginalName(value: Value): String {
     val component = value.name!!.split(".").toMutableList()
-    if (component.size > 1 && component.last().toIntOrNull() != null) {
+    return if (component.size > 1 && component.last().toIntOrNull() != null) {
       component.removeLast()
-      return component.joinToString(".")
+      component.joinToString(".")
     } else {
-      return value.name!!
+      value.name!!
     }
   }
 
   private fun renameBlock(block: BasicBlock) {
-    block.instList.filterIsInstance<PhiInst>().forEach { renameValue(it); }
 
     for (inst in block.instList) {
       if (inst !is PhiInst) {
-        // global values and constants could not be rename
-        inst.apply { if (!it.isConst() && !isRenamed(it)) stack.getValue(getValuesOriginalName(it)).last() else it }
-        if (inst.isDef()) {
-          renameValue(inst)
+        inst.replaceAll {
+          if (it.isDef() && it.type !is LabelType && it.type !is FuncType) { // it can't be a basic block
+            stack.getValue(getValuesOriginalName(it)).last()
+          } else {
+            it
+          }
         }
+      }
+
+      // global values and constants could not be rename
+      if (inst.isDef()) {
+        renameValue(inst)
       }
     }
 
-    for (nextBlock in block.nextBlockList) {
+    block.nextBlockList.forEach { nextBlock ->
       nextBlock.instList.filterIsInstance<PhiInst>()
         .filter { !it.name!!.startsWith(".phi") } // ignore manually generated phi
-        .forEach { it.predList.add(Pair(stack.getValue(getValuesOriginalName(it)).last(), block)) }
-
-      nextBlock.instList.filterIsInstance<PhiInst>()
-        .filter { it.name!!.startsWith(".") } // especially for generated phi
-        .forEach {
-          it.predList = it.predList.map { pred ->
-            if (pred.second == block && !pred.first.isConst()) {
-              Pair(stack.getValue(getValuesOriginalName(pred.first)).last(), block)
-            } else {
-              pred
-            }
-          }.toMutableList()
-        }
+        .forEach { it.addAssignment(stack.getValue(getValuesOriginalName(it)).last(), block) }
     }
 
-    for (successor in domTree.successors.getValue(block)) {
-      renameBlock(successor)
-    }
+    domTree.successors.getValue(block).forEach { renameBlock(it) }
 
     block.instList.filter { it.name != null }.forEach { stack.getValue(getValuesOriginalName(it)).removeLast() }
   }
@@ -111,7 +99,7 @@ class SSAConstructor : IRVisitor() {
       for (inst in block.instList) {
         if (inst !is PhiInst) { // ignore manually added phi
           globals.addAll(
-            inst.collectUses()
+            inst.useeList
               .filterIsInstance<Instruction>()
               .filter { it !is PhiInst } // still ignore manually added instruction
               .map { it.name!! }
