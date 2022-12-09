@@ -10,9 +10,7 @@ import frontend.parser.MeteorParser
 import frontend.semantic.SemanticChecker
 import frontend.semantic.SymbolCollector
 import middleend.controller.IRGenerator
-import middleend.pass.Eliminator
-import middleend.pass.SSAConstructor
-import middleend.pass.SSADestructor
+import middleend.pass.*
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import java.io.FileInputStream
@@ -51,7 +49,9 @@ fun main(args: Array<String>) {
   val ssaConstructor = SSAConstructor()
   ssaConstructor.visit(middleend.topModule)
 
-//  IREmit.visit(middleend.topModule)
+  LocalValueNumbering.visit(middleend.topModule)
+
+  IREmit.visit(middleend.topModule)
 
   val ssaDestructor = SSADestructor()
   ssaDestructor.visit(middleend.topModule)
@@ -71,6 +71,6 @@ fun main(args: Array<String>) {
 
   val registerAllocator = ASMRegisterAllocator()
   registerAllocator.visit(backend.module!!)
-  asmEmit.visit(backend.module!!)
+//  asmEmit.visit(backend.module!!)
 }
 

@@ -57,4 +57,28 @@ object Utils {
     }
     return length
   }
+
+  fun calculate(op: String, lhs: Int, rhs: Int): Int {
+    return when (op) {
+      "mul" -> lhs * rhs
+      "sdiv" -> lhs / rhs
+      "srem" -> lhs % rhs
+      "add" -> lhs + rhs
+      "sub" -> lhs - rhs
+      "shl" -> lhs shl rhs
+      "ashr" -> lhs shr rhs
+      "sle" -> if (lhs <= rhs) 1 else 0
+      "slt" -> if (lhs < rhs) 1 else 0
+      "sge" -> if (lhs >= rhs) 1 else 0
+      "sgt" -> if (lhs > rhs) 1 else 0
+      "eq" -> if (lhs == rhs) 1 else 0
+      "ne" -> if (lhs != rhs) 1 else 0
+      "and" -> lhs and rhs
+      "or" -> lhs or rhs
+      "xor" -> lhs xor rhs
+      "land" -> if (lhs != 0 && rhs != 0) 1 else 0
+      "lor" -> if (lhs != 0 || rhs != 0) 1 else 0
+      else -> throw Exception("unexpected operator")
+    }
+  }
 }

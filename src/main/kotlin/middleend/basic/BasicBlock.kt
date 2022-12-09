@@ -23,6 +23,16 @@ class BasicBlock(name: String, val execFreq: Int) : Value(TypeFactory.getLabelTy
     instList.add(index, inst)
   }
 
+  fun replaceInst(oldInst: Instruction, newInst: Instruction) {
+    val index = instList.indexOf(oldInst)
+    if (index == -1) {
+      throw Exception("cannot find instruction in basic block")
+    }
+    oldInst.eliminate()
+    instList[index] = newInst
+    newInst.parent = this
+  }
+
   fun getIndexInFunc(): Int {
     for ((index, block) in parent!!.blockList.withIndex()) {
       if (block === this) {
