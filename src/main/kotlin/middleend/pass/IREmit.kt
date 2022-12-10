@@ -4,6 +4,9 @@ import middleend.basic.*
 import middleend.helper.Utils
 
 object IREmit : IRVisitor() {
+  // enable pcopy, mv or not
+  var printOption: Boolean = true
+
   override fun visit(topModule: TopModule) {
     println(
       "; ModuleID = 'test'\n" +
@@ -148,7 +151,10 @@ object IREmit : IRVisitor() {
   }
 
   override fun visit(inst: MvInst) {
-    println("%${inst.name} = add ${inst.type} ${inst.getSrc()}, 0")
-//    println("%${inst.name} = mv ${inst.type} ${inst.getSrc()}")
+    if (printOption) {
+      println("%${inst.name} = mv ${inst.type} ${inst.getSrc()}")
+    } else {
+      println("%${inst.name} = add ${inst.type} ${inst.getSrc()}, 0")
+    }
   }
 }

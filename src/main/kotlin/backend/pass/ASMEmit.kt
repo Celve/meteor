@@ -3,7 +3,7 @@ package backend.pass
 import backend.basic.*
 import backend.controller.ASMVisitor
 
-class ASMEmit : ASMVisitor() {
+object ASMEmit : ASMVisitor() {
   override fun visit(module: ASMModule) {
     module.funcList.forEach { it.accept(this) }
     module.globalPtr.forEach { it.value.accept(this) }

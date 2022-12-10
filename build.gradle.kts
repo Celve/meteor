@@ -37,6 +37,7 @@ tasks.generateGrammarSource {
 tasks.named("run", JavaExec::class) {
   // redirect the input from console
   standardInput = System.`in`
+
 }
 
 application {

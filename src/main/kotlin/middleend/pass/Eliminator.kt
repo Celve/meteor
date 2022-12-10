@@ -5,11 +5,8 @@ import middleend.basic.*
 /**
  * remove useless loads and stores from program
  */
-class Eliminator : IRVisitor() {
-  var module: TopModule? = null
-
+object Eliminator : IRVisitor() {
   override fun visit(topModule: TopModule) {
-    module = topModule
     topModule.funcMap.forEach { it.value.accept(this) }
   }
 

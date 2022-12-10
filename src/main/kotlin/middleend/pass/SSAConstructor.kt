@@ -4,7 +4,7 @@ import middleend.basic.*
 import middleend.controller.IRBuilder
 import middleend.helper.DomTree
 
-class SSAConstructor : IRVisitor() {
+object SSAConstructor : IRVisitor() {
   var module: TopModule? = null
 
   val counter = hashMapOf<String, Int>().withDefault { 0 }

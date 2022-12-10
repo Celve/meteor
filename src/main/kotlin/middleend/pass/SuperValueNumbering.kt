@@ -8,7 +8,13 @@ object SuperValueNumbering : IRVisitor() {
   private val processedSet = hashSetOf<BasicBlock>()
   private val workList = mutableListOf<BasicBlock>()
 
+  fun init() {
+    processedSet.clear()
+    workList.clear()
+  }
+
   override fun visit(topModule: TopModule) {
+    init()
     topModule.funcMap.forEach { it.value.accept(this) }
   }
 

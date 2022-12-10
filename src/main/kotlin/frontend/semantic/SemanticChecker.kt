@@ -8,7 +8,7 @@ import frontend.metadata.TypeMd
 import frontend.utils.ClassScope
 import frontend.utils.ScopeManager
 
-class SemanticChecker : ASTVisitor() {
+object SemanticChecker : ASTVisitor() {
   private val scopeManager = ScopeManager()
   override fun visit(curr: ProgNode) {
     scopeManager.addLast(curr.scope)

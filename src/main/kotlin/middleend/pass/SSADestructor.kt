@@ -3,7 +3,7 @@ package middleend.pass
 import middleend.basic.*
 import middleend.helper.SymbolTable
 
-class SSADestructor : IRVisitor() {
+object SSADestructor : IRVisitor() {
   var module = TopModule()
   private var symbolTable = SymbolTable("")
 

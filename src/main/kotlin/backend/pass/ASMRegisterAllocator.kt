@@ -5,7 +5,7 @@ import backend.controller.ASMBuilder
 import backend.controller.ASMVisitor
 import backend.helper.RegFactory
 
-class ASMRegisterAllocator : ASMVisitor() {
+object ASMRegisterAllocator : ASMVisitor() {
   val k = RegInfo.assignableRegList.size
 
   /**
@@ -161,7 +161,7 @@ class ASMRegisterAllocator : ASMVisitor() {
     }
   }
 
-  private fun initialize() {
+  private fun init() {
     initial.clear()
     simplifyWorklist.clear()
     freezeWorklist.clear()
@@ -187,7 +187,7 @@ class ASMRegisterAllocator : ASMVisitor() {
   }
 
   private fun graphColoring() {
-    initialize()
+    init()
     livenessAnalysis()
     build()
     makeWorklist()

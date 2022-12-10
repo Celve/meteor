@@ -10,7 +10,7 @@ import frontend.utils.ScopeManager
 /**
  * SymbolCollector is used to collect classes and funcs which support forward reference
  */
-class SymbolCollector : ASTVisitor() {
+object SymbolCollector : ASTVisitor() {
   private val scopeManager = ScopeManager()
 
   override fun visit(curr: ProgNode) {

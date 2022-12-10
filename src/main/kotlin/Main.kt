@@ -1,76 +1,37 @@
-import backend.controller.ASMGenerator
-import backend.pass.ASMEmit
-import backend.pass.ASMRegisterAllocator
-import backend.pass.ASMStackAllocator
-import frontend.ast.controller.ASTBuilder
-import frontend.ast.controller.AntlrErrorListener
-import frontend.ast.node.ProgNode
-import frontend.parser.MeteorLexer
-import frontend.parser.MeteorParser
-import frontend.semantic.SemanticChecker
-import frontend.semantic.SymbolCollector
-import middleend.controller.IRGenerator
-import middleend.pass.*
-import org.antlr.v4.runtime.CharStreams
-import org.antlr.v4.runtime.CommonTokenStream
-import java.io.FileInputStream
+import backend.BackEndManager
+import frontend.FrontEndManager
+import middleend.MiddleEndManager
+import middleend.basic.pointerNumBits
+import middleend.pass.IREmit
 
 fun main(args: Array<String>) {
-  val input = if (args.size > 1) FileInputStream(args[1]) else System.`in`
+  if (args.isEmpty()) {
+    throw Exception("No build option")
+  } else {
+    val mode = args[0]
+    var testIR = false
+    var testASM = false
 
-  val lexer = MeteorLexer(CharStreams.fromStream(input))
-  lexer.removeErrorListeners()
-  lexer.addErrorListener(AntlrErrorListener())
+    when (mode) {
+      "custom" -> testIR = true
 
-  val parser = MeteorParser(CommonTokenStream(lexer))
-  parser.removeErrorListeners()
-  parser.addErrorListener(AntlrErrorListener())
-  val parserRoot = parser.prog()
+      "ir" -> {
+        testIR = true
+        IREmit.printOption = false
+      }
 
-  val astBuilder = ASTBuilder()
-  val builderRoot = astBuilder.visitProg(parserRoot) as ProgNode
+      "asm" -> {
+        testASM = true
+        pointerNumBits = 32 // riscv32
+      }
 
-  val symbolCollector = SymbolCollector()
-  symbolCollector.visit(builderRoot)
+      else -> throw Exception("Unknown build option")
+    }
 
-  val semanticChecker = SemanticChecker()
-  semanticChecker.visit(builderRoot)
+    val inputStream = System.`in`
 
-  val middleend = IRGenerator()
-  middleend.visit(builderRoot)
-
-//  IREmit.visit(middleend.topModule)
-
-  val eliminator = Eliminator()
-  eliminator.visit(middleend.topModule)
-
-//  IREmit.visit(middleend.topModule)
-
-  val ssaConstructor = SSAConstructor()
-  ssaConstructor.visit(middleend.topModule)
-
-  SuperValueNumbering.visit(middleend.topModule)
-
-  IREmit.visit(middleend.topModule)
-
-  val ssaDestructor = SSADestructor()
-  ssaDestructor.visit(middleend.topModule)
-
-//  IREmit.visit(middleend.topModule)
-
-  val backend = ASMGenerator()
-  backend.visit(middleend.topModule)
-
-  val asmEmit = ASMEmit()
-//  asmEmit.visit(backend.module!!)
-
-  val asmAllocator = ASMStackAllocator()
-//  asmAllocator.visit(backend.module!!)
-
-//  asmEmit.visit(backend.module!!)
-
-  val registerAllocator = ASMRegisterAllocator()
-  registerAllocator.visit(backend.module!!)
-//  asmEmit.visit(backend.module!!)
+    val progNode = FrontEndManager.visit(inputStream)
+    val topModule = MiddleEndManager.visit(progNode, testIR)
+    BackEndManager.visit(topModule, testASM)
+  }
 }
-
