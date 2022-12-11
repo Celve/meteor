@@ -62,13 +62,14 @@ def test_single_file(filename, build_option):
 
     right_exit_code = get_io_and_ec(fd)
 
-    if (build_option == "ir"):
+    if (build_option == "asm"):
         os.system(
             "java -jar build/libs/meteor-all.jar asm < {} > debug/test.s".format(filename))
         exit_code = os.system(
-            "ravel --input-file=debug/input.txt --output-file=debug/answer.txt debug/test.s src/main/resources/builtin/builtin.s > debug/ravel.log 2> debug/ravel-error.log"
+            "ravel --input-file=debug/input.txt --output-file=debug/answer.txt debug/test.s src/main/resources/builtin/builtin.s > debug/result/{}.log 2> debug/ravel-error.log".format(
+                os.path.basename(filename).rsplit('.', 1)[0])
         ) >> 8
-    elif (build_option == "asm"):
+    elif (build_option == "ir"):
         os.system(
             "java -jar build/libs/meteor-all.jar ir < {} > debug/test.ll".format(filename))
         os.system(
