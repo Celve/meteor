@@ -104,7 +104,7 @@ def test_all_files(dirname, build_option):
     for filename in os.listdir(dirname):
         filepath = dirname + filename
         if os.path.isdir(filepath):
-            sub_sum, sub_accepted = test_all_files(filepath + "/")
+            sub_sum, sub_accepted = test_all_files(filepath + "/", build_option)
             sum += sub_sum
             accepted += sub_accepted
         elif filename.endswith(".mx"):
