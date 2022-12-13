@@ -51,7 +51,7 @@ class DomTree(val func: Func) {
 
   fun build() {
     doms.clear() // initialize
-    startNode = func!!.getEntryBlock()
+    startNode = func.getEntryBlock()
     doms[startNode] = startNode
 
     calcPostorder()

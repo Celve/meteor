@@ -120,15 +120,11 @@ class StoreInst(value: Value, addr: Value) : Instruction(TypeFactory.getVoidType
 }
 
 
-class CmpInst(name: String, val cond: Cond, rs: Value, rt: Value) :
+class CmpInst(name: String, val cond: String, rs: Value, rt: Value) :
   Instruction(TypeFactory.getIntType(1), name) {
   init { // rs, rt
     link(this, rs)
     link(this, rt)
-  }
-
-  enum class Cond {
-    eq, ne, ugt, uge, ult, ule, sgt, sge, slt, sle,
   }
 
   fun getLhs(): Value {
@@ -353,6 +349,12 @@ class PhiInst(name: String, type: Type, predList: MutableList<Pair<Value, BasicB
 
   fun getPred(index: Int): Pair<Value, BasicBlock> {
     return Pair(useeList[index * 2], useeList[index * 2 + 1] as BasicBlock)
+  }
+
+  fun removePred(block: BasicBlock) {
+    val index = useeList.indexOf(block)
+    cut(this, useeList[index])
+    cut(this, useeList[index - 1])
   }
 
   override fun replicate(): Instruction {

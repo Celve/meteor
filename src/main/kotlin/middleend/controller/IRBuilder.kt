@@ -130,7 +130,7 @@ object IRBuilder {
   }
 
   fun createCmp(name: String, cond: String, lhs: Value, rhs: Value): CmpInst {
-    val cmpInst = CmpInst(name, CmpInst.Cond.valueOf(cond), lhs, rhs)
+    val cmpInst = CmpInst(name, cond, lhs, rhs)
     insertInstBeforeInsertPoint(cmpInst)
     return cmpInst
   }

@@ -22,23 +22,24 @@ object Checker : IRVisitor() {
     block.instList.forEach { inst ->
       assert(inst.parent == block)
       inst.useeList.forEach { assert(it.userList.contains(inst)) }
+      inst.userList.forEach { assert(it.useeList.contains(inst)) }
     }
     for (inst in block.instList) {
       inst.accept(this)
     }
   }
 
-  override fun visit(inst: AllocaInst) { }
+  override fun visit(inst: AllocaInst) {}
 
-  override fun visit(inst: CallInst) { }
+  override fun visit(inst: CallInst) {}
 
-  override fun visit(inst: LoadInst) { }
+  override fun visit(inst: LoadInst) {}
 
-  override fun visit(inst: BitCastInst) { }
+  override fun visit(inst: BitCastInst) {}
 
-  override fun visit(inst: PhiInst) { }
+  override fun visit(inst: PhiInst) {}
 
-  override fun visit(inst: BinaryInst) { }
+  override fun visit(inst: BinaryInst) {}
 
   override fun visit(inst: BranchInst) {
     val trueBlock = inst.getTrueBlock()

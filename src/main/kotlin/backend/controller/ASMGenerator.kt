@@ -273,7 +273,7 @@ class ASMGenerator : IRVisitor() {
     if (inst.getCond() == null) { // unconditional br
       ASMBuilder.createJInst(func.getBlockByPureName(inst.getTrueBlock().name!!)!!)
     } else { // conditional br
-      val condReg = value2Reg[inst.getCond()!!.name!!]!!
+      val condReg = getRegOfValue(inst.getCond()!!)!!
       val trueBlock = func.getBlockByPureName(inst.getTrueBlock().name!!)!!
       val falseBlock = func.getBlockByPureName(inst.getFalseBlock()!!.name!!)!!
       ASMBuilder.createBzInst("bnez", condReg, trueBlock)
@@ -353,7 +353,7 @@ class ASMGenerator : IRVisitor() {
     val rhsReg = getRegOfValue(inst.getRhs())!!
 
     // due to the limitation of RISC-V, implementations of some comparisons should be done with help of others
-    when (inst.cond.name) {
+    when (inst.cond) {
       "slt" -> {
         ASMBuilder.createCmpInst("slt", virReg, lhsReg, rhsReg)
       }

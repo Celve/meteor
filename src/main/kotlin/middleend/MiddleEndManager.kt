@@ -16,11 +16,14 @@ object MiddleEndManager {
     Eliminator.visit(module)
     SSAConstructor.visit(module)
     Checker.visit(module)
-    if (buildOptions.contains("--svn")) {
-      SuperValueNumbering.visit(module)
-    }
     if (buildOptions.contains("--inline")) {
       Inliner.visit(module)
+    }
+    if (buildOptions.contains("--sccp")) {
+      ConstPropagator.visit(module)
+    }
+    if (buildOptions.contains("--svn")) {
+      SuperValueNumbering.visit(module)
     }
     Checker.visit(module)
 

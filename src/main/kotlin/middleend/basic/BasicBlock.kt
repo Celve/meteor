@@ -33,6 +33,7 @@ class BasicBlock(name: String, val execFreq: Int) : Value(TypeFactory.getLabelTy
       throw Exception("cannot find instruction in basic block")
     }
     oldInst.eliminate()
+    oldInst.substituteAll(newInst)
     instList[index] = newInst
     newInst.parent = this
   }

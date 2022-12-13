@@ -13,7 +13,6 @@ class Func(name: String, val funcType: FuncType, val argList: List<Value>) : Glo
 
   override fun replicate(): Value {
     TODO("Not yet implemented")
-
   }
 
   fun getEntryBlock(): BasicBlock {
