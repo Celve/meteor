@@ -1,25 +1,36 @@
 package middleend.helper
 
-class SymbolTable(val limit: String) {
+abstract class SymbolTable {
   var counter = mutableMapOf<String, Int>().withDefault { 0 }
-
-  fun rename(name: String): String {
-    val withoutVersion = name.replace("\\d+$".toRegex(), "") // remove tail number
-    val withoutLimit = if (withoutVersion.endsWith(limit)) {
-      withoutVersion.dropLast(limit.length)
-    } else {
-      withoutVersion
-    }
-    val ver = counter.getValue(withoutLimit)
-    counter[withoutLimit] = ver + 1
-    return if (ver == 0) {
-      withoutLimit
-    } else {
-      "$withoutLimit$limit$ver"
-    }
-  }
+  abstract fun rename(name: String): String
 
   fun clear() {
     counter.clear()
+  }
+}
+
+class ValueTable : SymbolTable() {
+  override fun rename(name: String): String {
+    val withoutVersion = name.replace("\\d+$".toRegex(), "") // remove tail number
+    val ver = counter.getValue(withoutVersion)
+    counter[withoutVersion] = ver + 1
+    return if (ver == 0) {
+      withoutVersion
+    } else {
+      "$withoutVersion$ver"
+    }
+  }
+}
+
+class SSATable : SymbolTable() {
+  override fun rename(name: String): String {
+    val withoutVersion = name.replace("\\.\\d+$".toRegex(), "") // remove tail number
+    val ver = counter.getValue(withoutVersion)
+    counter[withoutVersion] = ver + 1
+    return if (ver == 0) {
+      withoutVersion
+    } else {
+      "$withoutVersion.$ver"
+    }
   }
 }

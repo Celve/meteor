@@ -8,8 +8,8 @@ import frontend.utils.GlobalScope
 import frontend.utils.ScopeManager
 import middleend.basic.*
 import middleend.helper.LoopManager
-import middleend.helper.SymbolTable
 import middleend.helper.Utils
+import middleend.helper.ValueTable
 import kotlin.math.pow
 
 class IRGenerator : ASTVisitor() {
@@ -17,8 +17,8 @@ class IRGenerator : ASTVisitor() {
   private val loopManager = LoopManager()
   val topModule = TopModule()
   private var initFunc: Func? = null
-  private var localSymbolTable = SymbolTable("")
-  private var globalSymbolTable = SymbolTable("")
+  private var localSymbolTable = ValueTable()
+  private var globalSymbolTable = ValueTable()
 
   private fun renameGlobal(name: String): String {
     return globalSymbolTable.rename(name)
@@ -62,9 +62,13 @@ class IRGenerator : ASTVisitor() {
       // create implicit constructor
       if (!classMd.hasCustomCtor) {
         val ctor = topModule.getFunc("${className}.new")!!
+        localSymbolTable = ctor.mulTable
         val entryBlock = BasicBlock(renameLocal("entry"), 1)
+//        val returnBlock = BasicBlock(renameLocal("return"), 1)
         IRBuilder.setCurrentFunc(ctor)
         IRBuilder.setInsertBlock(entryBlock)
+//        IRBuilder.createBr(returnBlock)
+//        IRBuilder.setInsertBlock(returnBlock)
         IRBuilder.createRetVoid()
       }
     }
@@ -96,6 +100,7 @@ class IRGenerator : ASTVisitor() {
      */
     val initFuncName = "_global_variable_init"
     initFunc = Func(initFuncName, FuncType(initFuncName, listOf(), TypeFactory.getVoidType()), listOf())
+    localSymbolTable = initFunc!!.mulTable
 
     val initBlock = BasicBlock(renameLocal("entry"), 1)
     initBlock.insertAtTheTailOf(initFunc!!)
@@ -146,7 +151,7 @@ class IRGenerator : ASTVisitor() {
     val func = topModule.getFunc(funcName)!!
     val innerScope = scopeManger.last()
     IRBuilder.setCurrentFunc(func)
-    localSymbolTable = func.symbolTable
+    localSymbolTable = func.mulTable
 
     val entryBlock = BasicBlock(renameLocal("entry"), 1)
     IRBuilder.setInsertBlock(entryBlock)
@@ -169,8 +174,6 @@ class IRGenerator : ASTVisitor() {
   }
 
   override fun visit(curr: FuncDefNode) {
-    localSymbolTable.clear()
-
     scopeManger.addLast(curr.funcMd)
     val innerScope = scopeManger.last() as FuncScope
     val recentClass = scopeManger.getRecentClass()
@@ -178,7 +181,7 @@ class IRGenerator : ASTVisitor() {
     val funcName = if (recentClass != null) "${recentClass.className}.${innerScope.funcName}" else innerScope.funcName
     val func = topModule.getFunc(funcName)!!
     IRBuilder.setCurrentFunc(func)
-    localSymbolTable = func.symbolTable
+    localSymbolTable = func.mulTable
 
     /** avoid conflicts with global value */
     localSymbolTable.counter.putAll(topModule.globalVarMap.map { it.key to 1 })
@@ -195,12 +198,14 @@ class IRGenerator : ASTVisitor() {
          * This pointer should be inserted into method's value symbol table and scope, in order to retrieve it.
          * And there is no need to alloca and load it like other args.
          */
-        if (arg.name == "this") {
+        val originalName = arg.name!!
+        arg.name = renameLocal(arg.name!!)
+        if (originalName == "this") {
           innerScope.setAddr("this", arg)
           continue
         }
-        val allocaInst = IRBuilder.createAlloca("${renameLocal(arg.name!!)}.addr", arg.type)
-        innerScope.setAddr(arg.name!!, allocaInst)
+        val allocaInst = IRBuilder.createAlloca("${arg.name!!}.addr", arg.type)
+        innerScope.setAddr(originalName, allocaInst)
         IRBuilder.createStore(arg, allocaInst)
       }
     }
@@ -209,6 +214,7 @@ class IRGenerator : ASTVisitor() {
     if (funcType.resultType != TypeFactory.getVoidType()) {
       val allocaInst = IRBuilder.createAlloca(".ret.addr", funcType.resultType)
       innerScope.setAddr(".ret", allocaInst)
+      renameLocal(".ret") // just insert an entry
     }
 
     val returnBlock = BasicBlock(renameLocal("return"), 1)
@@ -473,7 +479,7 @@ class IRGenerator : ASTVisitor() {
       IRBuilder.createBitCast(renameLocal(".bitcast"), extendedArray, TypeFactory.getPtrType("int"))
     }
     IRBuilder.createStore(arraySize, arraySizeAddr)
-    val pureArray = IRBuilder.createGEP("ptr", renameLocal(".array.addr"), extendedArray, ConstantInt(32, 1), null)
+    val pureArray = IRBuilder.createGEP("ptr", renameLocal(".array") + ".addr", extendedArray, ConstantInt(32, 1), null)
 
     /** there is no need to recurse more, because the size of arraySizeList indicates the remainder of dimension */
     if (arraySizeList.size == 1) {
@@ -481,7 +487,7 @@ class IRGenerator : ASTVisitor() {
     }
 
     /** the start point is the last element of array, which iterate until the addr before the first element */
-    val startPoint = IRBuilder.createGEP("ptr", renameLocal(".array.addr"), extendedArray, arraySize, null)
+    val startPoint = IRBuilder.createGEP("ptr", renameLocal(".array") + ".addr", extendedArray, arraySize, null)
     val previousBlock = IRBuilder.getInsertBlock()!!
     val nestedLoopsNum = loopManager.getNestedLoopsNum() + count + 1
     val execFreq = 10.0.pow(nestedLoopsNum).toInt()
@@ -508,12 +514,12 @@ class IRGenerator : ASTVisitor() {
 
     val nextElement = IRBuilder.createGEP(
       "ptr",
-      renameLocal(".array.addr"),
+      renameLocal(".array") + ".addr",
       phiInst,
       ConstantInt(32, -1),
       null
     )
-    phiInst.addAssignment(nextElement, bodyBlock)
+    phiInst.addAssignment(nextElement, IRBuilder.getInsertBlock()!!)
     IRBuilder.createBr(condBlock)
 
     IRBuilder.setInsertBlock(endBlock)
@@ -560,7 +566,7 @@ class IRGenerator : ASTVisitor() {
       /** for array, it has only one method called size() */
       assert(curr.method == "size")
       val arraySizeAddr =
-        IRBuilder.createGEP("ptr", renameLocal(".arraysize.addr"), curr.expr.value!!, ConstantInt(32, -1), null)
+        IRBuilder.createGEP("ptr", renameLocal(".arraysize") + ".addr", curr.expr.value!!, ConstantInt(32, -1), null)
       val finalInst = if (arraySizeAddr.type != TypeFactory.getPtrType("int")) {
         IRBuilder.createBitCast(renameLocal(".bitcast"), arraySizeAddr, TypeFactory.getPtrType("int"))
       } else {
@@ -580,12 +586,12 @@ class IRGenerator : ASTVisitor() {
 
   override fun visit(curr: MemberAccessNode) {
     curr.expr.accept(this)
-    val memberName = "${curr.expr.type!!.cl.className}.${curr.member}"
+    val memberName = renameLocal("${curr.expr.type!!.cl.className}.${curr.member}")
     val pointerType = curr.expr.value!!.type as PointerType
     val structType = pointerType.pointeeTy as StructType
     val gepInst = IRBuilder.createGEP(
       "struct",
-      renameLocal("$memberName.addr"),
+      "$memberName.addr",
       curr.expr.value!!,
       ConstantInt(32, 0),
       ConstantInt(32, structType.getIndex(curr.member))
@@ -596,8 +602,9 @@ class IRGenerator : ASTVisitor() {
   override fun visit(curr: ArrayAccessNode) {
     curr.array.accept(this)
     curr.index.accept(this)
-    val ptr = IRBuilder.createGEP("ptr", renameLocal(".elem.addr"), curr.array.value!!, curr.index.value!!, null)
-    curr.value = IRBuilder.createLoad(renameLocal(".elem"), ptr)
+    val elemName = renameLocal(".elem")
+    val ptr = IRBuilder.createGEP("ptr", "$elemName.addr", curr.array.value!!, curr.index.value!!, null)
+    curr.value = IRBuilder.createLoad(elemName, ptr)
   }
 
   private fun getIdsNameAndItsPtr(curr: AtomNode): Pair<String, Value> {
@@ -610,14 +617,14 @@ class IRGenerator : ASTVisitor() {
       Pair(ptr.name!!.substringBeforeLast('.'), ptr) // remove .addr
     } else if (recentClass != null && recentClass.memberToIndex.containsKey(id)) {
       // Even though it's not in member access format, it could still be a member access when this happens in class's method definition.
-      val memberName = "${recentClass.className}.$id"
+      val memberName = renameLocal("${recentClass.className}.$id")
       val structType = topModule.getStruct("class.${recentClass.className}")
 
       Pair(
-        renameLocal(memberName),
+        memberName,
         IRBuilder.createGEP(
           "struct",
-          renameLocal("$memberName.addr"),
+          "$memberName.addr",
           innerScope.getAddr("this")!!,
           ConstantInt(32, 0),
           ConstantInt(32, structType.getIndex(id))
@@ -636,19 +643,20 @@ class IRGenerator : ASTVisitor() {
       is ArrayAccessNode -> {
         curr.array.accept(this)
         curr.index.accept(this)
+        val elemName = renameLocal(".elem")
         Pair(
-          renameLocal(".elem"),
-          IRBuilder.createGEP("ptr", renameLocal(".elem.addr"), curr.array.value!!, curr.index.value!!, null)
+          elemName,
+          IRBuilder.createGEP("ptr", "$elemName.addr", curr.array.value!!, curr.index.value!!, null)
         )
       }
 
       is MemberAccessNode -> {
         curr.expr.accept(this)
         val className = curr.expr.type!!.cl.className
-        val memberName = "$className.${curr.member}"
+        val memberName = renameLocal("$className.${curr.member}")
         val structType = topModule.getStruct("class.$className")
         Pair(
-          renameLocal(memberName),
+          memberName,
           IRBuilder.createGEP(
             "struct",
             renameLocal("$memberName.addr"),

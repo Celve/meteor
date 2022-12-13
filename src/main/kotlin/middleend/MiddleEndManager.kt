@@ -16,6 +16,7 @@ object MiddleEndManager {
     Eliminator.visit(module)
     SSAConstructor.visit(module)
     SuperValueNumbering.visit(module)
+    Inliner.visit(module)
 
     if (testing) {
       IREmit.visit(module)

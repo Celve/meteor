@@ -1,9 +1,9 @@
-package middleend.helper
+package middleend.struct
 
 import middleend.basic.BasicBlock
 import middleend.basic.Func
 
-class DomTree(val func: Func?) {
+class DomTree(val func: Func) {
   private var doms = hashMapOf<BasicBlock, BasicBlock>()
   var domFrontiers = hashMapOf<BasicBlock, MutableList<BasicBlock>>().withDefault { mutableListOf() }
   var successors = hashMapOf<BasicBlock, MutableList<BasicBlock>>().withDefault { mutableListOf() }

@@ -12,6 +12,10 @@ class BasicBlock(name: String, val execFreq: Int) : Value(TypeFactory.getLabelTy
   val prevBlockList = mutableListOf<BasicBlock>()
   val nextBlockList = mutableListOf<BasicBlock>()
 
+  override fun duplicate(): Value {
+    return BasicBlock(name!!, execFreq)
+  }
+
   fun hasTerminator(): Boolean {
     return instList.isNotEmpty() && instList.last().isTerminator()
   }

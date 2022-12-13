@@ -2,17 +2,18 @@ package middleend.pass
 
 import middleend.basic.*
 import middleend.controller.IRBuilder
-import middleend.helper.DomTree
+import middleend.helper.SSATable
+import middleend.struct.DomTree
 
 object SSAConstructor : IRVisitor() {
   var module: TopModule? = null
 
-  val counter = hashMapOf<String, Int>().withDefault { 0 }
   val stack = hashMapOf<String, MutableList<Value>>().withDefault { mutableListOf() }
   val globals = hashSetOf<String>()
   var name2DefBlockSet = hashMapOf<String, HashSet<BasicBlock>>().withDefault { hashSetOf() }
   var name2Type = hashMapOf<String, Type>()
-  var domTree = DomTree(null)
+  var domTree: DomTree? = null
+  var ssaTable = SSATable()
 
   override fun visit(topModule: TopModule) {
     module = topModule
@@ -29,13 +30,9 @@ object SSAConstructor : IRVisitor() {
 
   // modify the original name of input value
   private fun renameValue(value: Value) {
-    val ver = counter.getValue(value.name!!)
-    counter[value.name!!] = ver + 1
-    val originalName = value.name!!
-    if (ver != 0) {
-      value.name += ".$ver"
-    }
-    stack.getOrPut(originalName) { mutableListOf() }.add(value)
+    val oriName = value.name!!
+    value.name = ssaTable.rename(oriName)
+    stack.getOrPut(oriName) { mutableListOf() }.add(value)
   }
 
   private fun getValuesOriginalName(value: Value): String {
@@ -49,7 +46,6 @@ object SSAConstructor : IRVisitor() {
   }
 
   private fun renameBlock(block: BasicBlock) {
-
     for (inst in block.instList) {
       if (inst !is PhiInst) {
         inst.replaceAll {
@@ -73,7 +69,7 @@ object SSAConstructor : IRVisitor() {
         .forEach { it.addAssignment(stack.getValue(getValuesOriginalName(it)).last(), block) }
     }
 
-    domTree.successors.getValue(block).forEach { renameBlock(it) }
+    domTree!!.successors.getValue(block).forEach { renameBlock(it) }
 
     block.instList.filter { it.name != null }.forEach { stack.getValue(getValuesOriginalName(it)).removeLast() }
   }
@@ -81,7 +77,7 @@ object SSAConstructor : IRVisitor() {
   override fun visit(func: Func) {
     name2DefBlockSet = hashMapOf<String, HashSet<BasicBlock>>().withDefault { hashSetOf() }
     name2Type = hashMapOf()
-    counter.clear()
+    ssaTable = func.ssaTable
     stack.clear()
     globals.clear()
 
@@ -90,8 +86,8 @@ object SSAConstructor : IRVisitor() {
     module!!.constStrMap.forEach { it.value.accept(this) }
     func.argList.forEach { renameValue(it) }
 
-    domTree = DomTree(func)
-    domTree.build()
+    domTree = func.domTree
+    domTree!!.build()
 
     // collect global variables
     for (block in func.blockList) {
@@ -113,6 +109,8 @@ object SSAConstructor : IRVisitor() {
       }
     }
 
+    globals.removeAll { it.startsWith('.') && !it.startsWith(".ret") } // all system created variables are should be legal
+
     // insert phi-instructions
     for (valueName in globals) {
       val defBlocks = name2DefBlockSet.getValue(valueName)
@@ -122,7 +120,7 @@ object SSAConstructor : IRVisitor() {
       while (workList.isNotEmpty()) {
         val block = workList.first()
         workList.remove(block)
-        for (df in domTree.domFrontiers.getValue(block)) {
+        for (df in domTree!!.domFrontiers.getValue(block)) {
           if (!finishedSet.contains(df)) {
             finishedSet.add(df)
             IRBuilder.setInsertPointBefore(df.instList.first())

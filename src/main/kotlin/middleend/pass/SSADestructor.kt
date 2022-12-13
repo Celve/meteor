@@ -1,11 +1,11 @@
 package middleend.pass
 
 import middleend.basic.*
-import middleend.helper.SymbolTable
+import middleend.helper.ValueTable
 
 object SSADestructor : IRVisitor() {
   var module = TopModule()
-  private var symbolTable = SymbolTable("")
+  private var symbolTable = ValueTable()
 
   override fun visit(topModule: TopModule) {
     module = topModule
@@ -89,7 +89,7 @@ object SSADestructor : IRVisitor() {
   }
 
   override fun visit(func: Func) {
-    symbolTable = func.symbolTable
+    symbolTable = func.mulTable
 
     for (block in func.blockList.toList()) {
       phi2PCopy(block)

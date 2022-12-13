@@ -74,6 +74,13 @@ object Eliminator : IRVisitor() {
       // eliminate after all have been done
       eliminated.forEach { it.eliminate() }
     }
+
+    // rearrange alloca inst
+    for (block in func.blockList) {
+      val allocaInstList = block.instList.filterIsInstance<AllocaInst>()
+      block.instList.removeAll(allocaInstList)
+      block.instList.addAll(0, allocaInstList)
+    }
   }
 
   override fun visit(block: BasicBlock) {

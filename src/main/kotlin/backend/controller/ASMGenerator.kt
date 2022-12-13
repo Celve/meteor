@@ -201,9 +201,9 @@ class ASMGenerator : IRVisitor() {
 
     // TODO: this implementation is buggy or costy, because the builtin func is generated every single time
     ASMBuilder.createCallInst(
-      module!!.getFunc(inst.getFunc().funcType.funcName) ?: ASMFunc(inst.getFunc().funcType.funcName)
+      module!!.getFunc(inst.getCallee().funcType.funcName) ?: ASMFunc(inst.getCallee().funcType.funcName)
     )
-    if (inst.getFunc().funcType.resultType != TypeFactory.getVoidType()) {
+    if (inst.getCallee().funcType.resultType != TypeFactory.getVoidType()) {
       val virReg = regFactory.newVirReg()
       linkValAndReg(inst, virReg)
       ASMBuilder.createMvInst(virReg, regFactory.getPhyReg("a0"))
@@ -235,7 +235,6 @@ class ASMGenerator : IRVisitor() {
   }
 
   override fun visit(inst: BitCastInst) {
-    // I think it's useless, only usage is to refer it
     val virReg = getRegOfInst(inst)
     ASMBuilder.createMvInst(virReg, getRegOfValue(inst.getCastee())!!)
   }

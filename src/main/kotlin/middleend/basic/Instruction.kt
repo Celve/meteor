@@ -6,6 +6,7 @@ import middleend.pass.IRVisitor
 abstract class Instruction(type: Type, name: String? = null) : User(type, name) {
   var parent: BasicBlock? = null
 
+  // only name and type are reserved, all user-usee relationship are ignored
   open fun isTerminator(): Boolean {
     return false
   }
@@ -54,6 +55,10 @@ class BinaryInst(name: String, val op: String, rs: Value, rt: Value) :
     return useeList[1]
   }
 
+  override fun replicate(): Instruction {
+    return BinaryInst(name!!, op, getLhs().duplicate(), getRhs().duplicate())
+  }
+
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
@@ -62,6 +67,10 @@ class BinaryInst(name: String, val op: String, rs: Value, rt: Value) :
 class AllocaInst(name: String, val varType: Type) : Instruction(TypeFactory.getPtrType(varType), name) {
   fun getAllocatedSize(): Int {
     return varType.getAlign()
+  }
+
+  override fun replicate(): Instruction {
+    return AllocaInst(name!!, varType)
   }
 
   override fun accept(irVisitor: IRVisitor) {
@@ -76,6 +85,10 @@ class LoadInst(name: String, addr: Value) : Instruction(Utils.getPointee(addr.ty
 
   fun getAddr(): Value {
     return useeList[0]
+  }
+
+  override fun replicate(): Instruction {
+    return LoadInst(name!!, getAddr().duplicate())
   }
 
   override fun accept(irVisitor: IRVisitor) {
@@ -95,6 +108,10 @@ class StoreInst(value: Value, addr: Value) : Instruction(TypeFactory.getVoidType
 
   fun getAddr(): Value {
     return useeList[1]
+  }
+
+  override fun replicate(): Instruction {
+    return StoreInst(getValue().duplicate(), getAddr().duplicate())
   }
 
   override fun accept(irVisitor: IRVisitor) {
@@ -122,6 +139,10 @@ class CmpInst(name: String, val cond: Cond, rs: Value, rt: Value) :
     return useeList[1]
   }
 
+  override fun replicate(): Instruction {
+    return CmpInst(name!!, cond, getLhs().duplicate(), getRhs().duplicate())
+  }
+
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
@@ -135,6 +156,10 @@ class TruncInst(name: String, originalVal: Value, val toTy: Type) :
 
   fun getOriginalVal(): Value {
     return useeList[0]
+  }
+
+  override fun replicate(): Instruction {
+    return TruncInst(name!!, getOriginalVal().duplicate(), toTy)
   }
 
   override fun accept(irVisitor: IRVisitor) {
@@ -151,6 +176,10 @@ class ReturnInst(type: Type, retVal: Value?) : Instruction(type) {
 
   fun getRetVal(): Value? {
     return if (useeList.isEmpty()) null else useeList[0]
+  }
+
+  override fun replicate(): Instruction {
+    return ReturnInst(type, getRetVal()?.duplicate())
   }
 
   override fun accept(irVisitor: IRVisitor) {
@@ -205,6 +234,14 @@ class BranchInst(trueBlock: BasicBlock, cond: Value?, falseBlock: BasicBlock?) :
     link(this, falseBlock)
   }
 
+  override fun replicate(): Instruction {
+    return BranchInst(
+      getTrueBlock().duplicate() as BasicBlock,
+      getCond()?.duplicate(),
+      getFalseBlock()?.duplicate() as BasicBlock?
+    )
+  }
+
   override fun isTerminator(): Boolean {
     return true
   }
@@ -221,12 +258,16 @@ class CallInst(name: String?, func: Func, argList: List<Value>) :
     argList.forEach { link(this, it) }
   }
 
-  fun getFunc(): Func {
+  fun getCallee(): Func {
     return useeList[0] as Func
   }
 
   fun getArgList(): List<Value> {
     return useeList.subList(1, useeList.size)
+  }
+
+  override fun replicate(): Instruction {
+    return CallInst(name, getCallee(), getArgList().map { it.duplicate() })
   }
 
   override fun accept(irVisitor: IRVisitor) {
@@ -264,6 +305,16 @@ class GetElementPtrInst(val op: String, name: String, ptr: Value, offset: Value,
 
   fun getIndex(): ConstantInt? {
     return if (useeList.size > 2) useeList[2] as ConstantInt else null
+  }
+
+  override fun replicate(): Instruction {
+    return GetElementPtrInst(
+      op,
+      name!!,
+      getPtr().duplicate(),
+      getOffset().duplicate(),
+      getIndex()?.duplicate() as ConstantInt?
+    )
   }
 
   override fun accept(irVisitor: IRVisitor) {
@@ -304,6 +355,15 @@ class PhiInst(name: String, type: Type, predList: MutableList<Pair<Value, BasicB
     return Pair(useeList[index * 2], useeList[index * 2 + 1] as BasicBlock)
   }
 
+  override fun replicate(): Instruction {
+    return PhiInst(
+      name!!,
+      type,
+      getPredList().map { Pair(it.first.duplicate(), it.second.duplicate() as BasicBlock) }
+        .toMutableList()
+    )
+  }
+
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
@@ -320,6 +380,10 @@ class BitCastInst(name: String, castee: Value, toTy: Type) : Instruction(toTy, n
     return useeList[0]
   }
 
+  override fun replicate(): Instruction {
+    return BitCastInst(name!!, getCastee().duplicate(), type)
+  }
+
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
@@ -332,6 +396,10 @@ class ZExtInst(name: String, originalVal: Value, toTy: Type) : Instruction(toTy,
 
   fun getOriginalVal(): Value {
     return useeList[0]
+  }
+
+  override fun replicate(): Instruction {
+    return ZExtInst(name!!, getOriginalVal().duplicate(), type)
   }
 
   override fun accept(irVisitor: IRVisitor) {
@@ -362,6 +430,12 @@ class PCopyInst : Instruction(TypeFactory.getVoidType(), null) {
     link(this, src)
   }
 
+  override fun replicate(): Instruction {
+    val inst = PCopyInst()
+    getAssignmentList().forEach { inst.addAssignment(it.first.duplicate(), it.second.duplicate()) }
+    return inst
+  }
+
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
@@ -374,6 +448,10 @@ class MvInst(name: String, rs: Value) : Instruction(rs.type, name) {
 
   fun getSrc(): Value {
     return useeList[0]
+  }
+
+  override fun replicate(): Instruction {
+    return MvInst(name!!, getSrc().duplicate())
   }
 
   override fun accept(irVisitor: IRVisitor) {

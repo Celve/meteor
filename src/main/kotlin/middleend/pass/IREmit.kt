@@ -60,11 +60,11 @@ object IREmit : IRVisitor() {
   }
 
   override fun visit(block: BasicBlock) {
-    println("${block.name}:")
     block.instList.forEach { inst ->
       assert(inst.parent == block)
       inst.useeList.forEach { assert(it.userList.contains(inst)) }
     }
+    println("${block.name}:")
     for (inst in block.instList) {
       print("\t")
       inst.accept(this)
@@ -78,8 +78,8 @@ object IREmit : IRVisitor() {
   override fun visit(inst: CallInst) {
     val prefix: String = if (inst.name == null) "" else "%${inst.name} = "
     val argList =
-      inst.getFunc().funcType.argList.zip(inst.getArgList()).joinToString(", ") { "${it.first} ${it.second}" }
-    println("${prefix}call ${inst.getFunc().funcType.resultType} @${inst.getFunc().funcType.funcName}($argList)")
+      inst.getCallee().funcType.argList.zip(inst.getArgList()).joinToString(", ") { "${it.first} ${it.second}" }
+    println("${prefix}call ${inst.getCallee().funcType.resultType} @${inst.getCallee().funcType.funcName}($argList)")
   }
 
   override fun visit(inst: LoadInst) {
@@ -102,11 +102,17 @@ object IREmit : IRVisitor() {
   }
 
   override fun visit(inst: BranchInst) {
+    val trueBlock = inst.getTrueBlock()
+    val falseBlock = inst.getFalseBlock()
+    assert(trueBlock.prevBlockList.contains(inst.parent) && inst.parent!!.nextBlockList.contains(trueBlock))
+    if (falseBlock != null) {
+      assert(falseBlock.prevBlockList.contains(inst.parent) && inst.parent!!.nextBlockList.contains(falseBlock))
+    }
     println(
       if (inst.getCond() == null) {
-        "br label ${inst.getTrueBlock()}"
+        "br label ${trueBlock}"
       } else {
-        "br i1 ${inst.getCond()}, label ${inst.getTrueBlock()}, label ${inst.getFalseBlock()!!}"
+        "br i1 ${inst.getCond()}, label ${trueBlock}, label ${falseBlock!!}"
       }
     )
   }
@@ -158,7 +164,8 @@ object IREmit : IRVisitor() {
     if (printOption) {
       println("%${inst.name} = mv ${inst.type} ${inst.getSrc()}")
     } else {
-      println("%${inst.name} = add ${inst.type} ${inst.getSrc()}, 0")
+      println("%${inst.name} = bitcast ${inst.getSrc().type} ${inst.getSrc()} to ${inst.type}")
+//      println("%${inst.name} = add ${inst.type} ${inst.getSrc()}, 0")
     }
   }
 }

@@ -1,11 +1,16 @@
 package middleend.basic
 
+import middleend.struct.CallGraph
+
 class TopModule {
   val constStrMap: LinkedHashMap<String, ConstantStr> = linkedMapOf()
   val structTypeMap: LinkedHashMap<String, StructType> = linkedMapOf()
   val funcMap: LinkedHashMap<String, Func> = linkedMapOf()
   val builtinFuncMap: LinkedHashMap<String, Func> = linkedMapOf()
   val globalVarMap: LinkedHashMap<String, GlobalVariable> = linkedMapOf()
+
+  // data structure
+  val callGraph = CallGraph(this)
 
   fun setConst(name: String, value: ConstantStr) {
     constStrMap[name] = value

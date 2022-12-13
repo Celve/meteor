@@ -81,4 +81,12 @@ object Utils {
       else -> throw Exception("unexpected operator")
     }
   }
+
+  fun eliminateVersionWithoutDot(name: String): String {
+    return name.replace("\\d+$".toRegex(), "")
+  }
+
+  fun eliminateVersionWithDot(name: String): String {
+    return name.replace("\\.\\d+$".toRegex(), "") // remove tail number
+  }
 }

@@ -17,6 +17,15 @@ open class Value(val type: Type, var name: String? = null) {
     return false
   }
 
+  // only copy name and type or no-name value
+  open fun duplicate(): Value {
+    return Value(type, name)
+  }
+
+  open fun replicate(): Value {
+    return Value(type, name)
+  }
+
   fun substituteAll(value: Value) {
     value.userList.addAll(userList)
     for (user in userList) {
@@ -33,6 +42,26 @@ open class Value(val type: Type, var name: String? = null) {
       }
     }
     userList = except.toMutableList()
+  }
+
+  fun substituteAllExcept(value: Value, except: (User) -> Boolean) {
+    for (user in userList) {
+      if (!except(user)) {
+        value.userList.add(user)
+        user.useeList.replaceAll { if (it === this) value else it }
+      }
+    }
+    userList = userList.filter { except(it) }.toMutableList()
+  }
+
+  fun substituteOnly(value: Value, only: (User) -> Boolean) {
+    for (user in userList) {
+      if (only(user)) {
+        value.userList.add(user)
+        user.useeList.replaceAll { if (it === this) value else it }
+      }
+    }
+    userList = userList.filter { !only(it) }.toMutableList()
   }
 
   override fun toString(): String {
