@@ -15,12 +15,14 @@ object MiddleEndManager {
     // optimization
     Eliminator.visit(module)
     SSAConstructor.visit(module)
+    Checker.visit(module)
     if (buildOptions.contains("--svn")) {
       SuperValueNumbering.visit(module)
     }
     if (buildOptions.contains("--inline")) {
       Inliner.visit(module)
     }
+    Checker.visit(module)
 
     if (testing) {
       IREmit.visit(module)

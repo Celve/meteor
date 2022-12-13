@@ -49,7 +49,6 @@ object IREmit : IRVisitor() {
   override fun visit(func: Func) {
     println("define ${func.funcType.resultType} @${func.name}(${func.argList.joinToString(", ") { "${it.type} %${it.name}" }}) {")
     for (block in func.blockList) {
-      assert(block.parent == func)
       block.accept(this)
       if (block != func.blockList.last()) {
         println()
@@ -60,10 +59,6 @@ object IREmit : IRVisitor() {
   }
 
   override fun visit(block: BasicBlock) {
-    block.instList.forEach { inst ->
-      assert(inst.parent == block)
-      inst.useeList.forEach { assert(it.userList.contains(inst)) }
-    }
     println("${block.name}:")
     for (inst in block.instList) {
       print("\t")
@@ -104,15 +99,11 @@ object IREmit : IRVisitor() {
   override fun visit(inst: BranchInst) {
     val trueBlock = inst.getTrueBlock()
     val falseBlock = inst.getFalseBlock()
-    assert(trueBlock.prevBlockList.contains(inst.parent) && inst.parent!!.nextBlockList.contains(trueBlock))
-    if (falseBlock != null) {
-      assert(falseBlock.prevBlockList.contains(inst.parent) && inst.parent!!.nextBlockList.contains(falseBlock))
-    }
     println(
       if (inst.getCond() == null) {
-        "br label ${trueBlock}"
+        "br label $trueBlock"
       } else {
-        "br i1 ${inst.getCond()}, label ${trueBlock}, label ${falseBlock!!}"
+        "br i1 ${inst.getCond()}, label $trueBlock, label ${falseBlock!!}"
       }
     )
   }
