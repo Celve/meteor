@@ -5,22 +5,23 @@ import middleend.basic.pointerNumBits
 import middleend.pass.IREmit
 
 fun main(args: Array<String>) {
-  if (args.isEmpty()) {
+  val buildOptions = args.toHashSet()
+
+  if (buildOptions.isEmpty()) {
     throw Exception("No build option")
   } else {
-    val mode = args[0]
     var testIR = false
     var testASM = false
 
-    when (mode) {
-      "custom" -> testIR = true
+    when {
+      buildOptions.contains("--custom") -> testIR = true
 
-      "ir" -> {
+      buildOptions.contains("--ir") -> {
         testIR = true
         IREmit.printOption = false
       }
 
-      "asm" -> {
+      buildOptions.contains("--asm") -> {
         testASM = true
         pointerNumBits = 32 // riscv32
       }
@@ -31,7 +32,7 @@ fun main(args: Array<String>) {
     val inputStream = System.`in`
 
     val progNode = FrontEndManager.visit(inputStream)
-    val topModule = MiddleEndManager.visit(progNode, testIR)
+    val topModule = MiddleEndManager.visit(progNode, testIR, args.toHashSet())
     BackEndManager.visit(topModule, testASM)
   }
 }

@@ -1,0 +1,51 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+
+
+class Colors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
+if __name__ == "__main__":
+    args = sys.argv[1:]
+    if len(args) != 2:
+        print("Need two arguments")
+        exit(1)
+
+    standard_dir = "debug/" + args[0]
+    if not standard_dir.endswith("/"):
+        standard_dir += "/"
+    experiment_dir = "debug/" + args[1]
+    if not experiment_dir.endswith("/"):
+        experiment_dir += "/"
+
+    for filename in os.listdir(standard_dir):
+        standard_filepath = standard_dir + filename
+        experiment_filepath = experiment_dir + filename
+
+        with open(standard_filepath) as standard_fd:
+            for i, line in enumerate(standard_fd):
+                if i == 6:
+                    standard_time = int(line.split(": ").pop())
+
+        with open(experiment_filepath) as experiment_fd:
+            for i, line in enumerate(experiment_fd):
+                if i == 6:
+                    experiment_time = int(line.split(": ").pop())
+
+        if standard_time >= experiment_time:
+            print(Colors.BOLD + "{}: ".format(filename) + Colors.OKGREEN + "-{}%".format(
+                (standard_time - experiment_time) / experiment_time * 100) + Colors.ENDC)
+        else:
+            print(Colors.BOLD + "{}: ".format(filename) + Colors.FAIL + "+{}%".format(
+                (experiment_time - standard_time) / experiment_time * 100) + Colors.ENDC)

@@ -40,11 +40,11 @@ def get_io_and_ec(fd):
         elif line == "=== output ===\n":
             mode = 2
 
-    input_fd = open("debug/input.txt", "w")
-    input_fd.write(input_content)
+    with open("debug/input.txt", "w") as input_fd:
+        input_fd.write(input_content)
 
-    output_fd = open("debug/output.txt", "w")
-    output_fd.write(output_content)
+    with open("debug/output.txt", "w") as output_fd:
+        output_fd.write(output_content)
 
     return exit_code
 
@@ -57,21 +57,21 @@ def enumerate_count(filename):
     return count
 
 
-def test_single_file(filename, build_option):
-    fd = open(filename)
+def test_single_file(filename, build_options, result_dir):
+    with open(filename) as fd:
+        right_exit_code = get_io_and_ec(fd)
 
-    right_exit_code = get_io_and_ec(fd)
-
-    if (build_option == "asm"):
+    if "--asm" in build_options:
         os.system(
-            "java -jar build/libs/meteor-all.jar asm < {} > debug/test.s".format(filename))
+            "java -jar build/libs/meteor-all.jar {} < {} > debug/test.s".format(' '.join(build_options), filename))
         exit_code = os.system(
-            "ravel --input-file=debug/input.txt --output-file=debug/answer.txt debug/test.s src/main/resources/builtin/builtin.s > debug/result/{}.log 2> debug/ravel-error.log".format(
+            "ravel --input-file=debug/input.txt --output-file=debug/answer.txt debug/test.s src/main/resources/builtin/builtin.s > debug/{}{}.log 2> debug/ravel-error.log".format(
+                result_dir,
                 os.path.basename(filename).rsplit('.', 1)[0])
         ) >> 8
-    elif (build_option == "ir"):
+    elif "--ir" in build_options:
         os.system(
-            "java -jar build/libs/meteor-all.jar ir < {} > debug/test.ll".format(filename))
+            "java -jar build/libs/meteor-all.jar {} < {} > debug/test.ll".format(' '.join(build_options), filename))
         os.system(
             "clang src/main/resources/builtin/builtin.ll debug/test.ll -o debug/code 2> debug/compile.log")
         exit_code = os.system("./debug/code < debug/input.txt > debug/answer.txt") >> 8
@@ -99,17 +99,17 @@ def test_single_file(filename, build_option):
         return 1
 
 
-def test_all_files(dirname, build_option):
+def test_all_files(dirname, build_options, result_dir):
     sum, accepted = 0, 0
     for filename in os.listdir(dirname):
         filepath = dirname + filename
         if os.path.isdir(filepath):
-            sub_sum, sub_accepted = test_all_files(filepath + "/", build_option)
+            sub_sum, sub_accepted = test_all_files(filepath + "/", build_options, result_dir)
             sum += sub_sum
             accepted += sub_accepted
         elif filename.endswith(".mx"):
             print(Colors.BOLD + "Testing {}...".format(filename) + Colors.ENDC)
-            accepted += test_single_file(filepath, build_option)
+            accepted += test_single_file(filepath, build_options, result_dir)
             sum += 1
     return sum, accepted
 
@@ -118,7 +118,9 @@ if __name__ == "__main__":
     file = ""
     testcases_dir = "src/main/resources/testcases/"
     subdir = "codegen/"
+    result_dir = "result/"
     modified = False
+    build_options = set()
     for argv in sys.argv:
         if argv.startswith("--compile"):
             os.system("gradle shadowJar")
@@ -132,17 +134,38 @@ if __name__ == "__main__":
             if not subdir.endswith("/"):
                 subdir += "/"
         elif argv.startswith("--asm"):
-            build_option = "asm"
+            build_options.add("--asm")
         elif argv.startswith("--ir"):
-            build_option = "ir"
+            build_options.add("--ir")
+        elif argv.startswith("--inline"):
+            build_options.add("--inline")
+        elif argv.startswith("--svn"):
+            build_options.add("--svn")
+        elif argv.startswith("--O2"):
+            build_options.add("--svn")
+            build_options.add("--inline")
+        elif argv.startswith("--result"):
+            _, result_dir = argv.split("=")
+            if not result_dir.endswith("/"):
+                result_dir += "/"
+
+    if "--ir" in build_options and "--asm" in build_options:
+        print("Cannot specify both --ir and --asm")
+        exit(1)
+
+    # make needed info
+    if not os.path.exists("debug/"):
+        os.mkdir("debug/")
+    if not os.path.exists("debug/" + result_dir):
+        os.mkdir("debug/" + result_dir)
 
     if not modified:
         print("In default, testcases in codegen/ will be tested.")
 
     if file == "":  # test all files
-        sum, accepted = test_all_files(testcases_dir + subdir, build_option)
+        sum, accepted = test_all_files(testcases_dir + subdir, build_options, result_dir)
         print(Colors.BOLD + "Test Score: {}/{}".format(accepted, sum) + Colors.ENDC)
     else:  # test single file
         filename = testcases_dir + subdir + file
         print(Colors.BOLD + "Testing {}...".format(filename) + Colors.ENDC)
-        test_single_file(filename, build_option)
+        test_single_file(filename, build_options, result_dir)
