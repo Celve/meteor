@@ -53,6 +53,9 @@ object SuperValueNumbering : IRVisitor() {
   }
 
   private fun superValueNumbering(block: BasicBlock, parentTable: PatternTable) {
+    if (processedSet.contains(block)) {
+      return
+    }
     processedSet.add(block)
     val patternTable = PatternTable(parentTable)
     localValueNumbering(block, patternTable)
@@ -65,7 +68,7 @@ object SuperValueNumbering : IRVisitor() {
     }
   }
 
-  override fun visit(block: BasicBlock) { }
+  override fun visit(block: BasicBlock) {}
 
   override fun visit(inst: AllocaInst) {
     TODO("Not yet implemented")
