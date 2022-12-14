@@ -65,6 +65,7 @@ object ConstPropagator : IRVisitor() {
   private fun addBlock2WorkList(block: BasicBlock) {
     if (!blockStateMap.getValue(block)) {
       blockWorkList.add(block)
+      blockWorkList.addAll(block.nextBlockList.filter { blockStateMap.getValue(block) })
       blockStateMap[block] = true
     }
   }
