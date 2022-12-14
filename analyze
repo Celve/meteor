@@ -25,13 +25,18 @@ if __name__ == "__main__":
     standard_dir = "debug/" + args[0]
     if not standard_dir.endswith("/"):
         standard_dir += "/"
+    standard_dir += "benchmark/"
     experiment_dir = "debug/" + args[1]
     if not experiment_dir.endswith("/"):
         experiment_dir += "/"
+    experiment_dir += "benchmark/"
 
     for filename in os.listdir(standard_dir):
         standard_filepath = standard_dir + filename
         experiment_filepath = experiment_dir + filename
+
+        if not os.path.exists(experiment_dir) or not os.path.exists(standard_dir):
+            continue
 
         with open(standard_filepath) as standard_fd:
             for i, line in enumerate(standard_fd):
@@ -45,7 +50,7 @@ if __name__ == "__main__":
 
         if standard_time >= experiment_time:
             print(Colors.BOLD + "{}: ".format(filename) + Colors.OKGREEN + "-{}%".format(
-                (standard_time - experiment_time) / experiment_time * 100) + Colors.ENDC)
+                (standard_time - experiment_time) / standard_time * 100) + Colors.ENDC)
         else:
             print(Colors.BOLD + "{}: ".format(filename) + Colors.FAIL + "+{}%".format(
-                (experiment_time - standard_time) / experiment_time * 100) + Colors.ENDC)
+                (experiment_time - standard_time) / standard_time * 100) + Colors.ENDC)

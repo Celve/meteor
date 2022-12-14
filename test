@@ -57,23 +57,28 @@ def enumerate_count(filename):
     return count
 
 
-def test_single_file(filename, build_options, result_dir):
+def test_single_file(filename, tag, build_options, result_dir):
     with open(filename) as fd:
         right_exit_code = get_io_and_ec(fd)
 
     if "--asm" in build_options:
         os.system(
-            "java -jar build/libs/meteor-all.jar {} < {} > debug/test.s".format(' '.join(build_options), filename))
+            "java -jar build/libs/meteor-all.jar {} < {} > debug/{}code/{}.s".format(' '.join(build_options), filename,
+                                                                                     result_dir, tag))
         exit_code = os.system(
-            "ravel --input-file=debug/input.txt --output-file=debug/answer.txt debug/test.s src/main/resources/builtin/builtin.s > debug/{}{}.log 2> debug/ravel-error.log".format(
+            "ravel --input-file=debug/input.txt --output-file=debug/answer.txt debug/{}code/{}.s src/main/resources/builtin/builtin.s > debug/{}benchmark/{}.log 2> debug/ravel-error.log".format(
+                result_dir,
+                tag,
                 result_dir,
                 os.path.basename(filename).rsplit('.', 1)[0])
         ) >> 8
     elif "--ir" in build_options:
         os.system(
-            "java -jar build/libs/meteor-all.jar {} < {} > debug/test.ll".format(' '.join(build_options), filename))
+            "java -jar build/libs/meteor-all.jar {} < {} > debug/{}code/{}.ll".format(' '.join(build_options),
+                                                                                      filename, result_dir, tag))
         os.system(
-            "clang src/main/resources/builtin/builtin.ll debug/test.ll -o debug/code 2> debug/compile.log")
+            "clang src/main/resources/builtin/builtin.ll debug/{}code/{}.ll -o debug/code 2> debug/compile.log".format(
+                result_dir, tag))
         exit_code = os.system("./debug/code < debug/input.txt > debug/answer.txt") >> 8
 
     if exit_code:
@@ -109,7 +114,7 @@ def test_all_files(dirname, build_options, result_dir):
             accepted += sub_accepted
         elif filename.endswith(".mx"):
             print(Colors.BOLD + "Testing {}...".format(filename) + Colors.ENDC)
-            accepted += test_single_file(filepath, build_options, result_dir)
+            accepted += test_single_file(filepath, filename[:-3], build_options, result_dir)
             sum += 1
     return sum, accepted
 
@@ -161,6 +166,10 @@ if __name__ == "__main__":
         os.mkdir("debug/")
     if not os.path.exists("debug/" + result_dir):
         os.mkdir("debug/" + result_dir)
+    if not os.path.exists("debug/" + result_dir + "code/"):
+        os.mkdir("debug/" + result_dir + "code/")
+    if not os.path.exists("debug/" + result_dir + "benchmark/"):
+        os.mkdir("debug/" + result_dir + "benchmark/")
 
     if not modified:
         print("In default, testcases in codegen/ will be tested.")
@@ -171,4 +180,4 @@ if __name__ == "__main__":
     else:  # test single file
         filename = testcases_dir + subdir + file
         print(Colors.BOLD + "Testing {}...".format(filename) + Colors.ENDC)
-        test_single_file(filename, build_options, result_dir)
+        test_single_file(filename, file[:-3], build_options, result_dir)
