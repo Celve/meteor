@@ -13,7 +13,7 @@ object MiddleEndManager {
     val module = irGenerator.topModule
 
     // optimization
-    Eliminator.visit(module)
+    Transformer.visit(module)
     SSAConstructor.visit(module)
     Checker.visit(module)
     if (buildOptions.contains("--inline")) {

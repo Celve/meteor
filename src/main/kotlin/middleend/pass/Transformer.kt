@@ -5,7 +5,7 @@ import middleend.basic.*
 /**
  * remove useless loads and stores from program
  */
-object Eliminator : IRVisitor() {
+object Transformer : IRVisitor() {
   override fun visit(topModule: TopModule) {
     topModule.funcMap.forEach { it.value.accept(this) }
   }
