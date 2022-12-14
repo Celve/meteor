@@ -148,10 +148,13 @@ if __name__ == "__main__":
             build_options.add("--svn")
         elif argv.startswith("--sccp"):
             build_options.add("--sccp")
+        elif argv.startswith("--adce"):
+            build_options.add("--adce")
         elif argv.startswith("--O2"):
             build_options.add("--svn")
             build_options.add("--inline")
             build_options.add("--sccp")
+            build_options.add("--adce")
         elif argv.startswith("--result"):
             _, result_dir = argv.split("=")
             if not result_dir.endswith("/"):

@@ -25,6 +25,9 @@ object MiddleEndManager {
     if (buildOptions.contains("--svn")) {
       SuperValueNumbering.visit(module)
     }
+    if (buildOptions.contains("--adce")) {
+      Eliminator.visit(module)
+    }
     Checker.visit(module)
 
     if (testing) {
