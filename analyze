@@ -35,7 +35,7 @@ if __name__ == "__main__":
         standard_filepath = standard_dir + filename
         experiment_filepath = experiment_dir + filename
 
-        if not os.path.exists(experiment_dir) or not os.path.exists(standard_dir):
+        if not os.path.exists(experiment_filepath) or not os.path.exists(standard_filepath):
             continue
 
         with open(standard_filepath) as standard_fd:
