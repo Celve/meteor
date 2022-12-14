@@ -9,7 +9,8 @@ class Func(name: String, val funcType: FuncType, val argList: List<Value>) : Glo
   var blockList: MutableList<BasicBlock> = mutableListOf()
   val mulTable = ValueTable()
   val ssaTable = SSATable()
-  val domTree = DomTree(this)
+  val domTree = DomTree(this, false)
+  val revDomTree = DomTree(this, true)
 
   override fun replicate(): Value {
     TODO("Not yet implemented")
