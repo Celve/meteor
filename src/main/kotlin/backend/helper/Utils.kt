@@ -17,6 +17,18 @@ object Utils {
     }
   }
 
+  fun revCond(cond: String): String {
+    return when (cond) {
+      "slt" -> "sge"
+      "sle" -> "sgt"
+      "sgt" -> "sle"
+      "sge" -> "slt"
+      "eq" -> "ne"
+      "ne" -> "eq"
+      else -> throw Exception("Unknown condition: $cond")
+    }
+  }
+
   fun getPhyRegId(abi: String): Int {
     return when (abi) {
       "zero" -> 0

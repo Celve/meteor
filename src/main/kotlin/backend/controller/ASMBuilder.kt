@@ -141,6 +141,11 @@ object ASMBuilder {
     insertInst(cmpInst)
   }
 
+  fun createCmpiInst(op: String, rd: Register, rs1: Register, imm: DeterminedImmediate, comment: String = "") {
+    val cmpiInst = ASMCmpiInst(op, rd, rs1, imm, comment)
+    insertInst(cmpiInst)
+  }
+
   /**
    * This function is used to build instruction like seqz, snez.
    */

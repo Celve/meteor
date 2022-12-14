@@ -116,7 +116,7 @@ object ASMEmit : ASMVisitor() {
   }
 
   override fun visit(inst: ASMCmpiInst) {
-    print("\t${inst.op} ${inst.rs1}, ${inst.imm}")
+    print("\t${inst.op} ${inst.rd}, ${inst.rs1}, ${inst.imm}")
     printPs(inst.comment)
   }
 

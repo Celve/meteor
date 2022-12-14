@@ -209,13 +209,14 @@ class ASMCmpInst(val op: String, var rd: Register, var rs1: Register, var rs2: R
   }
 }
 
-class ASMCmpiInst(val op: String, var rs1: Register, val imm: DeterminedImmediate, comment: String) : ASMInst(comment) {
+class ASMCmpiInst(val op: String, var rd: Register, var rs1: Register, val imm: DeterminedImmediate, comment: String) :
+  ASMInst(comment) {
   override fun getRs(): List<Register> {
     return listOf(rs1)
   }
 
   override fun getRd(): List<Register> {
-    return listOf()
+    return listOf(rd)
   }
 
 
@@ -226,6 +227,9 @@ class ASMCmpiInst(val op: String, var rs1: Register, val imm: DeterminedImmediat
   }
 
   override fun replaceRd(oldReg: Register, newReg: Register) {
+    if (rd == oldReg) {
+      rd = newReg
+    }
   }
 
   override fun accept(visitor: ASMVisitor) {

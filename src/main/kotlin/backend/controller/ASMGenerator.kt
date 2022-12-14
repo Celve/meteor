@@ -349,41 +349,86 @@ class ASMGenerator : IRVisitor() {
 
   override fun visit(inst: CmpInst) {
     val virReg = getRegOfInst(inst)
-    val lhsReg = getRegOfValue(inst.getLhs())!!
-    val rhsReg = getRegOfValue(inst.getRhs())!!
+    val (cond, lhs, rhs) = if (inst.getLhs() is ConstantInt) {
+      Triple(Utils.revCond(inst.cond), inst.getRhs(), inst.getLhs())
+    } else {
+      Triple(inst.cond, inst.getLhs(), inst.getRhs())
+    }
 
     // due to the limitation of RISC-V, implementations of some comparisons should be done with help of others
-    when (inst.cond) {
-      "slt" -> {
-        ASMBuilder.createCmpInst("slt", virReg, lhsReg, rhsReg)
-      }
+    if (lhs is ConstantInt && rhs is ConstantInt) {
+      throw Exception("Cmp instruction with two constants")
+    } else if (rhs is ConstantInt) {
+      val lhsReg = getRegOfValue(lhs)!!
+      when (cond) {
+        "slt" -> {
+          ASMBuilder.createCmpiInst("slti", virReg, lhsReg, DeterminedImmediate(rhs.value))
+        }
 
-      "sle" -> {
-        val relayVirReg = regFactory.newVirReg()
-        ASMBuilder.createCmpInst("slt", relayVirReg, rhsReg, lhsReg)
-        ASMBuilder.createArithiInst("xori", virReg, relayVirReg, DeterminedImmediate(1))
-      }
+        "sle" -> {
+          ASMBuilder.createCmpiInst("slti", virReg, lhsReg, DeterminedImmediate(rhs.value + 1))
+        }
 
-      "sgt" -> {
-        ASMBuilder.createCmpInst("slt", virReg, rhsReg, lhsReg)
-      }
+        "sgt" -> {
+          val relayVirReg = regFactory.newVirReg()
+          ASMBuilder.createCmpiInst("slti", relayVirReg, lhsReg, DeterminedImmediate(rhs.value + 1))
+          ASMBuilder.createArithiInst("xori", virReg, relayVirReg, DeterminedImmediate(1))
+        }
 
-      "sge" -> {
-        val relayVirReg = regFactory.newVirReg()
-        ASMBuilder.createCmpInst("slt", relayVirReg, lhsReg, rhsReg)
-        ASMBuilder.createArithiInst("xori", virReg, relayVirReg, DeterminedImmediate(1))
-      }
+        "sge" -> {
+          val relayVirReg = regFactory.newVirReg()
+          ASMBuilder.createCmpiInst("slti", relayVirReg, lhsReg, DeterminedImmediate(rhs.value))
+          ASMBuilder.createArithiInst("xori", virReg, relayVirReg, DeterminedImmediate(1))
+        }
 
-      "eq" -> {
-        val relayVirReg = regFactory.newVirReg()
-        ASMBuilder.createArithInst("xor", relayVirReg, lhsReg, rhsReg)
-        ASMBuilder.createCmpzInst("seqz", virReg, relayVirReg)
-      }
+        "eq" -> {
+          val relayVirReg = regFactory.newVirReg()
+          ASMBuilder.createArithiInst("addi", relayVirReg, lhsReg, DeterminedImmediate(-rhs.value))
+          ASMBuilder.createCmpzInst("seqz", virReg, relayVirReg)
+        }
 
-      "ne" -> {
-        val relayVirReg = regFactory.newVirReg()
-        ASMBuilder.createArithInst("xor", relayVirReg, lhsReg, rhsReg)
-        ASMBuilder.createCmpzInst("snez", virReg, relayVirReg)
+
+        "ne" -> {
+          val relayVirReg = regFactory.newVirReg()
+          ASMBuilder.createArithiInst("addi", relayVirReg, lhsReg, DeterminedImmediate(-rhs.value))
+          ASMBuilder.createCmpzInst("snez", virReg, relayVirReg)
+        }
+      }
+    } else {
+      val lhsReg = getRegOfValue(lhs)!!
+      val rhsReg = getRegOfValue(rhs)!!
+      when (cond) {
+        "slt" -> {
+          ASMBuilder.createCmpInst("slt", virReg, lhsReg, rhsReg)
+        }
+
+        "sle" -> {
+          val relayVirReg = regFactory.newVirReg()
+          ASMBuilder.createCmpInst("slt", relayVirReg, rhsReg, lhsReg)
+          ASMBuilder.createArithiInst("xori", virReg, relayVirReg, DeterminedImmediate(1))
+        }
+
+        "sgt" -> {
+          ASMBuilder.createCmpInst("slt", virReg, rhsReg, lhsReg)
+        }
+
+        "sge" -> {
+          val relayVirReg = regFactory.newVirReg()
+          ASMBuilder.createCmpInst("slt", relayVirReg, lhsReg, rhsReg)
+          ASMBuilder.createArithiInst("xori", virReg, relayVirReg, DeterminedImmediate(1))
+        }
+
+        "eq" -> {
+          val relayVirReg = regFactory.newVirReg()
+          ASMBuilder.createArithInst("xor", relayVirReg, lhsReg, rhsReg)
+          ASMBuilder.createCmpzInst("seqz", virReg, relayVirReg)
+        }
+
+        "ne" -> {
+          val relayVirReg = regFactory.newVirReg()
+          ASMBuilder.createArithInst("xor", relayVirReg, lhsReg, rhsReg)
+          ASMBuilder.createCmpzInst("snez", virReg, relayVirReg)
+        }
       }
     }
   }
