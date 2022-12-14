@@ -5,9 +5,23 @@ import middleend.helper.Utils
 
 object ConstPropagator : IRVisitor() {
   sealed class VarState(val stage: Int) {
-    object NoEvidence : VarState(0)
-    class Determined(val value: Int) : VarState(1)
-    object Undetermined : VarState(2)
+    object NoEvidence : VarState(0) {
+      override fun toString(): String {
+        return "NoEvidence"
+      }
+    }
+
+    class Determined(val value: Int) : VarState(1) {
+      override fun toString(): String {
+        return "Determined($value)"
+      }
+    }
+
+    object Undetermined : VarState(2) {
+      override fun toString(): String {
+        return "Undetermined"
+      }
+    }
   }
 
   val varWorkList = mutableListOf<Value>()
@@ -29,6 +43,15 @@ object ConstPropagator : IRVisitor() {
 
   private fun isUndetermined(value: Value): Boolean {
     return value !is Constant && varStateMap.getValue(value) is VarState.Undetermined
+  }
+
+  private fun isAccessible(block: BasicBlock, prevBlock: BasicBlock): Boolean {
+    val brInst = prevBlock.getTerminator() as BranchInst
+    val cond = brInst.getCond()
+    return cond == null
+        || !isDetermined(cond)
+        || (getDetermined(cond) == 0 && block == brInst.getFalseBlock()!!)
+        || (getDetermined(cond) == 1 && block == brInst.getTrueBlock())
   }
 
   private fun getDetermined(value: Value): Int {
@@ -159,7 +182,8 @@ object ConstPropagator : IRVisitor() {
     val determinedSet = hashSetOf<Int>()
     var undeterminedSum = 0
     inst.getPredList().forEach {
-      if (blockStateMap.getValue(it.second)) {
+      // use isAccessible()k to eliminate some impossible branch instruction
+      if (blockStateMap.getValue(it.second) && isAccessible(inst.parent!!, it.second)) {
         if (isDetermined(it.first)) {
           determinedSet.add(getDetermined(it.first))
         } else if (isUndetermined(it.first)) {

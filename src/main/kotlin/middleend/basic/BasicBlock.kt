@@ -20,6 +20,10 @@ class BasicBlock(name: String, val execFreq: Int) : Value(TypeFactory.getLabelTy
     return instList.isNotEmpty() && instList.last().isTerminator()
   }
 
+  fun getTerminator(): Instruction {
+    return instList.last()
+  }
+
   fun addInst(index: Int, inst: Instruction) {
     if (hasTerminator() && index >= instList.size) {
       throw Exception("basicblock has been terminated")
