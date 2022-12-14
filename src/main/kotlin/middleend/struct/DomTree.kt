@@ -4,7 +4,7 @@ import middleend.basic.BasicBlock
 import middleend.basic.Func
 
 class DomTree(val func: Func, val reversed: Boolean) {
-  private var doms = hashMapOf<BasicBlock, BasicBlock>()
+  var doms = hashMapOf<BasicBlock, BasicBlock>()
   var domFrontiers = hashMapOf<BasicBlock, MutableList<BasicBlock>>().withDefault { mutableListOf() }
   var successors = hashMapOf<BasicBlock, MutableList<BasicBlock>>().withDefault { mutableListOf() }
 
@@ -67,7 +67,11 @@ class DomTree(val func: Func, val reversed: Boolean) {
 
   fun build() {
     doms.clear() // initialize
-    startNode = func.getEntryBlock()
+    startNode = if (reversed) {
+      func.blockList.last()
+    } else {
+      func.getEntryBlock()
+    }
     doms[startNode] = startNode
 
     calcPostorder()
