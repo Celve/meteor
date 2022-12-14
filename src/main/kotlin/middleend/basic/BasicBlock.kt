@@ -9,8 +9,8 @@ import middleend.pass.IRVisitor
 class BasicBlock(name: String, val execFreq: Int) : Value(TypeFactory.getLabelType(name), name) {
   var parent: Func? = null
   var instList: MutableList<Instruction> = mutableListOf()
-  val prevBlockList = mutableListOf<BasicBlock>()
-  val nextBlockList = mutableListOf<BasicBlock>()
+  val prevBlockSet = hashSetOf<BasicBlock>()
+  val nextBlockSet = hashSetOf<BasicBlock>()
 
   override fun duplicate(): Value {
     return BasicBlock(name!!, execFreq)
@@ -76,19 +76,19 @@ class BasicBlock(name: String, val execFreq: Int) : Value(TypeFactory.getLabelTy
   }
 
   fun addPrevBlock(prevBlock: BasicBlock) {
-    prevBlockList.add(prevBlock)
+    prevBlockSet.add(prevBlock)
   }
 
   fun removePrevBlock(prevBlock: BasicBlock) {
-    prevBlockList.remove(prevBlock)
+    prevBlockSet.remove(prevBlock)
   }
 
   fun addNextBlock(nextBlock: BasicBlock) {
-    nextBlockList.add(nextBlock)
+    nextBlockSet.add(nextBlock)
   }
 
   fun removeNextBlock(nextBlock: BasicBlock) {
-    nextBlockList.remove(nextBlock)
+    nextBlockSet.remove(nextBlock)
   }
 
   fun accept(visitor: IRVisitor) {

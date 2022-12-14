@@ -21,10 +21,10 @@ object SSADestructor : IRVisitor() {
       return
     }
     val block2PCopyInst = hashMapOf<BasicBlock, PCopyInst>()
-    for (prevBlock in block.prevBlockList.toList()) {
+    for (prevBlock in block.prevBlockSet.toList()) {
       val pCopyInst = PCopyInst()
       block2PCopyInst[prevBlock] = pCopyInst
-      if (prevBlock.nextBlockList.size > 1) { // has several outgoing edges
+      if (prevBlock.nextBlockSet.size > 1) { // has several outgoing edges
         val middleBlock = BasicBlock(symbolTable.rename("edge.split"), block.execFreq) // FIXME: not sure about it
 
         val branchInst = prevBlock.instList.last() as BranchInst

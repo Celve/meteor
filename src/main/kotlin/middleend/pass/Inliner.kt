@@ -146,12 +146,12 @@ object Inliner : IRVisitor() {
     callerBlock.instList.removeAll(callerBlock.instList.subList(splitPos, callerBlock.instList.size))
     callerBlock.substituteOnly(newCallerBlock) { it is PhiInst }
 
-    newCallerBlock.nextBlockList.addAll(callerBlock.nextBlockList)
-    callerBlock.nextBlockList.clear()
-    callerBlock.nextBlockList.add(newCallerBlock)
-    newCallerBlock.nextBlockList.forEach {
-      it.prevBlockList.remove(callerBlock)
-      it.prevBlockList.add(newCallerBlock)
+    newCallerBlock.nextBlockSet.addAll(callerBlock.nextBlockSet)
+    callerBlock.nextBlockSet.clear()
+    callerBlock.nextBlockSet.add(calleeEntryBlock)
+    newCallerBlock.nextBlockSet.forEach {
+      it.prevBlockSet.remove(callerBlock)
+      it.prevBlockSet.add(newCallerBlock)
     }
 
     // connect callee return block
@@ -166,16 +166,16 @@ object Inliner : IRVisitor() {
     val callee2Caller = BranchInst(newCallerBlock, null, null)
     callee2Caller.parent = calleeReturnBlock
     calleeReturnBlock.instList.add(callee2Caller)
-    calleeReturnBlock.nextBlockList.add(newCallerBlock)
-    newCallerBlock.prevBlockList.add(calleeReturnBlock)
+    calleeReturnBlock.nextBlockSet.add(newCallerBlock)
+    newCallerBlock.prevBlockSet.add(calleeReturnBlock)
 
     // replace callInst with jmp
     val caller2Callee = BranchInst(calleeEntryBlock, null, null)
     caller2Callee.parent = callerBlock
     callerBlock.instList.add(caller2Callee)
     insertedBlockList.reversed().forEach { caller.blockList.add(callerBlockPos + 1, it) }
-    callerBlock.nextBlockList.add(calleeEntryBlock)
-    calleeEntryBlock.prevBlockList.add(callerBlock)
+    callerBlock.nextBlockSet.add(calleeEntryBlock)
+    calleeEntryBlock.prevBlockSet.add(callerBlock)
   }
 
   override fun visit(func: Func) {

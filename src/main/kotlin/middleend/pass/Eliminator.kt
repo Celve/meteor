@@ -60,10 +60,65 @@ object Eliminator : IRVisitor() {
     }
   }
 
+  private fun checkPhiInst(origin: BasicBlock): Boolean { // avoid phi inst with two different values from the same block
+    val phiInstList = origin.userList.filterIsInstance<PhiInst>() // FIXME: I SHOULD CHECK IT AGAIN
+    phiInstList.forEach { inst ->
+      val originsValue = inst.getPred(inst.getIndex(origin)).first
+      val result = origin.prevBlockSet.any {
+        val pred = inst.getPred(it)
+        pred != null && pred.first != originsValue
+      }
+      if (result) {
+        return false
+      }
+    }
+    return true
+  }
+
+  private fun clean(func: Func) {
+    for (block in func.domTree.blockListInPostorder) {
+      var terminator = block.getTerminator()
+      if (terminator is BranchInst && !terminator.isJump()) { // it's a conditional branch
+        val trueBlock = terminator.getTrueBlock()
+        if (trueBlock == terminator.getFalseBlock()) { // case 1
+          val newTerminator = BranchInst(trueBlock, null, null)
+          block.replaceInst(terminator, newTerminator)
+          terminator = newTerminator
+        }
+      }
+
+      if (terminator is BranchInst && terminator.isJump() && block != func.getEntryBlock()) {
+        val jumpBlock = terminator.getTrueBlock()
+        if (block.instList.size == 1 && checkPhiInst(block)) { // it's empty
+          block.userList.filterIsInstance<PhiInst>().forEach { inst ->
+            val value = inst.getPred(inst.getIndex(block)).first
+            inst.removePred(block)
+            block.prevBlockSet.forEach { inst.addAssignment(value, it) }
+          }
+
+          block.substituteOnly(jumpBlock) { it is BranchInst }
+          block.prevBlockSet.forEach {
+            it.nextBlockSet.remove(block)
+//            block.prevBlockList.remove(it)
+            it.nextBlockSet.add(jumpBlock)
+            jumpBlock.addPrevBlock(it)
+          }
+
+          jumpBlock.removePrevBlock(block)
+          func.blockList.remove(block)
+          assert(block.userList.isEmpty())
+        }
+      }
+    }
+  }
+
   override fun visit(func: Func) {
     func.revDomTree.build()
     mark(func)
     sweep(func)
+
+    func.domTree.build()
+    clean(func)
   }
 
   override fun visit(block: BasicBlock) {

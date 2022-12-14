@@ -59,8 +59,8 @@ object SuperValueNumbering : IRVisitor() {
     processedSet.add(block)
     val patternTable = PatternTable(parentTable)
     localValueNumbering(block, patternTable)
-    block.nextBlockList.forEach {
-      if (it.prevBlockList.size == 1) {
+    block.nextBlockSet.forEach {
+      if (it.prevBlockSet.size == 1) {
         superValueNumbering(it, patternTable)
       } else if (!processedSet.contains(it)) {
         workList.add(it)

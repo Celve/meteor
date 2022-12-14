@@ -19,6 +19,14 @@ object Checker : IRVisitor() {
   }
 
   override fun visit(block: BasicBlock) {
+    block.prevBlockSet.forEach {
+      assert(it.nextBlockSet.contains(block))
+      assert(block.parent!!.blockList.contains(it))
+    }
+    block.nextBlockSet.forEach {
+      assert(it.prevBlockSet.contains(block))
+      assert(block.parent!!.blockList.contains(it))
+    }
     block.instList.forEach { inst ->
       assert(inst.parent == block)
       inst.useeList.forEach { assert(it.userList.contains(inst)) }
@@ -44,9 +52,9 @@ object Checker : IRVisitor() {
   override fun visit(inst: BranchInst) {
     val trueBlock = inst.getTrueBlock()
     val falseBlock = inst.getFalseBlock()
-    assert(trueBlock.prevBlockList.contains(inst.parent) && inst.parent!!.nextBlockList.contains(trueBlock))
+    assert(trueBlock.prevBlockSet.contains(inst.parent) && inst.parent!!.nextBlockSet.contains(trueBlock))
     if (falseBlock != null) {
-      assert(falseBlock.prevBlockList.contains(inst.parent) && inst.parent!!.nextBlockList.contains(falseBlock))
+      assert(falseBlock.prevBlockSet.contains(inst.parent) && inst.parent!!.nextBlockSet.contains(falseBlock))
     }
   }
 

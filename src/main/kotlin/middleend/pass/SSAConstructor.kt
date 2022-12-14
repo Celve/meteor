@@ -63,7 +63,7 @@ object SSAConstructor : IRVisitor() {
       }
     }
 
-    block.nextBlockList.forEach { nextBlock ->
+    block.nextBlockSet.forEach { nextBlock ->
       nextBlock.instList.filterIsInstance<PhiInst>()
         .filter { !it.name!!.startsWith(".phi") } // ignore manually generated phi
         .forEach { it.addAssignment(stack.getValue(getValuesOriginalName(it)).last(), block) }

@@ -9,24 +9,24 @@ class DomTree(val func: Func, val reversed: Boolean) {
   var successors = hashMapOf<BasicBlock, MutableList<BasicBlock>>().withDefault { mutableListOf() }
 
   // used to calculate the postorder of the spanning DFS tree
-  private var blockListInPostorder = mutableListOf<BasicBlock>()
+  var blockListInPostorder = mutableListOf<BasicBlock>()
   private var block2Postorder = hashMapOf<BasicBlock, Int>()
   private var visitedSet = hashSetOf<BasicBlock>()
   private var startNode = BasicBlock("init", 0)
 
-  private fun getNextBlockList(block: BasicBlock): List<BasicBlock> {
+  private fun getNextBlockSet(block: BasicBlock): Set<BasicBlock> {
     return if (reversed) {
-      block.prevBlockList
+      block.prevBlockSet
     } else {
-      block.nextBlockList
+      block.nextBlockSet
     }
   }
 
-  private fun getPrevBlockList(block: BasicBlock): List<BasicBlock> {
+  private fun getPrevBlockSet(block: BasicBlock): Set<BasicBlock> {
     return if (reversed) {
-      block.nextBlockList
+      block.nextBlockSet
     } else {
-      block.prevBlockList
+      block.prevBlockSet
     }
   }
 
@@ -42,7 +42,7 @@ class DomTree(val func: Func, val reversed: Boolean) {
 
   private fun calcPostorderOf(block: BasicBlock) {
     visitedSet.add(block)
-    for (nextBlock in getNextBlockList(block)) {
+    for (nextBlock in getNextBlockSet(block)) {
       if (!visitedSet.contains(nextBlock)) {
         calcPostorderOf(nextBlock)
       }
@@ -85,7 +85,7 @@ class DomTree(val func: Func, val reversed: Boolean) {
         }
 
         var newIdom: BasicBlock? = null
-        for (prevBlock in getPrevBlockList(block)) {
+        for (prevBlock in getPrevBlockSet(block)) {
           if (doms[prevBlock] != null) {
             newIdom = if (newIdom == null) {
               prevBlock
@@ -113,19 +113,19 @@ class DomTree(val func: Func, val reversed: Boolean) {
     val removingBlocks = func.blockList.subtract(visitedSet)
     func.blockList.removeAll(removingBlocks)
     for (block in removingBlocks) {
-      for (prevBlock in getPrevBlockList(block)) {
+      for (prevBlock in getPrevBlockSet(block)) {
         prevBlock.removeNextBlock(block)
         block.removePrevBlock(block)
       }
-      for (nextBlock in getNextBlockList(block)) {
+      for (nextBlock in getNextBlockSet(block)) {
         nextBlock.removePrevBlock(block)
         block.removeNextBlock(block)
       }
     }
 
     for (block in blockListInPostorder) {
-      if (getPrevBlockList(block).size >= 2) {
-        for (prevBlock in getPrevBlockList(block)) {
+      if (getPrevBlockSet(block).size >= 2) {
+        for (prevBlock in getPrevBlockSet(block)) {
           var runner = prevBlock
           while (runner != doms[block]) {
             domFrontiers.getOrPut(runner) { mutableListOf() }.add(block)

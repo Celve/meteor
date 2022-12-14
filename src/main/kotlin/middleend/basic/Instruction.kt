@@ -195,6 +195,10 @@ class BranchInst(trueBlock: BasicBlock, cond: Value?, falseBlock: BasicBlock?) :
     }
   }
 
+  fun isJump(): Boolean {
+    return useeList.size == 1
+  }
+
   fun getTrueBlock(): BasicBlock {
     return useeList[0] as BasicBlock
   }
@@ -349,6 +353,20 @@ class PhiInst(name: String, type: Type, predList: MutableList<Pair<Value, BasicB
 
   fun getPred(index: Int): Pair<Value, BasicBlock> {
     return Pair(useeList[index * 2], useeList[index * 2 + 1] as BasicBlock)
+  }
+
+  fun getPred(block: BasicBlock): Pair<Value, BasicBlock>? {
+    val index = useeList.indexOf(block)
+    return if (index == -1) {
+      null
+    } else {
+      Pair(useeList[index - 1], useeList[index] as BasicBlock)
+    }
+  }
+
+  fun getIndex(block: BasicBlock): Int {
+    val index = useeList.indexOf(block)
+    return index / 2
   }
 
   fun removePred(block: BasicBlock) {

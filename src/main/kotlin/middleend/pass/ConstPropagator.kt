@@ -65,7 +65,7 @@ object ConstPropagator : IRVisitor() {
   private fun addBlock2WorkList(block: BasicBlock) {
     if (!blockStateMap.getValue(block)) {
       blockWorkList.add(block)
-      blockWorkList.addAll(block.nextBlockList.filter { blockStateMap.getValue(it) })
+      blockWorkList.addAll(block.nextBlockSet.filter { blockStateMap.getValue(it) })
       blockStateMap[block] = true
     }
   }
@@ -121,10 +121,12 @@ object ConstPropagator : IRVisitor() {
           if (cond.value == 0) {
             block.replaceInst(inst, BranchInst(falseBlock!!, null, null))
             block.removeNextBlock(trueBlock)
+            trueBlock.removePrevBlock(block)
             trueBlock.instList.filterIsInstance<PhiInst>().forEach { it.removePred(block) }
           } else {
             block.replaceInst(inst, BranchInst(trueBlock, null, null))
             block.removeNextBlock(falseBlock!!)
+            falseBlock.removePrevBlock(block)
             falseBlock.instList.filterIsInstance<PhiInst>().forEach { it.removePred(block) }
           }
         }
@@ -142,17 +144,11 @@ object ConstPropagator : IRVisitor() {
 
     val removedBlockSet = func.blockList.filter { !blockStateMap.getValue(it) }
     removedBlockSet.forEach { block ->
-      if (!blockStateMap.getValue(block)) {
-        block.userList.toList().forEach {
-          if (it is PhiInst) {
-            val nextBlock = it.parent!!
-            nextBlock.removePrevBlock(block)
-            it.removePred(block)
-          }
-        }
-        block.instList.forEach { it.eliminate() }
-        block.instList.clear()
-      }
+      block.userList.toList().filterIsInstance<PhiInst>().forEach { it.removePred(block) }
+      block.prevBlockSet.forEach { it.removeNextBlock(block) }
+      block.nextBlockSet.forEach { it.removePrevBlock(block) }
+      block.instList.forEach { it.eliminate() }
+      block.instList.clear()
     }
     func.blockList.removeAll(removedBlockSet)
   }

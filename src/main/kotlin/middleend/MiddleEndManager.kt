@@ -19,12 +19,15 @@ object MiddleEndManager {
     if (buildOptions.contains("--inline")) {
       Inliner.visit(module)
     }
+    Checker.visit(module)
     if (buildOptions.contains("--sccp")) {
       ConstPropagator.visit(module)
     }
+    Checker.visit(module)
     if (buildOptions.contains("--svn")) {
       SuperValueNumbering.visit(module)
     }
+    Checker.visit(module)
     if (buildOptions.contains("--adce")) {
       Eliminator.visit(module)
     }
