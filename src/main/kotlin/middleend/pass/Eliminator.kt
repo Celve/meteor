@@ -5,6 +5,7 @@ import middleend.basic.*
 object Eliminator : IRVisitor() {
   val workList = mutableListOf<Instruction>()
   val markedSet = hashSetOf<Value>()
+  var changed = false
 
   override fun visit(topModule: TopModule) {
     topModule.funcMap.forEach { it.value.accept(this) }
@@ -68,41 +69,128 @@ object Eliminator : IRVisitor() {
     }
   }
 
-  private fun clean(func: Func) {
-    for (block in func.domTree.blockListInPostorder) {
-      var terminator = block.getTerminator()
-      if (terminator is BranchInst && !terminator.isJump()) { // it's a conditional branch
-        val trueBlock = terminator.getTrueBlock()
-        if (trueBlock == terminator.getFalseBlock()) { // case 1
-          val newTerminator = BranchInst(trueBlock, null, null)
-          block.replaceInst(terminator, newTerminator)
-          terminator = newTerminator
-        }
-      }
-
-      if (terminator is BranchInst && terminator.isJump() && block != func.getEntryBlock()) {
-        val jumpBlock = terminator.getTrueBlock()
-        if (block.instList.size == 1 && checkPhiInst(block)) { // it's empty
-          block.userList.filterIsInstance<PhiInst>().forEach { inst ->
-            val value = inst.getPred(inst.getIndex(block)).first
-            inst.removePred(block)
-            block.prevBlockSet.forEach { inst.addAssignment(value, it) }
-          }
-
-          block.substituteOnly(jumpBlock) { it is BranchInst }
-          block.prevBlockSet.forEach {
-            it.nextBlockSet.remove(block)
-//            block.prevBlockList.remove(it)
-            it.nextBlockSet.add(jumpBlock)
-            jumpBlock.addPrevBlock(it)
-          }
-
-          jumpBlock.removePrevBlock(block)
-          func.blockList.remove(block)
-          assert(block.userList.isEmpty())
-        }
+  private fun foldRedundantBr(block: BasicBlock) {
+    var terminator = block.getTerminator()
+    if (terminator is BranchInst && !terminator.isJump()) { // it's a conditional branch
+      val trueBlock = terminator.getTrueBlock()
+      if (trueBlock == terminator.getFalseBlock()) { // case 1
+        val newTerminator = BranchInst(trueBlock, null, null)
+        block.replaceInst(terminator, newTerminator)
       }
     }
+  }
+
+  private fun removeEmptyBlock(block: BasicBlock) {
+    val terminator = block.getTerminator()
+    val func = block.parent!!
+    if (terminator is BranchInst && terminator.isJump() && block != func.getEntryBlock()) {
+      val jumpBlock = terminator.getTrueBlock()
+      if (block.instList.size == 1 && checkPhiInst(block)) { // it's empty
+        block.userList.filterIsInstance<PhiInst>().forEach { inst ->
+          val value = inst.getPred(block)!!.first
+          inst.removePred(block)
+          block.prevBlockSet.forEach { inst.addAssignment(value, it) }
+
+          // eliminate useless phi instruction
+          val firstValue = inst.getPred(0).first
+          if (inst.getPredList().size == 1 || inst.getPredList().all { it.first == firstValue }) {
+            inst.parent!!.replaceInst(inst, MvInst(inst.name!!, firstValue))
+          }
+        }
+
+        block.substituteOnly(jumpBlock) { it is BranchInst }
+        block.prevBlockSet.forEach {
+          it.nextBlockSet.remove(block)
+          it.nextBlockSet.add(jumpBlock)
+          jumpBlock.addPrevBlock(it)
+        }
+        block.prevBlockSet.clear()
+
+        jumpBlock.removePrevBlock(block)
+        func.blockList.remove(block)
+
+        assert(block.userList.isEmpty())
+        changed = true
+      }
+    }
+  }
+
+  private fun combineBlocks(block: BasicBlock) { // it will affect the judgement of return block
+    val func = block.parent!!
+    if (block.prevBlockSet.size == 1 && block != func.getReturnBlock()) { // it has only one predecessor
+      val prevBlock = block.prevBlockSet.first()
+      if (prevBlock.nextBlockSet.size == 1) {
+        assert(block.instList.filterIsInstance<PhiInst>().isEmpty())
+
+        // control flow related
+        prevBlock.nextBlockSet.clear()
+        prevBlock.nextBlockSet.addAll(block.nextBlockSet)
+        prevBlock.nextBlockSet.forEach {
+          it.removePrevBlock(block)
+          it.addPrevBlock(prevBlock)
+        }
+        block.substituteAll(prevBlock)
+        block.prevBlockSet.clear()
+        block.nextBlockSet.clear()
+        func.blockList.remove(block)
+
+        prevBlock.name = "${prevBlock.name}$${block.name}"
+
+        prevBlock.instList.removeLast() // remove branch instruction
+        prevBlock.instList.addAll(block.instList)
+        prevBlock.instList.forEach { it.parent = prevBlock }
+
+        changed = true
+      }
+    }
+  }
+
+  // I can construct a testcase to make this optimization takes effect
+  private fun hoistBranch(block: BasicBlock) {
+    val terminator = block.getTerminator()
+    if (terminator is BranchInst && terminator.isJump()) {
+      val jumpBlock = terminator.getTrueBlock()
+      val jumpTerminator = jumpBlock.getTerminator()
+      if (jumpBlock.instList.size == 1 && jumpTerminator is BranchInst && !jumpTerminator.isJump()) {
+        // the first block ends with a jump while the second block ends with a branch
+        val trueBlock = jumpTerminator.getTrueBlock()
+        val cond = jumpTerminator.getCond()!!
+        val falseBlock = jumpTerminator.getFalseBlock()!!
+
+        block.replaceInst(terminator, BranchInst(trueBlock, cond, falseBlock))
+
+        jumpBlock.removePrevBlock(block)
+        block.removeNextBlock(jumpBlock)
+        block.addNextBlock(trueBlock)
+        trueBlock.addPrevBlock(block)
+        block.addNextBlock(falseBlock)
+        falseBlock.addPrevBlock(block)
+
+        trueBlock.instList.filterIsInstance<PhiInst>().forEach {
+          val value = it.getPred(jumpBlock)!!.first
+          it.addAssignment(value, block)
+        }
+        falseBlock.instList.filterIsInstance<PhiInst>().forEach {
+          val value = it.getPred(jumpBlock)!!.first
+          it.addAssignment(value, block)
+        }
+
+        changed = true
+      }
+    }
+  }
+
+  private fun clean(func: Func) {
+    do {
+      changed = false
+      func.domTree.build()
+      for (block in func.domTree.blockListInPostorder) {
+        foldRedundantBr(block) // case 1
+        removeEmptyBlock(block) // case 2
+        combineBlocks(block) // case 3
+        hoistBranch(block)
+      }
+    } while (changed)
   }
 
   override fun visit(func: Func) {
@@ -110,7 +198,6 @@ object Eliminator : IRVisitor() {
     mark(func)
     sweep(func)
 
-    func.domTree.build()
     clean(func)
   }
 

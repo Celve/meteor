@@ -6,6 +6,7 @@ import middleend.pass.IRVisitor
 import middleend.struct.DomTree
 
 class Func(name: String, val funcType: FuncType, val argList: List<Value>) : GlobalValue(name, funcType) {
+  // ensure that entry block is always the first block and the return block is always the last block
   var blockList: MutableList<BasicBlock> = mutableListOf()
   val mulTable = ValueTable()
   val ssaTable = SSATable()
@@ -18,6 +19,11 @@ class Func(name: String, val funcType: FuncType, val argList: List<Value>) : Glo
 
   fun getEntryBlock(): BasicBlock {
     return blockList.first()
+  }
+
+  fun getReturnBlock(): BasicBlock {
+    assert(blockList.last().instList.any { it is ReturnInst })
+    return blockList.last()
   }
 
   fun addBasicBlockAtIndex(index: Int, basicBlock: BasicBlock) {
