@@ -133,15 +133,6 @@ object ConstPropagator : IRVisitor() {
       }
     }
 
-    // remove useless phi inst
-    for (block in func.blockList) {
-      for (inst in block.instList.filterIsInstance<PhiInst>()) {
-        if (inst.getSize() == 1) {
-          block.replaceInst(inst, MvInst(inst.name!!, inst.getPred(0).first))
-        }
-      }
-    }
-
     val removedBlockSet = func.blockList.filter { !blockStateMap.getValue(it) }
     removedBlockSet.forEach { block ->
       block.userList.toList().filterIsInstance<PhiInst>().forEach { it.removePred(block) }
@@ -151,6 +142,16 @@ object ConstPropagator : IRVisitor() {
       block.instList.clear()
     }
     func.blockList.removeAll(removedBlockSet)
+
+
+    // remove useless phi inst
+    for (block in func.blockList) {
+      for (inst in block.instList.filterIsInstance<PhiInst>()) {
+        if (inst.getSize() == 1) {
+          block.replaceInst(inst, MvInst(inst.name!!, inst.getPred(0).first))
+        }
+      }
+    }
   }
 
   override fun visit(block: BasicBlock) {
