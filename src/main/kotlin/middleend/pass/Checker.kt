@@ -45,7 +45,13 @@ object Checker : IRVisitor() {
 
   override fun visit(inst: BitCastInst) {}
 
-  override fun visit(inst: PhiInst) {}
+  override fun visit(inst: PhiInst) {
+    val block = inst.parent!!
+    val predList = inst.getPredList()
+    assert(predList.size == block.prevBlockSet.size)
+    assert(predList.size != 1)
+    predList.forEach { assert(block.prevBlockSet.contains(it.second)) }
+  }
 
   override fun visit(inst: BinaryInst) {}
 
