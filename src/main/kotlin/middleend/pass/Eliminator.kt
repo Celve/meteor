@@ -62,13 +62,10 @@ object Eliminator : IRVisitor() {
 
   private fun checkPhiInst(origin: BasicBlock): Boolean { // avoid phi inst with two different values from the same block
     val phiInstList = origin.userList.filterIsInstance<PhiInst>()
-    phiInstList.forEach { inst ->
+    return phiInstList.all { inst ->
       val originsValue = inst.getPred(inst.getIndex(origin)).first
-      if (origin.prevBlockSet.any { inst.getPred(it)?.first != originsValue }) {
-        return false
-      }
+      !origin.prevBlockSet.any { inst.getPred(it)?.first != originsValue }
     }
-    return true
   }
 
   private fun clean(func: Func) {
