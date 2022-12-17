@@ -56,7 +56,7 @@ object Eliminator : IRVisitor() {
 
       val terminator = block.getTerminator()
       if (terminator is BranchInst && terminator.getCond() != null && !markedSet.contains(terminator)) {
-        block.replaceInst(terminator, BranchInst(func.revDomTree.doms.getValue(block), null, null))
+        block.replaceInst(terminator, BranchInst(func.revDomTree.idoms.getValue(block), null, null))
       }
     }
   }
