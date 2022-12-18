@@ -4,6 +4,7 @@ import middleend.helper.SSATable
 import middleend.helper.ValueTable
 import middleend.pass.IRVisitor
 import middleend.struct.DomTree
+import middleend.struct.LivenessAnalyzer
 import middleend.struct.LoopNestTree
 
 class Func(name: String, val funcType: FuncType, val argList: List<Value>) : GlobalValue(name, funcType) {
@@ -14,6 +15,7 @@ class Func(name: String, val funcType: FuncType, val argList: List<Value>) : Glo
   val domTree = DomTree(this, false)
   val revDomTree = DomTree(this, true)
   val loopNestTree = LoopNestTree(this)
+  val livenessAnalyzer = LivenessAnalyzer(this)
 
   override fun replicate(): Value {
     TODO("Not yet implemented")

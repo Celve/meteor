@@ -20,6 +20,10 @@ object MiddleEndManager {
       Inliner.visit(module)
     }
     Checker.visit(module)
+    if (buildOptions.contains("--licm")) {
+      LoopInvarCodeMotion.visit(module)
+    }
+    Checker.visit(module)
     if (buildOptions.contains("--sccp")) {
       ConstPropagator.visit(module)
     }

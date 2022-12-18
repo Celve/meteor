@@ -3,14 +3,22 @@ package middleend.struct
 import middleend.basic.BasicBlock
 import middleend.basic.Func
 
-class Loop(val header: BasicBlock, val body: HashSet<BasicBlock>)
+class Loop(val header: BasicBlock, var body: Set<BasicBlock>) {
+  var exit = body.filter { it.nextBlockSet.any { next -> !body.contains(next) } }.toSet()
+  val succs = hashSetOf<Loop>()
+  val preds = hashSetOf<Loop>()
+
+  fun union(other: Set<BasicBlock>) {
+    body = body.union(other)
+    exit = body.filter { it.nextBlockSet.any { next -> !body.contains(next) } }.toSet()
+  }
+}
 
 class LoopNestTree(val func: Func) {
   private val backEdges = hashSetOf<Pair<BasicBlock, BasicBlock>>()
   private val naturalLoops = hashSetOf<List<BasicBlock>>()
   private val header2Loop = hashMapOf<BasicBlock, Loop>()
-  private val succs = mutableMapOf<BasicBlock, HashSet<BasicBlock>>().withDefault { hashSetOf() }
-  private val preds = mutableMapOf<BasicBlock, HashSet<BasicBlock>>().withDefault { hashSetOf() }
+  val roots = hashSetOf<Loop>()
 
   private fun collectBackEdges() {
     backEdges.clear()
@@ -51,7 +59,7 @@ class LoopNestTree(val func: Func) {
       val header = naturalLoop.first()
       val body = naturalLoop.toHashSet()
       if (header2Loop.contains(header)) {
-        header2Loop[header]!!.body.addAll(body)
+        header2Loop[header]!!.union(body)
       } else {
         header2Loop[header] = Loop(header, body)
       }
@@ -60,13 +68,14 @@ class LoopNestTree(val func: Func) {
 
   private fun constructTree() {
     val loopsBySize = header2Loop.values.sortedBy { it.body.size }
-    for (loop in loopsBySize) {
-      val pred = loopsBySize.firstOrNull { it != loop && it.body.contains(loop.header) }
+    for (succ in loopsBySize) {
+      val pred = loopsBySize.firstOrNull { it != succ && it.body.contains(succ.header) }
       if (pred != null) {
-        succs.getOrPut(pred.header) { hashSetOf() }.add(loop.header)
-        preds.getOrPut(loop.header) { hashSetOf() }.add(pred.header)
+        pred.succs.add(succ)
+        succ.preds.add(pred)
       }
     }
+    loopsBySize.filter { it.preds.isEmpty() }.forEach { roots.add(it) }
   }
 
   fun build() {
