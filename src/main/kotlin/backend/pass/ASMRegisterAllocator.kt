@@ -243,8 +243,9 @@ object ASMRegisterAllocator : ASMVisitor() {
     // in = use + (out - def)
     // out = union of all in of successors
     // repeat until in and out are fixed
-    while (true) {
-      var unequal = false
+    var changed: Boolean
+    do {
+      changed = false
       for (block in asmFunc.blockList) {
         val originLiveInSet = block.liveInSet
         val originLiveOutSet = block.liveOutSet
@@ -254,29 +255,15 @@ object ASMRegisterAllocator : ASMVisitor() {
 
         // FIXME: This is time-wasting, maybe I should maintain something like finish set?
         if (originLiveInSet != block.liveInSet || originLiveOutSet != block.liveOutSet) {
-          unequal = true
+          changed = true
         }
       }
-      if (!unequal) {
-        break
-      }
-    }
-//    for (func in asmModule.funcList) {
-//    for (block in asmFunc.blockList) {
-//      println("$block's liveInSet: ${block.liveInSet}")
-//      println("$block's liveOutSet: ${block.liveOutSet}")
-//      println("$block's useSet: ${block.useSet}")
-//      println("$block's defSet: ${block.defSet}")
-//      println("$block's succList: ${block.succList}")
-//    }
-//    }
+    } while (changed)
   }
 
   private fun build() {
-//    println("[build]")
     // from the liveOut of block to deduce the liveOut of inst
     for (block in asmFunc.blockList) {
-//        println("in block $block")
       val lives = block.liveOutSet
       for (inst in block.instList.reversed()) {
         val uses = inst.getRs()
@@ -311,13 +298,10 @@ object ASMRegisterAllocator : ASMVisitor() {
         }
       }
     }
-//    println(crossCallNodes)
-//    println()
   }
 
   private fun addEdge(lhs: Register, rhs: Register) {
     if (!adjSet.contains(Pair(lhs, rhs)) && lhs != rhs) {
-//      println("$lhs <-> $rhs")
       adjSet.add(Pair(lhs, rhs))
       adjSet.add(Pair(rhs, lhs))
       if (lhs !is PhyReg) { // it's useless, because it cannot be simplified, and it can save space
@@ -342,12 +326,6 @@ object ASMRegisterAllocator : ASMVisitor() {
         simplifyWorklist.add(virReg)
       }
     }
-//    println("[makeWorklist]")
-//    println("spillWorklist: ${spillWorklist.map { "$it(${degree.getValue(it)})" }}")
-//    println("freezeWorklist: ${freezeWorklist.map { "$it(${degree.getValue(it)})" }}")
-//    println("simplifyWorklist: ${simplifyWorklist.map { "$it(${degree.getValue(it)})" }}")
-//    val asmEmit = ASMEmit()
-//    asmEmit.visit(asmModule)
   }
 
   private fun adjacent(n: Register): List<Register> {
@@ -371,9 +349,7 @@ object ASMRegisterAllocator : ASMVisitor() {
    * The pre-colored nodes should never be simplified. Because it's meaningless.
    */
   private fun simplify() {
-//    println("[simplify]")
     val simplified = simplifyWorklist.firstOrNull() ?: return
-//    println("$simplified is selected to be removed")
     simplifyWorklist.remove(simplified)
     selectedStack.add(simplified)
     for (related in adjacent(simplified)) {
@@ -430,7 +406,6 @@ object ASMRegisterAllocator : ASMVisitor() {
 
   private fun coalesce() {
     val mv = worklistMoves.first()
-//    println("[coalesce] mv ${mv.rd}, ${mv.rs}")
     worklistMoves.remove(mv)
     var u = getAlias(mv.rs)
     var v = getAlias(mv.rd)
@@ -495,7 +470,6 @@ object ASMRegisterAllocator : ASMVisitor() {
   }
 
   private fun combine(u: Register, v: Register) {
-//    println("combine $u and $v")
     if (freezeWorklist.contains(v)) {
       freezeWorklist.remove(v)
     } else { // because v must be related with mv inst
@@ -516,7 +490,6 @@ object ASMRegisterAllocator : ASMVisitor() {
   }
 
   private fun freeze() {
-//    println("[freeze]")
     val frozen = freezeWorklist.firstOrNull() ?: return // could be optimized
     freezeWorklist.remove(frozen)
     simplifyWorklist.add(frozen)
@@ -542,16 +515,6 @@ object ASMRegisterAllocator : ASMVisitor() {
   private fun selectSpilledWithHeuristic(candidates: MutableList<Register>): Register? {
     // this heuristic is bad, because it doesn't consider context of the register
     candidates.sortBy { executionFrequency.getValue(it) / degree.getValue(it) }
-//    if (asmFunc.name == "Heap_Node.maxHeapify") {
-//      print("heuristic: ")
-//      println(candidates.map {
-//        "$it(${executionFrequency.getValue(it) / degree.getValue(it)}, ${
-//          it is VirReg && !rewrittenNodes.contains(
-//            it
-//          )
-//        })"
-//      })
-//    }
     return candidates.find { it is VirReg && !rewrittenNodes.contains(it) }
   }
 
@@ -567,18 +530,13 @@ object ASMRegisterAllocator : ASMVisitor() {
    * The pre-colored nodes should never be spilled. Because they have been colored, meaning that they cannot be reassigned.
    */
   private fun selectSpill() {
-//    println("[selectSpill]")
     val spilled = selectSpilledWithHeuristic(spillWorklist) ?: throw Exception("no spilled register")
-//    if (asmFunc.name == "Heap_Node.maxHeapify") {
-//      println("spilled: $spilled")
-//    }
     spillWorklist.remove(spilled)
     simplifyWorklist.add(spilled) // FIXME: I don't know what it should be added to here
     freezeMoves(spilled)
   }
 
   private fun assignColors() {
-//    println("[assign]")
     while (selectedStack.isNotEmpty()) {
       val top = selectedStack.last()
       selectedStack.removeLast()
@@ -590,21 +548,13 @@ object ASMRegisterAllocator : ASMVisitor() {
       } else {
         coloredNodes.add(top)
         color[top] = selectColorWithHeuristic(top, okColors)
-//        println("assign color ${color[top]} to $top")
       }
     }
     coalescedNodes.forEach { color[it] = color.getValue(getAlias(it)) }
   }
 
   private fun rewriteProgram() {
-//    if (asmFunc.name == "Heap_Node.maxHeapify") {
-//      println("[rewrite]")
-//    }
-//    for ((key, value) in color) {
-//      println("$key was colored with $value")
-//    }
     for (spilled in spilledNodes) {
-//      println("$spilled is rewritten")
       // allocate memory on stack
       val offset = if (spilled == raVirReg) {
         asmFunc.stackFrame.newReturnAddress()
@@ -640,10 +590,6 @@ object ASMRegisterAllocator : ASMVisitor() {
         }
       }
     }
-//    val emit = ASMEmit()
-//    emit.visit(asmFunc)
-//    println(adjList.getValue(regFactory.getVirReg(123)!!))
-//    Thread.sleep(1000)
   }
 
   override fun visit(globalPtr: ASMGlobalPointer) {
@@ -651,26 +597,12 @@ object ASMRegisterAllocator : ASMVisitor() {
   }
 
   override fun visit(func: ASMFunc) {
-//    println(func)
     asmFunc = func
     processCalleeSaved()
-//    if (func.name == "Heap_Node.maxHeapify") {
-//      val asmEmit = ASMEmit()
-//      asmEmit.visit(asmFunc)
-//    }
     graphColoring()
-//    println("degree: $degree")
     colorInstructions()
     eliminateUselessMv()
-//    val firstBlock = func.blockList.first()
-//    val lastBlock = func.blockList.last()
-//    (firstBlock.instList.first() as ASMArithiInst).imm = DeterminedImmediate(-func.stackAlloca)
-//    (lastBlock.instList[lastBlock.instList.size - 2] as ASMArithiInst).imm = DeterminedImmediate(func.stackAlloca)
     determineOffset()
-//    if (func.name == "Heap_Node.maxHeapify") {
-//      val asmEmit = ASMEmit()
-//      asmEmit.visit(asmFunc)
-//    }
   }
 
   override fun visit(block: ASMBlock) {
