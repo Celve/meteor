@@ -10,6 +10,7 @@ class LoopNestTree(val func: Func) {
   private val naturalLoops = hashSetOf<List<BasicBlock>>()
   private val header2Loop = hashMapOf<BasicBlock, Loop>()
   private val succs = mutableMapOf<BasicBlock, HashSet<BasicBlock>>().withDefault { hashSetOf() }
+  private val preds = mutableMapOf<BasicBlock, HashSet<BasicBlock>>().withDefault { hashSetOf() }
 
   private fun collectBackEdges() {
     backEdges.clear()
@@ -63,6 +64,7 @@ class LoopNestTree(val func: Func) {
       val pred = loopsBySize.firstOrNull { it != loop && it.body.contains(loop.header) }
       if (pred != null) {
         succs.getOrPut(pred.header) { hashSetOf() }.add(loop.header)
+        preds.getOrPut(loop.header) { hashSetOf() }.add(pred.header)
       }
     }
   }
