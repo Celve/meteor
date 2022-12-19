@@ -32,6 +32,16 @@ object Checker : IRVisitor() {
       inst.useeList.forEach { assert(it.userList.contains(inst)) }
       inst.userList.forEach { assert(it.useeList.contains(inst)) }
     }
+
+    val terminator = block.getTerminator()
+    if (terminator is BranchInst) {
+      if (terminator.isJump()) {
+        assert(block.nextBlockSet.size == 1)
+      } else {
+        assert(block.nextBlockSet.size == 2)
+      }
+    }
+
     for (inst in block.instList) {
       inst.accept(this)
     }
