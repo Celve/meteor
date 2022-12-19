@@ -14,23 +14,20 @@ object LoopInvarCodeMotion : IRVisitor() {
 
   override fun visit(constStr: ConstantStr) {}
 
-  private fun collectInvariants(loop: Loop): HashSet<Instruction> {
-    val invariants = hashSetOf<Instruction>()
+  private fun collectInvariants(loop: Loop): List<Instruction> {
+    var invariants = listOf<Instruction>()
     val defs = loop.body.flatMap { it.instList }.toSet()
-    var changed: Boolean
-    do {
-      changed = false
-      loop.body.forEach { block ->
-        block.instList
-          .filter { it is BinaryInst || it is CmpInst }
-          .filter { inst -> inst.useeList.all { it is Constant || invariants.contains(it) || !defs.contains(it) } }
-          .filter { !invariants.contains(it) }
-          .forEach {
-            invariants.add(it)
-            changed = true
-          }
+    val insts = loop.body.flatMap { it.instList }
+    var lastSize = 0
+    while (true) {
+      invariants = insts.filter { it is BinaryInst || it is CmpInst }
+        .filter { inst -> inst.useeList.all { it is Constant || invariants.contains(it) || !defs.contains(it) } }
+      if (invariants.size != lastSize) {
+        lastSize = invariants.size
+      } else {
+        break
       }
-    } while (changed)
+    }
     return invariants
   }
 
@@ -71,7 +68,7 @@ object LoopInvarCodeMotion : IRVisitor() {
 
       currFunc!!.blockList.add(currFunc!!.blockList.indexOf(loop.header), preHeader)
 
-      movable.reversed().forEach {
+      movable.forEach {
         it.parent!!.instList.remove(it)
         it.parent = preHeader
         preHeader.instList.add(it)

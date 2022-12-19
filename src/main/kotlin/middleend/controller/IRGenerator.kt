@@ -276,66 +276,134 @@ class IRGenerator : ASTVisitor() {
   }
 
   override fun visit(curr: ForSuiteNode) {
+    scopeManger.addLast(curr.initScope)
+
     val nestedLoopsNum = loopManager.getNestedLoopsNum() + 1
     val execFreq = 10.0.pow(nestedLoopsNum).toInt()
-    val condBlock = BasicBlock(renameLocal("for.cond"), execFreq)
-    val incBlock = BasicBlock(renameLocal("for.inc"), execFreq)
-    val bodyBlock = BasicBlock(renameLocal("for.body"), execFreq)
-    val endBlock = BasicBlock(renameLocal("for.end"), execFreq)
 
-    scopeManger.addLast(curr.initScope)
-    loopManager.addLast(incBlock, endBlock)
+    if (false) {
+      val condBlock = BasicBlock(renameLocal("for.cond"), execFreq)
+      val incBlock = BasicBlock(renameLocal("for.inc"), execFreq)
+      val bodyBlock = BasicBlock(renameLocal("for.body"), execFreq)
+      val endBlock = BasicBlock(renameLocal("for.end"), execFreq)
+      loopManager.addLast(incBlock, endBlock)
 
-    curr.init?.accept(this)
-    IRBuilder.createBr(condBlock)
+      curr.init?.accept(this)
+      IRBuilder.createBr(condBlock)
 
-    IRBuilder.setInsertBlock(condBlock)
-    if (curr.cond == null) {
-      IRBuilder.createBr(bodyBlock)
+      IRBuilder.setInsertBlock(condBlock)
+      if (curr.cond == null) {
+        IRBuilder.createBr(bodyBlock)
+      } else {
+        curr.cond.accept(this)
+        IRBuilder.createBr(curr.cond.value!!, bodyBlock, endBlock)
+      }
+
+      IRBuilder.setInsertBlock(bodyBlock)
+      scopeManger.addLast(curr.bodyScope)
+      curr.body.accept(this)
+      scopeManger.removeLast()
+      IRBuilder.createBr(incBlock)
+
+      IRBuilder.setInsertBlock(incBlock)
+      curr.inc?.accept(this)
+      IRBuilder.createBr(condBlock)
+
+      IRBuilder.setInsertBlock(endBlock)
+
+      loopManager.removeLast()
     } else {
-      curr.cond.accept(this)
-      IRBuilder.createBr(curr.cond.value!!, bodyBlock, endBlock)
+      val testBlock = BasicBlock(renameLocal("for.test"), execFreq)
+      val bodyBlock = BasicBlock(renameLocal("for.body"), execFreq)
+      val incBlock = BasicBlock(renameLocal("for.inc"), execFreq)
+      val condBlock = BasicBlock(renameLocal("for.cond"), execFreq)
+      val endBlock = BasicBlock(renameLocal("for.end"), execFreq)
+      loopManager.addLast(incBlock, endBlock)
+
+      IRBuilder.createBr(testBlock)
+      IRBuilder.setInsertBlock(testBlock)
+      curr.init?.accept(this)
+      if (curr.cond == null) {
+        IRBuilder.createBr(bodyBlock)
+      } else {
+        curr.cond.accept(this)
+        IRBuilder.createBr(curr.cond.value!!, bodyBlock, endBlock)
+      }
+      IRBuilder.setInsertBlock(bodyBlock)
+      scopeManger.addLast(curr.bodyScope)
+      curr.body.accept(this)
+      scopeManger.removeLast()
+      IRBuilder.createBr(incBlock)
+
+      IRBuilder.setInsertBlock(incBlock)
+      curr.inc?.accept(this)
+      IRBuilder.createBr(condBlock)
+
+      IRBuilder.setInsertBlock(condBlock)
+      if (curr.cond == null) {
+        IRBuilder.createBr(bodyBlock)
+      } else {
+        curr.cond.accept(this)
+        IRBuilder.createBr(curr.cond.value!!, bodyBlock, endBlock)
+      }
+
+      IRBuilder.setInsertBlock(endBlock)
+
+      loopManager.removeLast()
     }
 
-    IRBuilder.setInsertBlock(bodyBlock)
-    scopeManger.addLast(curr.bodyScope)
-    curr.body.accept(this)
     scopeManger.removeLast()
-    IRBuilder.createBr(incBlock)
-
-    IRBuilder.setInsertBlock(incBlock)
-    curr.inc?.accept(this)
-    IRBuilder.createBr(condBlock)
-
-    IRBuilder.setInsertBlock(endBlock)
-
-    scopeManger.removeLast()
-    loopManager.removeLast()
   }
 
   override fun visit(curr: WhileSuiteNode) {
+    scopeManger.addLast(curr.scope)
+
     val nestedLoopsNum = loopManager.getNestedLoopsNum() + 1
     val execFreq = 10.0.pow(nestedLoopsNum).toInt()
-    val condBlock = BasicBlock(renameLocal("while.cond"), execFreq)
-    val bodyBlock = BasicBlock(renameLocal("while.body"), execFreq)
-    val endBlock = BasicBlock(renameLocal("while.end"), execFreq)
 
-    scopeManger.addLast(curr.scope)
-    loopManager.addLast(condBlock, endBlock)
-    IRBuilder.createBr(condBlock)
+    if (false) {
+      val condBlock = BasicBlock(renameLocal("while.cond"), execFreq)
+      val bodyBlock = BasicBlock(renameLocal("while.body"), execFreq)
+      val endBlock = BasicBlock(renameLocal("while.end"), execFreq)
 
-    IRBuilder.setInsertBlock(condBlock)
-    curr.cond.accept(this)
-    IRBuilder.createBr(curr.cond.value!!, bodyBlock, endBlock)
+      loopManager.addLast(condBlock, endBlock)
+      IRBuilder.createBr(condBlock)
 
-    IRBuilder.setInsertBlock(bodyBlock)
-    curr.body.accept(this)
-    IRBuilder.createBr(condBlock)
+      IRBuilder.setInsertBlock(condBlock)
+      curr.cond.accept(this)
+      IRBuilder.createBr(curr.cond.value!!, bodyBlock, endBlock)
 
-    IRBuilder.setInsertBlock(endBlock)
+      IRBuilder.setInsertBlock(bodyBlock)
+      curr.body.accept(this)
+      IRBuilder.createBr(condBlock)
+
+      IRBuilder.setInsertBlock(endBlock)
+      loopManager.removeLast()
+    } else {
+      val testBlock = BasicBlock(renameLocal("while.test"), execFreq)
+      val bodyBlock = BasicBlock(renameLocal("while.body"), execFreq)
+      val condBlock = BasicBlock(renameLocal("while.cond"), execFreq)
+      val endBlock = BasicBlock(renameLocal("while.end"), execFreq)
+      loopManager.addLast(condBlock, endBlock)
+
+      IRBuilder.createBr(testBlock)
+      IRBuilder.setInsertBlock(testBlock)
+      curr.cond.accept(this)
+      IRBuilder.createBr(curr.cond.value!!, bodyBlock, endBlock)
+
+      IRBuilder.setInsertBlock(bodyBlock)
+      curr.body.accept(this)
+      IRBuilder.createBr(condBlock)
+
+      IRBuilder.setInsertBlock(condBlock)
+      curr.cond.accept(this)
+      IRBuilder.createBr(curr.cond.value!!, bodyBlock, endBlock)
+
+      IRBuilder.setInsertBlock(endBlock)
+      loopManager.removeLast()
+    }
 
     scopeManger.removeLast()
-    loopManager.removeLast()
   }
 
   override fun visit(curr: CondSuiteNode) {
