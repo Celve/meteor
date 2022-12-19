@@ -1,5 +1,3 @@
-## Design
+# 🌟Meteor
 
-[Front-end design](docs/frontend-design.md)
-
-[Middle-end design](docs/middleend-design.md)
+A compiler that convert instructions from Mx* language into rv32i assembly.
