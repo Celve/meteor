@@ -19,10 +19,10 @@ object Utils {
 
   fun revCond(cond: String): String {
     return when (cond) {
-      "slt" -> "sge"
-      "sle" -> "sgt"
-      "sgt" -> "sle"
-      "sge" -> "slt"
+      "slt" -> "sgt"
+      "sle" -> "sge"
+      "sgt" -> "slt"
+      "sge" -> "sle"
       "eq" -> "ne"
       "ne" -> "eq"
       else -> throw Exception("Unknown condition: $cond")
