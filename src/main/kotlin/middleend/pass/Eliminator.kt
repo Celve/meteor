@@ -54,9 +54,17 @@ object Eliminator : IRVisitor() {
       eliminated.forEach { it.eliminate() }
       block.instList.removeAll(eliminated)
 
+      // the branch instruction may never make effect
       val terminator = block.getTerminator()
-      if (terminator is BranchInst && terminator.getCond() != null && !markedSet.contains(terminator)) {
-        block.replaceInst(terminator, BranchInst(func.revDomTree.idoms.getValue(block), null, null))
+      if (terminator is BranchInst && !terminator.isJump() && !markedSet.contains(terminator)) {
+        val validNextBlock = func.revDomTree.idoms.getValue(block)
+        block.nextBlockSet.forEach { it.prevBlockSet.remove(block) }
+        block.nextBlockSet.clear()
+
+        block.nextBlockSet.add(validNextBlock)
+        validNextBlock.prevBlockSet.add(block)
+
+        block.replaceInst(terminator, BranchInst(validNextBlock, null, null))
       }
     }
   }
@@ -70,7 +78,7 @@ object Eliminator : IRVisitor() {
   }
 
   private fun foldRedundantBr(block: BasicBlock) {
-    var terminator = block.getTerminator()
+    val terminator = block.getTerminator()
     if (terminator is BranchInst && !terminator.isJump()) { // it's a conditional branch
       val trueBlock = terminator.getTrueBlock()
       if (trueBlock == terminator.getFalseBlock()) { // case 1
