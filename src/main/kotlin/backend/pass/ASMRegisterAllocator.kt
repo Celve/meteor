@@ -113,7 +113,8 @@ object ASMRegisterAllocator : ASMVisitor() {
   private fun processCalleeSaved() {
     val entryBlock = asmFunc.blockList.first()
     val exitBlock = asmFunc.blockList.last()
-    for (reg in listOf(1) + RegInfo.calleeSavedRegList) {
+    val insertedRegList = RegInfo.calleeSavedRegList + 1
+    for (reg in insertedRegList) {
       val virReg = regFactory.newVirReg()
       val phyReg = regFactory.getPhyReg(reg)
       if (reg == 1) {
