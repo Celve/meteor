@@ -230,7 +230,7 @@ class BranchInst(trueBlock: BasicBlock, cond: Value?, falseBlock: BasicBlock?) :
     if (useeList.size <= 2) {
       throw Exception("cannot set false block for branch instruction")
     }
-    cut(this, useeList[2])
+    cut(this, 2)
     link(this, falseBlock)
   }
 
@@ -371,8 +371,8 @@ class PhiInst(name: String, type: Type, predList: MutableList<Pair<Value, BasicB
 
   fun removePred(block: BasicBlock) {
     val index = useeList.indexOf(block)
-    cut(this, useeList[index])
-    cut(this, useeList[index - 1])
+    cut(this, index)
+    cut(this, index - 1)
   }
 
   override fun replicate(): Instruction {
@@ -445,7 +445,7 @@ class PCopyInst : Instruction(TypeFactory.getVoidType(), null) {
 
   fun setAssignment(index: Int, dst: Value, src: Value) {
     destList[index] = dst
-    cut(this, useeList[index])
+    cut(this, index)
     useeList[index] = src
     link(this, src)
   }

@@ -4,15 +4,63 @@ import middleend.basic.*
 import middleend.helper.Utils
 
 object Inliner : IRVisitor() {
-  var module: TopModule? = null
-  var currCaller: Func? = null
-  val old2Value = hashMapOf<String, Value>()
-  val mul2Mul = hashMapOf<String, String>()
+  private const val funcMaxSize = 1000
+
+  lateinit var module: TopModule
+  private lateinit var currCaller: Func
+  private val old2Value = hashMapOf<String, Value>()
+  private val mul2Mul = hashMapOf<String, String>()
+
+  private fun safeInlinable(inst: CallInst): Boolean {
+    // it's heuristic, now I use the simplest approach
+    return module.callGraph.func2CalleeSet.getValue(inst.getCallee()).isEmpty()
+        && calcInstCnt(inst.getCallee()) + calcInstCnt(inst.parent!!.parent!!) < funcMaxSize
+  }
+
+  private fun isNotRecursion(func: Func): Boolean {
+    return !module.callGraph.func2CalleeSet.getValue(func).contains(func)
+  }
+
+  private fun aggressiveInlinable(inst: CallInst): Boolean {
+    val caller = inst.parent!!.parent!!
+    val callee = inst.getCallee()
+    return caller != callee
+        && isNotRecursion(callee)
+        && calcInstCnt(callee) + calcInstCnt(caller) < funcMaxSize
+  }
+
+  private fun attempt(func: Func, isSafe: Boolean): Int {
+    var changed = 0
+    val callInstList = func.blockList
+      .flatMap { it.instList.filterIsInstance<CallInst>() }
+      .filter { !module.builtinFuncMap.contains(it.getCallee().name!!) }
+      .sortedByDescending { it.parent!!.execFreq }
+    for (callInst in callInstList) {
+      val callee = callInst.getCallee()
+      if (module.funcMap.contains(callee.name)) {
+        if ((isSafe && safeInlinable(callInst)) || (!isSafe && aggressiveInlinable(callInst))) {
+          changed++
+          inline(callInst)
+        }
+      }
+    }
+    return changed
+  }
 
   override fun visit(topModule: TopModule) {
     module = topModule
-    topModule.callGraph.build()
-    topModule.funcMap.forEach { it.value.accept(this) }
+    var changed: Int
+    do {
+      topModule.callGraph.build()
+      changed =
+        topModule.funcMap.values.sumOf { attempt(it, true) }
+    } while (changed > 0)
+
+    do {
+      topModule.callGraph.build()
+      changed =
+        topModule.funcMap.values.sumOf { attempt(it, false) }
+    } while (changed > 0)
 
     // remove useless function
     topModule.callGraph.build()
@@ -29,10 +77,8 @@ object Inliner : IRVisitor() {
     TODO("Not yet implemented")
   }
 
-  private fun inlinable(inst: CallInst): Boolean {
-    // it's heuristic, now I use the simplest approach
-    return module!!.callGraph.func2CalleeSet.getValue(inst.getCallee()).isEmpty()
-        && inst.parent!!.parent!!.blockList.sumOf { it.instList.size } < 1000
+  private fun calcInstCnt(func: Func): Int {
+    return func.blockList.sumOf { it.instList.size }
   }
 
   private fun rename(name: String): String {
@@ -43,17 +89,17 @@ object Inliner : IRVisitor() {
         mul2Mul.getValue(withoutAddr) + ".addr"
       } else {
         val withoutMultiply = Utils.eliminateVersionWithoutDot(withoutAddr)
-        val mulName = currCaller!!.mulTable.rename(withoutMultiply)
-        currCaller!!.ssaTable.rename("$mulName.addr")
+        val mulName = currCaller.mulTable.rename(withoutMultiply)
+        currCaller.ssaTable.rename("$mulName.addr")
         mul2Mul[withoutAddr] = mulName
         "$mulName.addr"
       }
     } else if (mul2Mul.contains(withoutSSA)) {
-      currCaller!!.ssaTable.rename(mul2Mul.getValue(withoutSSA))
+      currCaller.ssaTable.rename(mul2Mul.getValue(withoutSSA))
     } else {
       val withoutMultiply = Utils.eliminateVersionWithoutDot(withoutSSA)
-      val mulName = currCaller!!.mulTable.rename(withoutMultiply)
-      currCaller!!.ssaTable.rename(mulName)
+      val mulName = currCaller.mulTable.rename(withoutMultiply)
+      currCaller.ssaTable.rename(mulName)
       mul2Mul[name] = mulName
       mulName
     }
@@ -178,18 +224,7 @@ object Inliner : IRVisitor() {
     calleeEntryBlock.prevBlockSet.add(callerBlock)
   }
 
-  override fun visit(func: Func) {
-    val callInstList =
-      func.blockList.flatMap { it.instList.filterIsInstance<CallInst>() }.sortedByDescending { it.parent!!.execFreq }
-    for (callInst in callInstList) {
-      val callee = callInst.getCallee()
-      if (module!!.funcMap.contains(callee.name)) {
-        if (inlinable(callInst)) {
-          inline(callInst)
-        }
-      }
-    }
-  }
+  override fun visit(func: Func) {}
 
   override fun visit(block: BasicBlock) {
     TODO("Not yet implemented")
