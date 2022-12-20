@@ -23,8 +23,8 @@ object Utils {
       "sle" -> "sge"
       "sgt" -> "slt"
       "sge" -> "sle"
-      "eq" -> "ne"
-      "ne" -> "eq"
+      "eq" -> "eq"
+      "ne" -> "ne"
       else -> throw Exception("Unknown condition: $cond")
     }
   }
