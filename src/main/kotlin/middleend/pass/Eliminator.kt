@@ -5,7 +5,6 @@ import middleend.basic.*
 object Eliminator : IRVisitor() {
   val workList = mutableListOf<Instruction>()
   val markedSet = hashSetOf<Value>()
-  var changed = false
 
   override fun visit(topModule: TopModule) {
     topModule.funcMap.forEach { it.value.accept(this) }
@@ -77,18 +76,20 @@ object Eliminator : IRVisitor() {
     }
   }
 
-  private fun foldRedundantBr(block: BasicBlock) {
+  private fun foldRedundantBr(block: BasicBlock): Boolean {
     val terminator = block.getTerminator()
     if (terminator is BranchInst && !terminator.isJump()) { // it's a conditional branch
       val trueBlock = terminator.getTrueBlock()
       if (trueBlock == terminator.getFalseBlock()) { // case 1
         val newTerminator = BranchInst(trueBlock, null, null)
         block.replaceInst(terminator, newTerminator)
+        return true
       }
     }
+    return false
   }
 
-  private fun removeEmptyBlock(block: BasicBlock) {
+  private fun removeEmptyBlock(block: BasicBlock): Boolean {
     val terminator = block.getTerminator()
     val func = block.parent!!
     if (terminator is BranchInst && terminator.isJump() && block != func.getEntryBlock()) {
@@ -118,12 +119,13 @@ object Eliminator : IRVisitor() {
         func.blockList.remove(block)
 
         assert(block.userList.isEmpty())
-        changed = true
+        return true
       }
     }
+    return false
   }
 
-  private fun combineBlocks(block: BasicBlock) { // it will affect the judgement of return block
+  private fun combineBlocks(block: BasicBlock): Boolean { // it will affect the judgement of return block
     val func = block.parent!!
     if (block.prevBlockSet.size == 1 && block != func.getReturnBlock()) { // it has only one predecessor
       val prevBlock = block.prevBlockSet.first()
@@ -148,13 +150,14 @@ object Eliminator : IRVisitor() {
         prevBlock.instList.addAll(block.instList)
         prevBlock.instList.forEach { it.parent = prevBlock }
 
-        changed = true
+        return true
       }
     }
+    return false
   }
 
   // I can construct a testcase to make this optimization takes effect
-  private fun hoistBranch(block: BasicBlock) {
+  private fun hoistBranch(block: BasicBlock): Boolean {
     val terminator = block.getTerminator()
     if (terminator is BranchInst && terminator.isJump()) {
       val jumpBlock = terminator.getTrueBlock()
@@ -183,20 +186,26 @@ object Eliminator : IRVisitor() {
           it.addAssignment(value, block)
         }
 
-        changed = true
+        return true
       }
     }
+    return false
   }
 
   private fun clean(func: Func) {
+    var changed: Boolean
     do {
       changed = false
       func.domTree.build()
       for (block in func.domTree.blockListInPostorder) {
-        foldRedundantBr(block) // case 1
-        removeEmptyBlock(block) // case 2
-        combineBlocks(block) // case 3
-        hoistBranch(block)
+        changed = changed || foldRedundantBr(block) // case 1
+        Checker.visit(block)
+        changed = when {
+          removeEmptyBlock(block) -> true
+          combineBlocks(block) -> true
+          hoistBranch(block) -> true
+          else -> changed
+        }
       }
     } while (changed)
   }
@@ -205,6 +214,7 @@ object Eliminator : IRVisitor() {
     func.revDomTree.build()
     mark(func)
     sweep(func)
+    Checker.visit(func)
 
     clean(func)
   }

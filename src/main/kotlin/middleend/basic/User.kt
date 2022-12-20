@@ -29,8 +29,17 @@ open class User(type: Type, name: String? = null) : Value(type, name) {
       usee.userList.add(user)
     }
 
+    // This function is not safe because a value might have multiple occurrence inside one useeList.
+    // Use position cut instead.
     fun cut(user: User, usee: Value) {
       user.useeList.remove(usee)
+      usee.userList.remove(user)
+    }
+
+    // This function is the position cut.
+    fun cut(user: User, index: Int) {
+      val usee = user.useeList[index]
+      user.useeList.removeAt(index)
       usee.userList.remove(user)
     }
   }
