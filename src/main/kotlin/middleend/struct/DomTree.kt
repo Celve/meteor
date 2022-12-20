@@ -68,6 +68,8 @@ class DomTree(val func: Func, val reversed: Boolean) {
 
   fun build() {
     idoms.clear() // initialize
+    successors.clear()
+    
     startNode = if (reversed) {
       func.blockList.last()
     } else {
