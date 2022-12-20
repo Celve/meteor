@@ -13,6 +13,8 @@ import middleend.helper.ValueTable
 import kotlin.math.pow
 
 class IRGenerator : ASTVisitor() {
+  private val loopWeight = 10.0
+
   private val scopeManger = ScopeManager()
   private val loopManager = LoopManager()
   val topModule = TopModule()
@@ -279,7 +281,7 @@ class IRGenerator : ASTVisitor() {
     scopeManger.addLast(curr.initScope)
 
     val nestedLoopsNum = loopManager.getNestedLoopsNum() + 1
-    val execFreq = 10.0.pow(nestedLoopsNum).toInt()
+    val execFreq = loopWeight.pow(nestedLoopsNum).toInt()
 
     if (false) {
       val condBlock = BasicBlock(renameLocal("for.cond"), execFreq)
@@ -359,7 +361,7 @@ class IRGenerator : ASTVisitor() {
     scopeManger.addLast(curr.scope)
 
     val nestedLoopsNum = loopManager.getNestedLoopsNum() + 1
-    val execFreq = 10.0.pow(nestedLoopsNum).toInt()
+    val execFreq = loopWeight.pow(nestedLoopsNum).toInt()
 
     if (false) {
       val condBlock = BasicBlock(renameLocal("while.cond"), execFreq)
@@ -411,7 +413,7 @@ class IRGenerator : ASTVisitor() {
 
     val nestedLoopsNum = loopManager.getNestedLoopsNum()
     val execFreq =
-      10.0.pow(nestedLoopsNum).toInt() // according to EAC, it should be divided by the number of branches
+      loopWeight.pow(nestedLoopsNum).toInt() // according to EAC, it should be divided by the number of branches
     val endBlock = BasicBlock(renameLocal("if.end"), execFreq)
     val thenBlock = BasicBlock(renameLocal("if.then"), execFreq)
     val elseBlock: BasicBlock? = if (curr.elseDo != null) BasicBlock(renameLocal("if.else"), execFreq) else null
@@ -558,7 +560,7 @@ class IRGenerator : ASTVisitor() {
     val startPoint = IRBuilder.createGEP("ptr", renameLocal(".array") + ".addr", extendedArray, arraySize, null)
     val previousBlock = IRBuilder.getInsertBlock()!!
     val nestedLoopsNum = loopManager.getNestedLoopsNum() + count + 1
-    val execFreq = 10.0.pow(nestedLoopsNum).toInt()
+    val execFreq = loopWeight.pow(nestedLoopsNum).toInt()
     val condBlock = BasicBlock(renameLocal("while.cond"), execFreq)
     val bodyBlock = BasicBlock(renameLocal("while.body"), execFreq)
     val endBlock = BasicBlock(renameLocal("while.end"), execFreq)
@@ -867,7 +869,7 @@ class IRGenerator : ASTVisitor() {
 
   override fun visit(curr: LogicalOrExprNode) {
     val nestedLoopsNum = loopManager.getNestedLoopsNum()
-    val execFreq = 10.0.pow(nestedLoopsNum).toInt()
+    val execFreq = loopWeight.pow(nestedLoopsNum).toInt()
     val endBlock = BasicBlock(renameLocal("lor.end"), execFreq)
     val candidates: MutableList<Pair<Value, BasicBlock>> = mutableListOf()
     val size = curr.exprs.size
@@ -898,7 +900,7 @@ class IRGenerator : ASTVisitor() {
 
   override fun visit(curr: LogicalAndExprNode) {
     val nestedLoopsNum = loopManager.getNestedLoopsNum()
-    val execFreq = 10.0.pow(nestedLoopsNum).toInt()
+    val execFreq = loopWeight.pow(nestedLoopsNum).toInt()
     val endBlock = BasicBlock(renameLocal("land.end"), execFreq)
     val candidates: MutableList<Pair<Value, BasicBlock>> = mutableListOf()
     val size = curr.exprs.size

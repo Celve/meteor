@@ -12,7 +12,7 @@ open class Constant(type: Type, name: String? = null) : User(type, name) {
 /// It would never make sense to RAUW them.
 open class ConstantData(type: Type, name: String? = null) : Constant(type, name)
 
-class ConstantInt(val numOfBits: Int, val value: Int) : ConstantData(TypeFactory.getIntType(numOfBits)) {
+data class ConstantInt(val numOfBits: Int, val value: Int) : ConstantData(TypeFactory.getIntType(numOfBits)) {
   override fun duplicate(): Value {
     return ConstantInt(numOfBits, value)
   }

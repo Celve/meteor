@@ -46,8 +46,9 @@ object SuperValueNumbering : IRVisitor() {
         if (result != null) { // FIXME: temporarily ignore commute operations
           val newInst = MvInst(inst.name!!, result)
           block.replaceInst(inst, newInst)
+        } else {
+          patternTable.add(lhs, op, rhs, inst)
         }
-        patternTable.add(lhs, op, rhs, inst)
       }
     }
   }

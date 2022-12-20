@@ -152,12 +152,15 @@ if __name__ == "__main__":
             build_options.add("--adce")
         elif argv.startswith("--licm"):
             build_options.add("--licm")
+        elif argv.startswith("--dvnt"):
+            build_options.add("--dvnt")
         elif argv.startswith("--O2"):
             build_options.add("--svn")
             build_options.add("--inline")
             build_options.add("--sccp")
             build_options.add("--adce")
             build_options.add("--licm")
+            build_options.add("--dvnt")
         elif argv.startswith("--result"):
             _, result_dir = argv.split("=")
             if not result_dir.endswith("/"):

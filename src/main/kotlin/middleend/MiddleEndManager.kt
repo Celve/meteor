@@ -32,6 +32,10 @@ object MiddleEndManager {
       SuperValueNumbering.visit(module)
     }
     Checker.visit(module)
+    if (buildOptions.contains("--dvnt")) {
+      DomValueNumbering.visit(module)
+    }
+    Checker.visit(module)
     if (buildOptions.contains("--adce")) {
       Eliminator.visit(module)
     }

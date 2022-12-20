@@ -31,6 +31,12 @@ class BasicBlock(name: String, val execFreq: Int) : Value(TypeFactory.getLabelTy
     instList.add(index, inst)
   }
 
+  fun removeInst(inst: Instruction, sub: Value) {
+    inst.substituteAll(sub)
+    inst.eliminate()
+    instList.remove(inst)
+  }
+
   fun replaceInst(oldInst: Instruction, newInst: Instruction) {
     val index = instList.indexOf(oldInst)
     if (index == -1) {
