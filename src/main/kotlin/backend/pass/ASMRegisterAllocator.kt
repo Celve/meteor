@@ -149,9 +149,6 @@ object ASMRegisterAllocator : ASMVisitor() {
   }
 
   private fun colorInstructions() {
-//    println("[color]")
-//    println(color)
-//    println(color.contains(regFactory.getPhyReg("s1")))
     for (block in asmFunc.blockList) {
       for (inst in block.instList) {
         val rs = inst.getRs()
@@ -223,13 +220,6 @@ object ASMRegisterAllocator : ASMVisitor() {
       block.useSet.addAll(inst.getRs().subtract(block.defSet))
     }
     block.useSet += regFactory.getPhyReg(0)
-//    println("$block's defSet: ${block.defSet}")
-//    println("$block's useSet: ${block.useSet}")
-  }
-
-  private fun calculatedExecutedTime() {
-    val block = asmFunc.blockList.first()
-
   }
 
   private fun livenessAnalysis() {
