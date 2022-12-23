@@ -32,7 +32,7 @@ fun main(args: Array<String>) {
     val inputStream = System.`in`
 
     val progNode = FrontEndManager.visit(inputStream)
-    val topModule = MiddleEndManager.visit(progNode, testIR, args.toHashSet())
+    val topModule = MiddleEndManager.visit(progNode, testIR, buildOptions)
     BackEndManager.visit(topModule, testASM)
   }
 }
