@@ -3,7 +3,6 @@ package backend
 import backend.controller.ASMGenerator
 import backend.pass.ASMEmit
 import backend.pass.ASMRegisterAllocator
-import backend.pass.ASMStackAllocator
 import middleend.basic.TopModule
 
 object BackEndManager {

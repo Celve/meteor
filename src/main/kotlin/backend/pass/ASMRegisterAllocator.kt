@@ -78,7 +78,7 @@ object ASMRegisterAllocator : ASMVisitor() {
   val adjSet = hashSetOf<Pair<Register, Register>>()
 
   /** adjacent list of node u */
-  val adjList = hashMapOf<Register, MutableList<Register>>().withDefault { mutableListOf() }
+  val adjList = hashMapOf<Register, HashSet<Register>>().withDefault { hashSetOf() }
 
   /** degree of node u, the degree of pre-colored nodes should be considered as infinity  */
   val degree = hashMapOf<Register, Int>().withDefault { if (it is PhyReg) Int.MAX_VALUE else 0 }
@@ -219,6 +219,7 @@ object ASMRegisterAllocator : ASMVisitor() {
       // the use is the set of use that are not defined in the block
       block.useSet.addAll(inst.getRs().subtract(block.defSet))
     }
+//    block.useSet.removeAll(block.defSet)
     block.useSet += regFactory.getPhyReg(0)
   }
 
@@ -234,28 +235,26 @@ object ASMRegisterAllocator : ASMVisitor() {
     // in = use + (out - def)
     // out = union of all in of successors
     // repeat until in and out are fixed
-    var changed: Boolean
-    do {
-      changed = false
-      for (block in asmFunc.blockList) {
-        val originLiveInSet = block.liveInSet
-        val originLiveOutSet = block.liveOutSet
-        block.liveInSet = block.useSet.union(block.liveOutSet.minus(block.defSet)).toMutableSet()
-        block.liveOutSet =
-          block.succList.fold(setOf<Register>()) { acc, succ -> acc.union(succ.liveInSet) }.toMutableSet()
+//    val workList = mutableListOf<ASMBlock>(asmFunc.blockList.last())
+    val workList = asmFunc.blockList.toMutableList()
+    while (workList.isNotEmpty()) {
+      val block = workList.removeFirst()
+      val originLiveInSet = block.liveInSet
+      val originLiveOutSet = block.liveOutSet
+      block.liveOutSet = block.succList.fold(setOf()) { acc, succ -> acc.union(succ.liveInSet) }
+      block.liveInSet = block.useSet.union(block.liveOutSet.minus(block.defSet))
 
-        // FIXME: This is time-wasting, maybe I should maintain something like finish set?
-        if (originLiveInSet != block.liveInSet || originLiveOutSet != block.liveOutSet) {
-          changed = true
-        }
+      // FIXME: This is time-wasting, maybe I should maintain something like finish set?
+      if (originLiveInSet != block.liveInSet || originLiveOutSet != block.liveOutSet) {
+        workList.addAll(block.predList)
       }
-    } while (changed)
+    }
   }
 
   private fun build() {
     // from the liveOut of block to deduce the liveOut of inst
     for (block in asmFunc.blockList) {
-      val lives = block.liveOutSet
+      val lives = block.liveOutSet.toMutableSet()
       for (inst in block.instList.reversed()) {
         val uses = inst.getRs()
         val defs = inst.getRd()
@@ -296,11 +295,11 @@ object ASMRegisterAllocator : ASMVisitor() {
       adjSet.add(Pair(lhs, rhs))
       adjSet.add(Pair(rhs, lhs))
       if (lhs !is PhyReg) { // it's useless, because it cannot be simplified, and it can save space
-        adjList.getOrPut(lhs) { mutableListOf() }.add(rhs)
+        adjList.getOrPut(lhs) { hashSetOf() }.add(rhs)
         degree[lhs] = degree.getValue(lhs) + 1
       }
       if (rhs !is PhyReg) { // it's useless, and it can save space
-        adjList.getOrPut(rhs) { mutableListOf() }.add(lhs)
+        adjList.getOrPut(rhs) { hashSetOf() }.add(lhs)
         degree[rhs] = degree.getValue(rhs) + 1
       }
     }
@@ -319,8 +318,8 @@ object ASMRegisterAllocator : ASMVisitor() {
     }
   }
 
-  private fun adjacent(n: Register): List<Register> {
-    return adjList.getValue(n).minus(selectedStack.union(coalescedNodes))
+  private fun adjacent(n: Register): Set<Register> {
+    return adjList.getValue(n).minus(coalescedNodes.union(selectedStack))
   }
 
   private fun nodeMoves(n: Register): List<ASMMvInst> {
@@ -343,9 +342,7 @@ object ASMRegisterAllocator : ASMVisitor() {
     val simplified = simplifyWorklist.firstOrNull() ?: return
     simplifyWorklist.remove(simplified)
     selectedStack.add(simplified)
-    for (related in adjacent(simplified)) {
-      decrementDegree(related)
-    }
+    adjacent(simplified).forEach { decrementDegree(it) }
   }
 
   private fun decrementDegree(reg: Register) {
@@ -362,7 +359,7 @@ object ASMRegisterAllocator : ASMVisitor() {
     }
   }
 
-  private fun enableMoves(regs: List<Register>) {
+  private fun enableMoves(regs: Set<Register>) {
     for (reg in regs) {
       for (mv in nodeMoves(reg)) {
         if (activeMoves.contains(mv)) {
@@ -469,7 +466,7 @@ object ASMRegisterAllocator : ASMVisitor() {
     coalescedNodes.add(v)
     alias[v] = u
     moveList.getOrPut(u) { mutableListOf() }.addAll(moveList.getValue(v))
-    enableMoves(listOf(v))
+    enableMoves(setOf(v))
     for (neighbor in adjacent(v)) {
       addEdge(neighbor, u)
       decrementDegree(neighbor)
@@ -505,8 +502,9 @@ object ASMRegisterAllocator : ASMVisitor() {
 
   private fun selectSpilledWithHeuristic(candidates: MutableList<Register>): Register? {
     // this heuristic is bad, because it doesn't consider context of the register
-    candidates.sortBy { executionFrequency.getValue(it) / degree.getValue(it) }
-    return candidates.find { it is VirReg && !rewrittenNodes.contains(it) }
+//    candidates.sortBy { executionFrequency.getValue(it) / degree.getValue(it) }
+    return candidates.filter { it is VirReg && !rewrittenNodes.contains(it) }
+      .minByOrNull { executionFrequency.getValue(it) / degree.getValue(it) }
   }
 
   private fun selectColorWithHeuristic(reg: Register, candidate: HashSet<Int>): Int {
