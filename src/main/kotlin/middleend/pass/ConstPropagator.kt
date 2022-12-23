@@ -67,6 +67,9 @@ object ConstPropagator : IRVisitor() {
       blockWorkList.add(block)
       blockWorkList.addAll(block.nextBlockSet.filter { blockStateMap.getValue(it) })
       blockStateMap[block] = true
+    } else {
+      // this is to solve the accessibility problem for phi inst
+      varWorkList.addAll(block.instList.filterIsInstance<PhiInst>())
     }
   }
 
@@ -88,8 +91,7 @@ object ConstPropagator : IRVisitor() {
 
     while (varWorkList.isNotEmpty() || blockWorkList.isNotEmpty()) {
       if (varWorkList.isNotEmpty()) {
-        val variable = varWorkList.first()
-        varWorkList.removeFirst()
+        val variable = varWorkList.removeFirst()
         variable.userList.filterIsInstance<Instruction>()
           .filter { blockStateMap.getValue(it.parent!!) || it is PhiInst }.forEach { it.accept(this) }
       }
@@ -180,7 +182,11 @@ object ConstPropagator : IRVisitor() {
     val determinedSet = hashSetOf<Int>()
     var undeterminedSum = 0
     inst.getPredList().forEach {
-      // use isAccessible()k to eliminate some impossible branch instruction
+      // use isAccessible() to eliminate some impossible branch instruction
+      // however, bugs are introduced consequently
+      // there would be some cases that an initially not accessible branch becomes accessible,
+      // and it only affects the effectiveness of phi inst
+      // therefore when a branch inst becomes undetermined, all phi insts in its successor blocks should be added into work list
       if (blockStateMap.getValue(it.second) && isAccessible(inst.parent!!, it.second)) {
         if (isDetermined(it.first)) {
           determinedSet.add(getDetermined(it.first))
