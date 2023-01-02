@@ -10,7 +10,7 @@ import kotlin.math.min
  * The only difference is that Register could be overlapped (due to physical register), while value in LLVM cannot.
  */
 abstract class ASMInst(val comment: String) {
-  var parent: ASMBlock? = null
+  lateinit var parent: ASMBlock
 
   abstract fun getRs(): List<Register>
 
@@ -37,21 +37,20 @@ abstract class ASMInst(val comment: String) {
 
   fun insertedBefore(other: ASMInst) {
     val index = other.getIndexAtBlock()
-    insertAtIndexOf(other.parent!!, index)
+    insertAtIndexOf(other.parent, index)
   }
 
   fun insertedAfter(other: ASMInst) {
     val index = other.getIndexAtBlock()
-    insertAtIndexOf(other.parent!!, index + 1)
+    insertAtIndexOf(other.parent, index + 1)
   }
 
   fun unlink() {
-    parent!!.instList.remove(this)
-    parent = null
+    parent.instList.remove(this)
   }
 
   fun getIndexAtBlock(): Int {
-    for ((index, inst) in parent!!.instList.withIndex()) {
+    for ((index, inst) in parent.instList.withIndex()) {
       if (inst === this) {
         return index
       }

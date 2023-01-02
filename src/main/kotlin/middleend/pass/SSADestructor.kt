@@ -41,7 +41,7 @@ object SSADestructor : IRVisitor() {
         middleBlock.addInst(0, pCopyInst)
         middleBlock.addInst(1, BranchInst(block, null, null))
 
-        val blockList = block.parent!!.blockList
+        val blockList = block.parent.blockList
         val index = blockList.indexOf(prevBlock)
         blockList.add(index + 1, middleBlock)
       } else {

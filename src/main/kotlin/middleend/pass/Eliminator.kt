@@ -38,7 +38,7 @@ object Eliminator : IRVisitor() {
       val inst = workList.first()
       workList.removeFirst()
       inst.useeList.forEach { take(it) }
-      func.revDomTree.domFrontiers.getValue(inst.parent!!).forEach {
+      func.revDomTree.domFrontiers.getValue(inst.parent).forEach {
         val terminator = it.getTerminator()
         if (terminator is BranchInst) {
           take(terminator)
@@ -91,7 +91,7 @@ object Eliminator : IRVisitor() {
 
   private fun removeEmptyBlock(block: BasicBlock): Boolean {
     val terminator = block.getTerminator()
-    val func = block.parent!!
+    val func = block.parent
     if (terminator is BranchInst && terminator.isJump() && block != func.getEntryBlock()) {
       val jumpBlock = terminator.getTrueBlock()
       if (block.instList.size == 1 && checkPhiInst(block)) { // it's empty
@@ -103,7 +103,7 @@ object Eliminator : IRVisitor() {
           // eliminate useless phi instruction
           val firstValue = inst.getPred(0).first
           if (inst.getPredList().size == 1 || inst.getPredList().all { it.first == firstValue }) {
-            inst.parent!!.replaceInst(inst, MvInst(inst.name!!, firstValue))
+            inst.parent.replaceInst(inst, MvInst(inst.name!!, firstValue))
           }
         }
 
@@ -126,7 +126,7 @@ object Eliminator : IRVisitor() {
   }
 
   private fun combineBlocks(block: BasicBlock): Boolean { // it will affect the judgement of return block
-    val func = block.parent!!
+    val func = block.parent
     if (block.prevBlockSet.size == 1 && block != func.getReturnBlock()) { // it has only one predecessor
       val prevBlock = block.prevBlockSet.first()
       if (prevBlock.nextBlockSet.size == 1) {

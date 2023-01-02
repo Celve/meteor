@@ -23,11 +23,11 @@ object Checker : IRVisitor() {
   override fun visit(block: BasicBlock) {
     block.prevBlockSet.forEach {
       assert(it.nextBlockSet.contains(block))
-      assert(block.parent!!.blockList.contains(it))
+      assert(block.parent.blockList.contains(it))
     }
     block.nextBlockSet.forEach {
       assert(it.prevBlockSet.contains(block))
-      assert(block.parent!!.blockList.contains(it))
+      assert(block.parent.blockList.contains(it))
     }
     block.instList.forEach { inst ->
       assert(inst.parent == block)
@@ -58,7 +58,7 @@ object Checker : IRVisitor() {
   override fun visit(inst: BitCastInst) {}
 
   override fun visit(inst: PhiInst) {
-    val block = inst.parent!!
+    val block = inst.parent
     val predList = inst.getPredList()
     assert(predList.size == block.prevBlockSet.size)
     assert(predList.size != 1)
@@ -70,9 +70,9 @@ object Checker : IRVisitor() {
   override fun visit(inst: BranchInst) {
     val trueBlock = inst.getTrueBlock()
     val falseBlock = inst.getFalseBlock()
-    assert(trueBlock.prevBlockSet.contains(inst.parent) && inst.parent!!.nextBlockSet.contains(trueBlock))
+    assert(trueBlock.prevBlockSet.contains(inst.parent) && inst.parent.nextBlockSet.contains(trueBlock))
     if (falseBlock != null) {
-      assert(falseBlock.prevBlockSet.contains(inst.parent) && inst.parent!!.nextBlockSet.contains(falseBlock))
+      assert(falseBlock.prevBlockSet.contains(inst.parent) && inst.parent.nextBlockSet.contains(falseBlock))
     }
   }
 

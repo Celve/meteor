@@ -7,8 +7,8 @@ import backend.basic.*
  * When constructing the assembly code, we need to set up the ASMFunc, ASMBlock, or ASMInst properly, indicating the insert point.
  */
 object ASMBuilder {
-  var func: ASMFunc? = null
-  var block: ASMBlock? = null
+  private lateinit var func: ASMFunc
+  private lateinit var block: ASMBlock
   var point: ASMInst? = null
   var isBefore = false
 
@@ -18,7 +18,7 @@ object ASMBuilder {
   }
 
   fun getCurrentFunc(): ASMFunc {
-    return func!!
+    return func
   }
 
   fun setInsertBlock(newBlock: ASMBlock) {
@@ -27,13 +27,13 @@ object ASMBuilder {
   }
 
   fun getInsertBlock(): ASMBlock {
-    return block!!
+    return block
   }
 
   fun setInsertPointBefore(newInst: ASMInst) {
     point = newInst
     block = newInst.parent
-    func = block!!.parent
+    func = block.parent
     isBefore = true
   }
 
@@ -42,7 +42,7 @@ object ASMBuilder {
    */
   fun setInsertPointAfter(inst: ASMInst) {
     block = inst.parent
-    func = block!!.parent
+    func = block.parent
 //    point = block!!.instList[inst.getIndexAtBlock() + 1]
     point = inst
     isBefore = false
@@ -50,13 +50,13 @@ object ASMBuilder {
 
   private fun insertInst(inst: ASMInst) {
     if (point == null) {
-      inst.insertAtTheTailOf(block!!)
+      inst.insertAtTheTailOf(block)
     } else {
       val index = point!!.getIndexAtBlock()
       if (isBefore) {
-        inst.insertAtIndexOf(block!!, index)
+        inst.insertAtIndexOf(block, index)
       } else {
-        inst.insertAtIndexOf(block!!, index + 1)
+        inst.insertAtIndexOf(block, index + 1)
       }
     }
   }
@@ -121,7 +121,7 @@ object ASMBuilder {
   fun createJInst(target: ASMBlock, comment: String = "") {
     val jInst = ASMJInst(target, comment)
     insertInst(jInst)
-    target.addPredBlock(block!!)
+    target.addPredBlock(block)
   }
 
   /**
@@ -130,7 +130,7 @@ object ASMBuilder {
   fun createBzInst(op: String, rs: Register, target: ASMBlock, comment: String = "") {
     val bzInst = ASMBzInst(op, rs, target, comment)
     insertInst(bzInst)
-    target.addPredBlock(block!!)
+    target.addPredBlock(block)
   }
 
   /**

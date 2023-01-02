@@ -165,7 +165,7 @@ class IRGenerator : ASTVisitor() {
 
     curr.funcBlock?.accept(this)
 
-    if (!IRBuilder.getInsertBlock()!!.hasTerminator()) {
+    if (!IRBuilder.getInsertBlock().hasTerminator()) {
       val returnBlock = BasicBlock(renameLocal("return"), 1)
       IRBuilder.createBr(returnBlock)
       IRBuilder.setInsertBlock(returnBlock)
@@ -221,23 +221,23 @@ class IRGenerator : ASTVisitor() {
 
     val returnBlock = BasicBlock(renameLocal("return"), 1)
     IRBuilder.setReturnBlock(returnBlock)
-    IRBuilder.resetInsertBlock(returnBlock)
+
+
+    IRBuilder.resetInsertBlock(entryBlock)
+    curr.funcBlock?.accept(this)
+
+    if (!IRBuilder.getInsertBlock().hasTerminator()) {
+      IRBuilder.createBr(returnBlock)
+    }
+
+    // don't forget to push the return block into block list
+    IRBuilder.setInsertBlock(returnBlock)
     if (funcType.resultType != TypeFactory.getVoidType()) {
       val loadInst = IRBuilder.createLoad(".ret", innerScope.getAddr(".ret")!!)
       IRBuilder.createRet(loadInst)
     } else {
       IRBuilder.createRetVoid()
     }
-
-    IRBuilder.resetInsertBlock(entryBlock)
-    curr.funcBlock?.accept(this)
-
-    if (!IRBuilder.getInsertBlock()!!.hasTerminator()) {
-      IRBuilder.createBr(returnBlock)
-    }
-
-    // don't forget to push the return block into block list
-    IRBuilder.setInsertBlock(returnBlock)
 
     scopeManger.removeLast()
   }
@@ -558,7 +558,7 @@ class IRGenerator : ASTVisitor() {
 
     /** the start point is the last element of array, which iterate until the addr before the first element */
     val startPoint = IRBuilder.createGEP("ptr", renameLocal(".array") + ".addr", extendedArray, arraySize, null)
-    val previousBlock = IRBuilder.getInsertBlock()!!
+    val previousBlock = IRBuilder.getInsertBlock()
     val nestedLoopsNum = loopManager.getNestedLoopsNum() + count + 1
     val execFreq = loopWeight.pow(nestedLoopsNum).toInt()
     val condBlock = BasicBlock(renameLocal("while.cond"), execFreq)
@@ -589,7 +589,7 @@ class IRGenerator : ASTVisitor() {
       ConstantInt(32, -1),
       null
     )
-    phiInst.addAssignment(nextElement, IRBuilder.getInsertBlock()!!)
+    phiInst.addAssignment(nextElement, IRBuilder.getInsertBlock())
     IRBuilder.createBr(condBlock)
 
     IRBuilder.setInsertBlock(endBlock)
@@ -883,7 +883,7 @@ class IRGenerator : ASTVisitor() {
       candidates.add(
         Pair(
           if (index == size - 1) IRBuilder.checki8Toi1(expr.value!!) else ConstantInt(8, 1),
-          IRBuilder.getInsertBlock()!!
+          IRBuilder.getInsertBlock()
         )
       )
       if (index == size - 1) {
@@ -914,7 +914,7 @@ class IRGenerator : ASTVisitor() {
       candidates.add(
         Pair(
           if (index == size - 1) IRBuilder.checki8Toi1(expr.value!!) else ConstantInt(8, 0),
-          IRBuilder.getInsertBlock()!!
+          IRBuilder.getInsertBlock()
         )
       )
       if (index == size - 1) {

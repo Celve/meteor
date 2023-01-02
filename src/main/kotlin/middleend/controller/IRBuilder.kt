@@ -3,8 +3,8 @@ package middleend.controller
 import middleend.basic.*
 
 object IRBuilder {
-  private var func: Func? = null
-  private var block: BasicBlock? = null
+  private lateinit var func: Func
+  private lateinit var block: BasicBlock
   private var point: Instruction? = null
   private var returnBlock: BasicBlock? = null
   private var isBefore = false
@@ -15,12 +15,12 @@ object IRBuilder {
     returnBlock = null
   }
 
-  fun getCurrentFunc(): Func? {
+  fun getCurrentFunc(): Func {
     return func
   }
 
   fun getCurrentFuncReturnType(): Type {
-    return func!!.funcType.resultType
+    return func.funcType.resultType
   }
 
   /**
@@ -28,7 +28,7 @@ object IRBuilder {
    */
   fun setInsertBlock(newBlock: BasicBlock) {
     block = newBlock
-    block!!.insertAtTheTailOf(func!!)
+    block.insertAtTheTailOf(func)
     point = null
   }
 
@@ -46,7 +46,7 @@ object IRBuilder {
     returnBlock = newBlock // TODO: optimize this process, which should be encapsulated in a function
   }
 
-  fun getInsertBlock(): BasicBlock? {
+  fun getInsertBlock(): BasicBlock {
     return block
   }
 
@@ -57,13 +57,13 @@ object IRBuilder {
   fun setInsertPointBefore(inst: Instruction) {
     point = inst
     block = inst.parent
-    func = block!!.parent
+    func = block.parent
     isBefore = true
   }
 
   fun setInsertPointAfter(inst: Instruction) {
     block = inst.parent
-    func = block!!.parent
+    func = block.parent
 //    point = block!!.instList[inst.getIndexAtBlock() + 1]
     point = inst
     isBefore = false
@@ -71,13 +71,13 @@ object IRBuilder {
 
   private fun insertInstBeforeInsertPoint(inst: Instruction) {
     if (point == null) {
-      inst.insertAtTheTailOf(block!!)
+      inst.insertAtTheTailOf(block)
     } else {
       val index = point!!.getIndexAtBlock()
       if (isBefore) {
-        inst.insertAtIndexOf(block!!, index)
+        inst.insertAtIndexOf(block, index)
       } else {
-        inst.insertAtIndexOf(block!!, index + 1)
+        inst.insertAtIndexOf(block, index + 1)
       }
     }
   }
@@ -106,7 +106,7 @@ object IRBuilder {
 
   fun createAlloca(result: String, type: Type): Value {
     val allocaInst = AllocaInst(result, type)
-    val allocaBlock = func!!.blockList.first()
+    val allocaBlock = func.blockList.first()
     allocaInst.insertAtIndexOf(allocaBlock, allocaBlock.getLastAllocaInstIndex() + 1)
     return allocaInst
   }
@@ -154,13 +154,13 @@ object IRBuilder {
   }
 
   fun createBr(trueBlock: BasicBlock): BranchInst? {
-    return if (!block!!.hasTerminator()) {
+    return if (!block.hasTerminator()) {
       val brInst = BranchInst(trueBlock, null, null)
       insertInstBeforeInsertPoint(brInst)
 
       // build control flow graph
-      block!!.addNextBlock(trueBlock)
-      trueBlock.addPrevBlock(block!!)
+      block.addNextBlock(trueBlock)
+      trueBlock.addPrevBlock(block)
 
       brInst
     } else {
@@ -186,10 +186,10 @@ object IRBuilder {
     insertInstBeforeInsertPoint(brInst)
 
     // build control flow graph
-    block!!.addNextBlock(trueBlock)
-    trueBlock.addPrevBlock(block!!)
-    block!!.addNextBlock(falseBlock)
-    falseBlock.addPrevBlock(block!!)
+    block.addNextBlock(trueBlock)
+    trueBlock.addPrevBlock(block)
+    block.addNextBlock(falseBlock)
+    falseBlock.addPrevBlock(block)
     return brInst
   }
 

@@ -7,7 +7,7 @@ import middleend.pass.IRVisitor
  * A BasicBlock is a sequence of instructions, terminated by a terminator instruction.
  */
 class BasicBlock(name: String, val execFreq: Int) : Value(TypeFactory.getLabelType(name), name) {
-  var parent: Func? = null
+  lateinit var parent: Func
   var instList: MutableList<Instruction> = mutableListOf()
   val prevBlockSet = hashSetOf<BasicBlock>()
   val nextBlockSet = hashSetOf<BasicBlock>()
@@ -49,7 +49,7 @@ class BasicBlock(name: String, val execFreq: Int) : Value(TypeFactory.getLabelTy
   }
 
   fun getIndexInFunc(): Int {
-    for ((index, block) in parent!!.blockList.withIndex()) {
+    for ((index, block) in parent.blockList.withIndex()) {
       if (block === this) {
         return index
       }

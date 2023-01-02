@@ -4,7 +4,7 @@ import middleend.basic.*
 import middleend.struct.Loop
 
 object LoopInvarCodeMotion : IRVisitor() {
-  var currFunc: Func? = null
+  private lateinit var currFunc: Func
 
   override fun visit(topModule: TopModule) {
     topModule.funcMap.forEach { it.value.accept(this) }
@@ -33,15 +33,15 @@ object LoopInvarCodeMotion : IRVisitor() {
 
   private fun moveInvariants(loop: Loop) {
     val invariants = collectInvariants(loop)
-    val doms = currFunc!!.domTree.doms
+    val doms = currFunc.domTree.doms
     val exitsDom = loop.exit.map { doms.getValue(it).toSet() }.reduce { lhs, rhs -> lhs.intersect(rhs) }
-    val movable = invariants.filter { exitsDom.contains(it.parent!!) }
+    val movable = invariants.filter { exitsDom.contains(it.parent) }
 
     val header = loop.header
     val prevBlockSet = header.prevBlockSet.filter { !loop.body.contains(it) }
     if (movable.isNotEmpty() && prevBlockSet.size == 1) {
       // CFG
-      val preHeader = BasicBlock(currFunc!!.mulTable.rename("preheader"), loop.header.execFreq)
+      val preHeader = BasicBlock(currFunc.mulTable.rename("preheader"), loop.header.execFreq)
       val preLoop = prevBlockSet.first()
       preHeader.parent = currFunc
       preLoop.removeNextBlock(header)
@@ -66,10 +66,10 @@ object LoopInvarCodeMotion : IRVisitor() {
         it.addAssignment(value, preHeader)
       }
 
-      currFunc!!.blockList.add(currFunc!!.blockList.indexOf(loop.header), preHeader)
+      currFunc.blockList.add(currFunc.blockList.indexOf(loop.header), preHeader)
 
       movable.forEach {
-        it.parent!!.instList.remove(it)
+        it.parent.instList.remove(it)
         it.parent = preHeader
         preHeader.instList.add(it)
       }

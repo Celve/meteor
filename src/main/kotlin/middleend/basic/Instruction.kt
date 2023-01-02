@@ -4,7 +4,7 @@ import middleend.helper.Utils
 import middleend.pass.IRVisitor
 
 abstract class Instruction(type: Type, name: String? = null) : User(type, name) {
-  var parent: BasicBlock? = null
+  lateinit var parent: BasicBlock
 
   // only name and type are reserved, all user-usee relationship are ignored
   open fun isTerminator(): Boolean {
@@ -29,7 +29,7 @@ abstract class Instruction(type: Type, name: String? = null) : User(type, name) 
   }
 
   fun getIndexAtBlock(): Int {
-    for ((index, inst) in parent!!.instList.withIndex()) {
+    for ((index, inst) in parent.instList.withIndex()) {
       if (inst === this) {
         return index
       }

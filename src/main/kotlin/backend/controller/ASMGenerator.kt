@@ -12,7 +12,7 @@ import middleend.pass.IRVisitor
  * This convention only takes effect when we actually use all kinds of the physical register.
  */
 class ASMGenerator : IRVisitor() {
-  var module: ASMModule? = null
+  lateinit var module: ASMModule
   private var regFactory = RegFactory()
   private var value2Reg = hashMapOf<String, Register>() // this mapping is only for virtual register
   private var value2Offset = hashMapOf<Value, Immediate>() // this mapping is only for space allocated on stack
@@ -53,7 +53,7 @@ class ASMGenerator : IRVisitor() {
       virReg
     } else if (value is GlobalVariable || value is ConstantStr) {
       val virReg = regFactory.newVirReg()
-      ASMBuilder.createLaInst(virReg, module!!.getGlobalPtr(value.name!!))
+      ASMBuilder.createLaInst(virReg, module.getGlobalPtr(value.name!!))
       virReg
     } else {
       value2Reg[value.name!!]
@@ -76,7 +76,7 @@ class ASMGenerator : IRVisitor() {
 
   override fun visit(topModule: TopModule) {
     module = ASMModule()
-    regFactory = module!!.regFactory
+    regFactory = module.regFactory
 
     // FIXME: The whole process doesn't take care of the global variable
     topModule.globalVarMap.forEach { it.value.accept(this) }
@@ -87,7 +87,7 @@ class ASMGenerator : IRVisitor() {
   override fun visit(globalVar: GlobalVariable) {
     val nameWithAddr = globalVar.name!!
     val newGlobalVar = ASMGlobalPointer(nameWithAddr.split('.').first())
-    module!!.addGlobalPtr(nameWithAddr, newGlobalVar)
+    module.addGlobalPtr(nameWithAddr, newGlobalVar)
 
     newGlobalVar.addDef(Directive(".type", listOf(newGlobalVar.name, "@object")))
     newGlobalVar.addDef(Directive(".data", listOf()))
@@ -100,7 +100,7 @@ class ASMGenerator : IRVisitor() {
 
   override fun visit(constStr: ConstantStr) {
     val newGlobalVar = ASMGlobalPointer(constStr.name!!)
-    module!!.addGlobalPtr(constStr.name!!, newGlobalVar)
+    module.addGlobalPtr(constStr.name!!, newGlobalVar)
 
     newGlobalVar.addDef(Directive(".type", listOf(newGlobalVar.name, "@object")))
     newGlobalVar.addDef(Directive(".rodata", listOf()))
@@ -113,7 +113,7 @@ class ASMGenerator : IRVisitor() {
     val asmFunc = ASMFunc(func.name!!)
     asmFunc.argsNum = func.argList.size
     ASMBuilder.setCurrentFunc(asmFunc)
-    module!!.funcList.add(asmFunc)
+    module.funcList.add(asmFunc)
     regFactory.position = asmFunc
     value2Offset = hashMapOf()
 
@@ -201,7 +201,7 @@ class ASMGenerator : IRVisitor() {
 
     // TODO: this implementation is buggy or costy, because the builtin func is generated every single time
     ASMBuilder.createCallInst(
-      module!!.getFunc(inst.getCallee().funcType.funcName) ?: ASMFunc(inst.getCallee().funcType.funcName)
+      module.getFunc(inst.getCallee().funcType.funcName) ?: ASMFunc(inst.getCallee().funcType.funcName)
     )
     if (inst.getCallee().funcType.resultType != TypeFactory.getVoidType()) {
       val virReg = regFactory.newVirReg()
@@ -437,7 +437,6 @@ class ASMGenerator : IRVisitor() {
     if (inst.getRetVal() != null) {
       ASMBuilder.createMvInst(regFactory.getPhyReg("a0"), getRegOfValue(inst.getRetVal()!!)!!)
     }
-//    val stackAlloca = ASMBuilder.getCurrentFunc().stackAlloca
     val func = ASMBuilder.getCurrentFunc()
     ASMBuilder.createArithiInst("addi", PhyReg("sp"), PhyReg("sp"), func.stackFrame.newAllocaSpace())
     ASMBuilder.createRet()

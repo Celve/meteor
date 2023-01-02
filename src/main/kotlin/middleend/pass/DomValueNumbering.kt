@@ -4,7 +4,7 @@ import middleend.basic.*
 import middleend.helper.HashPatternTable
 
 object DomValueNumbering : IRVisitor() {
-  private var currFunc: Func? = null
+  private lateinit var currFunc: Func
 
   override fun visit(topModule: TopModule) {
     topModule.funcMap.forEach { it.value.accept(this) }
@@ -54,7 +54,7 @@ object DomValueNumbering : IRVisitor() {
       }
     }
 
-    for (succ in currFunc!!.domTree.successors.getValue(block)) {
+    for (succ in currFunc.domTree.successors.getValue(block)) {
       valueNumbering(succ, hashTable)
     }
   }

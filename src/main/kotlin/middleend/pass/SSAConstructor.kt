@@ -6,13 +6,13 @@ import middleend.helper.SSATable
 import middleend.struct.DomTree
 
 object SSAConstructor : IRVisitor() {
-  var module: TopModule? = null
+  lateinit var module: TopModule
 
   val stack = hashMapOf<String, MutableList<Value>>().withDefault { mutableListOf() }
   val globals = hashSetOf<String>()
   var name2DefBlockSet = hashMapOf<String, HashSet<BasicBlock>>().withDefault { hashSetOf() }
   var name2Type = hashMapOf<String, Type>()
-  var domTree: DomTree? = null
+  lateinit var domTree: DomTree
   var ssaTable = SSATable()
 
   override fun visit(topModule: TopModule) {
@@ -69,7 +69,7 @@ object SSAConstructor : IRVisitor() {
         .forEach { it.addAssignment(stack.getValue(getValuesOriginalName(it)).last(), block) }
     }
 
-    domTree!!.successors.getValue(block).forEach { renameBlock(it) }
+    domTree.successors.getValue(block).forEach { renameBlock(it) }
 
     block.instList.filter { it.name != null }.forEach { stack.getValue(getValuesOriginalName(it)).removeLast() }
   }
@@ -82,12 +82,12 @@ object SSAConstructor : IRVisitor() {
     globals.clear()
 
     // add global and intial local variables
-    module!!.globalVarMap.forEach { it.value.accept(this) }
-    module!!.constStrMap.forEach { it.value.accept(this) }
+    module.globalVarMap.forEach { it.value.accept(this) }
+    module.constStrMap.forEach { it.value.accept(this) }
     func.argList.forEach { renameValue(it) }
 
     domTree = func.domTree
-    domTree!!.build()
+    domTree.build()
 
     // collect global variables
     for (block in func.blockList) {
@@ -120,7 +120,7 @@ object SSAConstructor : IRVisitor() {
       while (workList.isNotEmpty()) {
         val block = workList.first()
         workList.remove(block)
-        for (df in domTree!!.domFrontiers.getValue(block)) {
+        for (df in domTree.domFrontiers.getValue(block)) {
           if (!finishedSet.contains(df)) {
             finishedSet.add(df)
             IRBuilder.setInsertPointBefore(df.instList.first())

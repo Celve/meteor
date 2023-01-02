@@ -14,7 +14,7 @@ object Inliner : IRVisitor() {
   private fun safeInlinable(inst: CallInst): Boolean {
     // it's heuristic, now I use the simplest approach
     return module.callGraph.func2CalleeSet.getValue(inst.getCallee()).isEmpty()
-        && calcInstCnt(inst.getCallee()) + calcInstCnt(inst.parent!!.parent!!) < funcMaxSize
+        && calcInstCnt(inst.getCallee()) + calcInstCnt(inst.parent.parent) < funcMaxSize
   }
 
   private fun isNotRecursion(func: Func): Boolean {
@@ -22,7 +22,7 @@ object Inliner : IRVisitor() {
   }
 
   private fun aggressiveInlinable(inst: CallInst): Boolean {
-    val caller = inst.parent!!.parent!!
+    val caller = inst.parent.parent
     val callee = inst.getCallee()
     return caller != callee
         && isNotRecursion(callee)
@@ -34,7 +34,7 @@ object Inliner : IRVisitor() {
     val callInstList = func.blockList
       .flatMap { it.instList.filterIsInstance<CallInst>() }
       .filter { !module.builtinFuncMap.contains(it.getCallee().name!!) }
-      .sortedByDescending { it.parent!!.execFreq }
+      .sortedByDescending { it.parent.execFreq }
     for (callInst in callInstList) {
       val callee = callInst.getCallee()
       if (module.funcMap.contains(callee.name)) {
@@ -106,8 +106,8 @@ object Inliner : IRVisitor() {
   }
 
   private fun inline(callInst: CallInst) {
-    val callerBlock = callInst.parent!!
-    val caller = callerBlock.parent!!
+    val callerBlock = callInst.parent
+    val caller = callerBlock.parent
     val callee = callInst.getCallee()
     val insertedBlockList = mutableListOf<BasicBlock>()
 

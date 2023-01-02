@@ -10,7 +10,7 @@ object BackEndManager {
     val backend = ASMGenerator()
     backend.visit(topModule)
 
-    val module = backend.module!!
+    val module = backend.module
 
     ASMRegisterAllocator.visit(module)
 

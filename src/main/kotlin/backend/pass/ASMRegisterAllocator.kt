@@ -371,7 +371,7 @@ object ASMRegisterAllocator : ASMVisitor() {
   }
 
   private fun eliminateMv(mv: ASMMvInst, origin: Register, target: Register) {
-    val mvBlock = mv.parent!!
+    val mvBlock = mv.parent
     val func = mvBlock.parent
     for (block in func.blockList) {
       val removed = mutableListOf<ASMMvInst>()

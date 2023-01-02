@@ -93,7 +93,7 @@ object ConstPropagator : IRVisitor() {
       if (varWorkList.isNotEmpty()) {
         val variable = varWorkList.removeFirst()
         variable.userList.filterIsInstance<Instruction>()
-          .filter { blockStateMap.getValue(it.parent!!) || it is PhiInst }.forEach { it.accept(this) }
+          .filter { blockStateMap.getValue(it.parent) || it is PhiInst }.forEach { it.accept(this) }
       }
       if (blockWorkList.isNotEmpty()) {
         val block = blockWorkList.first()
@@ -106,7 +106,7 @@ object ConstPropagator : IRVisitor() {
       if (it.value is VarState.Determined) {
         it.key.substituteAll(ConstantInt(it.key.type.getNumBits(), (it.value as VarState.Determined).value))
         if (it.key is Instruction) {
-          val block = (it.key as Instruction).parent!!
+          val block = (it.key as Instruction).parent
           block.instList.remove(it.key)
         }
         (it.key as User).eliminate()
@@ -187,7 +187,7 @@ object ConstPropagator : IRVisitor() {
       // there would be some cases that an initially not accessible branch becomes accessible,
       // and it only affects the effectiveness of phi inst
       // therefore when a branch inst becomes undetermined, all phi insts in its successor blocks should be added into work list
-      if (blockStateMap.getValue(it.second) && isAccessible(inst.parent!!, it.second)) {
+      if (blockStateMap.getValue(it.second) && isAccessible(inst.parent, it.second)) {
         if (isDetermined(it.first)) {
           determinedSet.add(getDetermined(it.first))
         } else if (isUndetermined(it.first)) {
@@ -195,7 +195,7 @@ object ConstPropagator : IRVisitor() {
         }
       }
     }
-    if (blockStateMap.getValue(inst.parent!!)) {
+    if (blockStateMap.getValue(inst.parent)) {
       if (undeterminedSum > 0) {
         addVar2WorkList(inst, VarState.Undetermined)
       } else if (determinedSet.size > 1) {
