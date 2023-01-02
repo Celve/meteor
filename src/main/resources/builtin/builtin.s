@@ -313,7 +313,7 @@ _string_concat:                         # @_string_concat
 
 	.type	.L.str.3,@object        # @.str.3
 .L.str.3:
-	.asciz	"%d\n"
+	.asciz	"%d\\n"
 	.size	.L.str.3, 4
 
 	.ident	"clang version 10.0.0-4ubuntu1 "
