@@ -4,8 +4,14 @@ import middleend.MiddleEndManager
 import middleend.basic.pointerNumBits
 import middleend.pass.IREmit
 
+const val OnlineJudge = true
+
 fun main(args: Array<String>) {
-  val buildOptions = args.toHashSet()
+  val buildOptions = if (OnlineJudge) {
+    hashSetOf("--inline", "--licm", "--sccp", "--dvnt", "--adce", "--asm")
+  } else {
+    args.toHashSet()
+  }
 
   if (buildOptions.isEmpty()) {
     throw Exception("No build option")
