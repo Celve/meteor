@@ -57,6 +57,14 @@ def enumerate_count(filename):
     return count
 
 
+def get_exit_code(filename):
+    with open(filename) as fd:
+        for line in fd.readlines():
+            if line.startswith("exit code: "):
+                return int(line.split(": ").pop())
+    return 0
+
+
 def test_single_file(filename, tag, build_options, result_dir):
     with open(filename) as fd:
         right_exit_code = get_io_and_ec(fd)
@@ -65,13 +73,14 @@ def test_single_file(filename, tag, build_options, result_dir):
         os.system(
             "java -jar build/libs/meteor-all.jar {} < {} > debug/{}code/{}.s".format(' '.join(build_options), filename,
                                                                                      result_dir, tag))
-        exit_code = os.system(
+        os.system(
             "ravel --input-file=debug/input.txt --output-file=debug/answer.txt debug/{}code/{}.s src/main/resources/builtin/builtin.s > debug/{}benchmark/{}.log 2> debug/ravel-error.log".format(
                 result_dir,
                 tag,
                 result_dir,
                 os.path.basename(filename).rsplit('.', 1)[0])
-        ) >> 8
+        )
+        exit_code = get_exit_code("debug/{}benchmark/{}.log".format(result_dir, tag))
     elif "--ir" in build_options:
         os.system(
             "java -jar build/libs/meteor-all.jar {} < {} > debug/{}code/{}.ll".format(' '.join(build_options),
@@ -81,12 +90,13 @@ def test_single_file(filename, tag, build_options, result_dir):
                 result_dir, tag))
         exit_code = os.system("./debug/code < debug/input.txt > debug/answer.txt") >> 8
 
-    if exit_code:
+    if exit_code or right_exit_code:
         if exit_code == right_exit_code:
             print(Colors.BOLD + Colors.OKGREEN + "Accepted with exit code: {} (right)".format(exit_code) + Colors.ENDC)
             return 1
         else:
-            print(Colors.BOLD + Colors.FAIL + "Runtime Error {}".format(exit_code) + Colors.ENDC)
+            print(Colors.BOLD + Colors.FAIL + "Wrong exit code. Expected {}, found {}".format(right_exit_code,
+                                                                                              exit_code) + Colors.ENDC)
             return 0
     elif os.system(
             "diff -w -B --strip-trailing-cr --ignore-all-space debug/answer.txt debug/output.txt > debug/diff.txt"):
@@ -154,6 +164,8 @@ if __name__ == "__main__":
             build_options.add("--licm")
         elif argv.startswith("--dvnt"):
             build_options.add("--dvnt")
+        elif argv.startswith("--localize"):
+            build_options.add("--localize")
         elif argv.startswith("--O2"):
             build_options.add("--svn")
             build_options.add("--inline")
@@ -161,6 +173,7 @@ if __name__ == "__main__":
             build_options.add("--adce")
             build_options.add("--licm")
             build_options.add("--dvnt")
+            build_options.add("--localize")
         elif argv.startswith("--result"):
             _, result_dir = argv.split("=")
             if not result_dir.endswith("/"):

@@ -8,6 +8,10 @@ class CallGraph(val module: TopModule) {
   val func2CalleeSet = mutableMapOf<Func, HashSet<Func>>().withDefault { hashSetOf() }
   val func2CallerSet = mutableMapOf<Func, HashSet<Func>>().withDefault { hashSetOf() }
 
+  val scc2CalleeSet = mutableMapOf<Int, HashSet<Int>>().withDefault { hashSetOf() }
+  val scc2CallerSet = mutableMapOf<Int, HashSet<Int>>().withDefault { hashSetOf() }
+
+
   val dfn = mutableMapOf<Func, Int>().withDefault { 0 }
   val low = mutableMapOf<Func, Int>().withDefault { 0 }
   val sccId = hashMapOf<Func, Int>()
@@ -68,6 +72,14 @@ class CallGraph(val module: TopModule) {
         }
       }
     }
+
     tarjan(module.getFunc("main")!!)
+
+    for (func in module.funcMap.values.filter { sccId[it] != null }) {
+      for (callee in func2CalleeSet.getValue(func).filter { sccId[it] != null }) {
+        scc2CalleeSet.getOrPut(sccId.getValue(func)) { hashSetOf() }.add(sccId.getValue(callee))
+        scc2CallerSet.getOrPut(sccId.getValue(callee)) { hashSetOf() }.add(sccId.getValue(func))
+      }
+    }
   }
 }

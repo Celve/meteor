@@ -14,6 +14,10 @@ object MiddleEndManager {
 
     // optimization
     Transformer.visit(module)
+    if (buildOptions.contains("--localize")) {
+      Localizer.visit(module)
+    }
+    Checker.visit(module)
     SSAConstructor.visit(module)
     Checker.visit(module)
     if (buildOptions.contains("--inline")) {

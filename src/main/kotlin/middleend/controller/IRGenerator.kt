@@ -104,17 +104,22 @@ class IRGenerator : ASTVisitor() {
     initFunc = Func(initFuncName, FuncType(initFuncName, listOf(), TypeFactory.getVoidType()), listOf())
     localSymbolTable = initFunc!!.mulTable
 
-    val initBlock = BasicBlock(renameLocal("entry"), 1)
-    initBlock.insertAtTheTailOf(initFunc!!)
+    val entryBlock = BasicBlock(renameLocal("entry"), 1)
+    entryBlock.insertAtTheTailOf(initFunc!!)
 
     curr.block.accept(this)
 
     // to check if there is a need to init global variable in main function
-    if (initBlock.instList.size > 0) {
-      IRBuilder.resetInsertBlock(initFunc!!.blockList.last())
-      IRBuilder.createRetVoid()
-      topModule.setFunc(initFuncName, initFunc!!)
+    if (entryBlock.instList.size > 0) {
+      val returnBlock = BasicBlock(renameLocal("return"), 1)
 
+      IRBuilder.resetInsertBlock(initFunc!!.blockList.last())
+      IRBuilder.createBr(returnBlock)
+
+      IRBuilder.setInsertBlock(returnBlock)
+      IRBuilder.createRetVoid()
+
+      topModule.setFunc(initFuncName, initFunc!!)
       val mainFunc = topModule.getFunc("main")!!
       val mainEntryBlock = mainFunc.blockList.first()
       IRBuilder.setInsertPointBefore(mainEntryBlock.instList.first())

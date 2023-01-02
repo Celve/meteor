@@ -28,11 +28,15 @@ class BasicBlock(name: String, val execFreq: Int) : Value(TypeFactory.getLabelTy
     if (hasTerminator() && index >= instList.size) {
       throw Exception("basicblock has been terminated")
     }
+    inst.parent = this
     instList.add(index, inst)
   }
 
-  fun removeInst(inst: Instruction, sub: Value) {
-    inst.substituteAll(sub)
+  fun removeInst(inst: Instruction, sub: Value? = null) {
+    assert(inst.name == null || sub != null)
+    if (sub != null) {
+      inst.substituteAll(sub)
+    }
     inst.eliminate()
     instList.remove(inst)
   }
