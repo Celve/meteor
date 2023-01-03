@@ -149,10 +149,6 @@ object ConstPropagator : IRVisitor() {
       block.instList.clear()
     }
     func.blockList.removeAll(removedBlockSet)
-    println(removedBlockSet)
-
-    println("test: ${func.getEntryBlock().name}")
-    println(func.getEntryBlock().nextBlockSet)
 
     // remove useless phi inst
     for (block in func.blockList) {
