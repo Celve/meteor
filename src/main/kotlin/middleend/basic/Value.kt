@@ -6,7 +6,7 @@ package middleend.basic
  * By definition, every LLVM Value should have its distinct name.
  * In this project, this constraint is achieved by using a map to store all values, which is SymbolTable.
  */
-open class Value(val type: Type, var name: String? = null) {
+open class Value(var type: Type, var name: String? = null) {
   var userList: MutableList<User> = mutableListOf()
 
   fun isDef(): Boolean {

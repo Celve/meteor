@@ -155,8 +155,9 @@ object IREmit : IRVisitor() {
     if (printOption) {
       println("%${inst.name} = mv ${inst.type} ${inst.getSrc()}")
     } else {
-      println("%${inst.name} = bitcast ${inst.getSrc().type} ${inst.getSrc()} to ${inst.type}")
-//      println("%${inst.name} = add ${inst.type} ${inst.getSrc()}, 0")
+      val src = inst.getSrc()
+      val srcType = if (src is ConstantNull) inst.type else src.type
+      println("%${inst.name} = bitcast $srcType $src to ${inst.type}")
     }
   }
 }

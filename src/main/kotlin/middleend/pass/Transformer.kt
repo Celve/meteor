@@ -23,12 +23,12 @@ object Transformer : IRVisitor() {
     // deal with alloca instructions
     val replaceUserSet = entryBlock.instList
       .filterIsInstance<AllocaInst>()
-      .filter { it.varType is IntType }
+//      .filter { it.varType is IntType }
       .map { it.userList.toSet() }
       .foldRight(setOf<User>()) { acc, set -> acc + set }
 
     entryBlock.instList = entryBlock.instList.map { inst ->
-      if (inst is AllocaInst && inst.varType is IntType) {
+      if (inst is AllocaInst) {
         val oriName = inst.name!!.substringBeforeLast(".")
         val mvInst = MvInst(
           inst.name!!.substringBeforeLast("."),
@@ -55,11 +55,11 @@ object Transformer : IRVisitor() {
         block.instList.filter { it is LoadInst && replaceUserSet.contains(it) }
 
       block.instList = block.instList
-        .filter { it !is LoadInst || !replaceUserSet.contains(it) }
+        .filter { it !is LoadInst || !replaceUserSet.contains(it) } // eliminate load inst related to alloca
         .map { inst ->
           if (inst is StoreInst && replaceUserSet.contains(inst)) {
             val varName = inst.getAddr().name!!.substringBeforeLast('.')
-            val mvInst = MvInst(varName, inst.getValue())
+            val mvInst = MvInst(varName, (inst.getAddr().type as PointerType).pointeeTy!!, inst.getValue())
             mvInst.parent = block // don't forget to set parent
             name2Value[varName] = mvInst
             inst.eliminate()

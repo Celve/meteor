@@ -11,7 +11,7 @@ object ConstPropagator : IRVisitor() {
       }
     }
 
-    class Determined(val value: Int) : VarState(1) {
+    class Determined(val value: Int?) : VarState(1) {
       override fun toString(): String {
         return "Determined($value)"
       }
@@ -54,7 +54,7 @@ object ConstPropagator : IRVisitor() {
         || (getDetermined(cond) == 1 && block == brInst.getTrueBlock())
   }
 
-  private fun getDetermined(value: Value): Int {
+  private fun getDetermined(value: Value): Int? {
     return if (value is ConstantInt) {
       value.value
     } else {
@@ -104,7 +104,12 @@ object ConstPropagator : IRVisitor() {
 
     varStateMap.forEach {
       if (it.value is VarState.Determined) {
-        it.key.substituteAll(ConstantInt(it.key.type.getNumBits(), (it.value as VarState.Determined).value))
+        val value = (it.value as VarState.Determined).value
+        if (value == null) {
+          it.key.substituteAll(ConstantNull())
+        } else {
+          it.key.substituteAll(ConstantInt(it.key.type.getNumBits(), value))
+        }
         if (it.key is Instruction) {
           val block = (it.key as Instruction).parent
           block.instList.remove(it.key)
@@ -160,7 +165,9 @@ object ConstPropagator : IRVisitor() {
     block.instList.forEach { it.accept(this) }
   }
 
-  override fun visit(inst: AllocaInst) {}
+  override fun visit(inst: AllocaInst) {
+    addVar2WorkList(inst, VarState.Undetermined)
+  }
 
   override fun visit(inst: CallInst) {
     addVar2WorkList(inst, VarState.Undetermined)
@@ -179,7 +186,7 @@ object ConstPropagator : IRVisitor() {
   }
 
   override fun visit(inst: PhiInst) {
-    val determinedSet = hashSetOf<Int>()
+    val determinedSet = hashSetOf<Int?>()
     var undeterminedSum = 0
     inst.getPredList().forEach {
       // use isAccessible() to eliminate some impossible branch instruction
@@ -230,7 +237,6 @@ object ConstPropagator : IRVisitor() {
           addBlock2WorkList(trueBlock)
         } else {
 //          inst.parent!!.replaceInst(inst, BranchInst(falseBlock!!, null, null))
-          addBlock2WorkList(falseBlock!!)
         }
       } else if (condState is VarState.Undetermined) {
         addBlock2WorkList(trueBlock)
@@ -280,7 +286,9 @@ object ConstPropagator : IRVisitor() {
 
   override fun visit(inst: MvInst) {
     val src = inst.getSrc()
-    if (isDetermined(src)) {
+    if (src is ConstantNull) {
+      addVar2WorkList(inst, VarState.Determined(null))
+    } else if (isDetermined(src)) {
       addVar2WorkList(inst, VarState.Determined(getDetermined(src)))
     } else if (isUndetermined(src)) {
       addVar2WorkList(inst, VarState.Undetermined)

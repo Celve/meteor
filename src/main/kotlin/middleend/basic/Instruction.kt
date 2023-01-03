@@ -390,7 +390,7 @@ class PhiInst(name: String, type: Type, predList: MutableList<Pair<Value, BasicB
 }
 
 class BitCastInst(name: String, castee: Value, toTy: Type) : Instruction(toTy, name) {
-  val fromTy = castee.type
+  val fromTy = if (castee is ConstantNull) toTy else castee.type
 
   init { // castee
     link(this, castee)
@@ -462,6 +462,10 @@ class PCopyInst : Instruction(TypeFactory.getVoidType(), null) {
 }
 
 class MvInst(name: String, rs: Value) : Instruction(rs.type, name) {
+  constructor(name: String, type: Type, rs: Value) : this(name, rs) {
+    this.type = type
+  }
+
   init { // rs
     link(this, rs)
   }
