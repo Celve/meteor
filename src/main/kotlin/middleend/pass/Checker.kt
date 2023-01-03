@@ -42,6 +42,8 @@ object Checker : IRVisitor() {
       } else {
         assert(block.nextBlockSet.size == 2)
       }
+    } else {
+      assert(terminator is ReturnInst)
     }
 
     for (inst in block.instList) {
