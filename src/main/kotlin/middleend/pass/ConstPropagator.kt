@@ -149,7 +149,10 @@ object ConstPropagator : IRVisitor() {
       block.instList.clear()
     }
     func.blockList.removeAll(removedBlockSet)
+    println(removedBlockSet)
 
+    println("test: ${func.getEntryBlock().name}")
+    println(func.getEntryBlock().nextBlockSet)
 
     // remove useless phi inst
     for (block in func.blockList) {
@@ -237,6 +240,7 @@ object ConstPropagator : IRVisitor() {
           addBlock2WorkList(trueBlock)
         } else {
 //          inst.parent!!.replaceInst(inst, BranchInst(falseBlock!!, null, null))
+          addBlock2WorkList(falseBlock!!)
         }
       } else if (condState is VarState.Undetermined) {
         addBlock2WorkList(trueBlock)
