@@ -288,7 +288,7 @@ class IRGenerator : ASTVisitor() {
     val nestedLoopsNum = loopManager.getNestedLoopsNum() + 1
     val execFreq = loopWeight.pow(nestedLoopsNum).toInt()
 
-    if (false) {
+    if (false) { // normal construction
       val condBlock = BasicBlock(renameLocal("for.cond"), execFreq)
       val incBlock = BasicBlock(renameLocal("for.inc"), execFreq)
       val bodyBlock = BasicBlock(renameLocal("for.body"), execFreq)
@@ -319,7 +319,7 @@ class IRGenerator : ASTVisitor() {
       IRBuilder.setInsertBlock(endBlock)
 
       loopManager.removeLast()
-    } else {
+    } else { // use do-while construction
       val testBlock = BasicBlock(renameLocal("for.test"), execFreq)
       val bodyBlock = BasicBlock(renameLocal("for.body"), execFreq)
       val incBlock = BasicBlock(renameLocal("for.inc"), execFreq)
@@ -368,7 +368,7 @@ class IRGenerator : ASTVisitor() {
     val nestedLoopsNum = loopManager.getNestedLoopsNum() + 1
     val execFreq = loopWeight.pow(nestedLoopsNum).toInt()
 
-    if (false) {
+    if (false) { // normal construction
       val condBlock = BasicBlock(renameLocal("while.cond"), execFreq)
       val bodyBlock = BasicBlock(renameLocal("while.body"), execFreq)
       val endBlock = BasicBlock(renameLocal("while.end"), execFreq)
@@ -386,7 +386,7 @@ class IRGenerator : ASTVisitor() {
 
       IRBuilder.setInsertBlock(endBlock)
       loopManager.removeLast()
-    } else {
+    } else { // do-while construction
       val testBlock = BasicBlock(renameLocal("while.test"), execFreq)
       val bodyBlock = BasicBlock(renameLocal("while.body"), execFreq)
       val condBlock = BasicBlock(renameLocal("while.cond"), execFreq)
@@ -872,66 +872,107 @@ class IRGenerator : ASTVisitor() {
     }
   }
 
+  private fun checkModification(curr: ExprNode): Boolean {
+    return when (curr) {
+      is PriorExprNode -> checkModification(curr.expr)
+      is LambdaCallNode -> true
+      is FuncCallNode -> true
+      is MethodCallNode -> true
+      is MemberAccessNode -> checkModification(curr.expr)
+      is SuffixExprNode -> true
+      is ArrayAccessNode -> true // to avoid the array access
+      is PrefixExprNode -> if (curr.op == "++" || curr.op == "--") true else checkModification(curr.expr)
+      is BinaryExprNode -> curr.exprs.any { checkModification(it) } || curr.ops.any { it == "/" }
+      is LogicalOrExprNode -> curr.exprs.any { checkModification(it) }
+      is LogicalAndExprNode -> curr.exprs.any { checkModification(it) }
+      else -> false
+    }
+  }
+
   override fun visit(curr: LogicalOrExprNode) {
     val nestedLoopsNum = loopManager.getNestedLoopsNum()
     val execFreq = loopWeight.pow(nestedLoopsNum).toInt()
-    val endBlock = BasicBlock(renameLocal("lor.end"), execFreq)
-    val candidates: MutableList<Pair<Value, BasicBlock>> = mutableListOf()
-    val size = curr.exprs.size
-    for ((index, expr) in curr.exprs.withIndex()) {
-      expr.accept(this)
+    if (checkModification(curr) || curr.exprs.size >= 3) {
+      val endBlock = BasicBlock(renameLocal("lor.end"), execFreq)
+      val candidates: MutableList<Pair<Value, BasicBlock>> = mutableListOf()
+      val size = curr.exprs.size
+      for ((index, expr) in curr.exprs.withIndex()) {
+        expr.accept(this)
 
-      /**
-       * it's a short circuit operator, implemented by using phi instruction
-       * for last, it's the comparison result assigned to phi; for all except last, it's 0 assigned to phi
-       */
-      candidates.add(
-        Pair(
-          if (index == size - 1) IRBuilder.checki8Toi1(expr.value!!) else ConstantInt(8, 1),
-          IRBuilder.getInsertBlock()
+        /**
+         * it's a short circuit operator, implemented by using phi instruction
+         * for last, it's the comparison result assigned to phi; for all except last, it's 0 assigned to phi
+         */
+        candidates.add(
+          Pair(
+            if (index == size - 1) IRBuilder.checki8Toi1(expr.value!!) else ConstantInt(8, 1),
+            IRBuilder.getInsertBlock()
+          )
         )
-      )
-      if (index == size - 1) {
-        IRBuilder.createBr(endBlock)
-      } else {
-        val rhsBlock = BasicBlock(renameLocal(if (index != size - 2) "lor.lhs.false" else "lor.rhs"), execFreq)
-        IRBuilder.createBr(expr.value!!, endBlock, rhsBlock)
-        IRBuilder.setInsertBlock(rhsBlock)
+        if (index == size - 1) {
+          IRBuilder.createBr(endBlock)
+        } else {
+          val rhsBlock = BasicBlock(renameLocal(if (index != size - 2) "lor.lhs.false" else "lor.rhs"), execFreq)
+          IRBuilder.createBr(expr.value!!, endBlock, rhsBlock)
+          IRBuilder.setInsertBlock(rhsBlock)
+        }
       }
+      IRBuilder.setInsertBlock(endBlock)
+      curr.value = IRBuilder.createPhi(renameLocal(".phi"), TypeFactory.getIntType(1), candidates)
+    } else {
+      var result: Value? = null
+      for (expr in curr.exprs) {
+        expr.accept(this)
+        result = if (result == null) {
+          expr.value
+        } else {
+          IRBuilder.createBinary(renameLocal(".or"), "or", result, expr.value!!)
+        }
+      }
+      curr.value = result
     }
-    IRBuilder.setInsertBlock(endBlock)
-    curr.value = IRBuilder.createPhi(renameLocal(".phi"), TypeFactory.getIntType(1), candidates)
   }
 
   override fun visit(curr: LogicalAndExprNode) {
     val nestedLoopsNum = loopManager.getNestedLoopsNum()
     val execFreq = loopWeight.pow(nestedLoopsNum).toInt()
-    val endBlock = BasicBlock(renameLocal("land.end"), execFreq)
-    val candidates: MutableList<Pair<Value, BasicBlock>> = mutableListOf()
-    val size = curr.exprs.size
-    for ((index, expr) in curr.exprs.withIndex()) {
-      expr.accept(this)
+    if (checkModification(curr) || curr.exprs.size >= 3) {
+      val endBlock = BasicBlock(renameLocal("land.end"), execFreq)
+      val candidates: MutableList<Pair<Value, BasicBlock>> = mutableListOf()
+      val size = curr.exprs.size
+      for ((index, expr) in curr.exprs.withIndex()) {
+        expr.accept(this)
 
-      /**
-       * it's a short circuit operator, implemented by using phi instruction
-       * for last, it's the comparison result assigned to phi; for all except last, it's 1 assigned to phi
-       */
-      candidates.add(
-        Pair(
-          if (index == size - 1) IRBuilder.checki8Toi1(expr.value!!) else ConstantInt(8, 0),
-          IRBuilder.getInsertBlock()
+        // it's a short circuit operator, implemented by using phi instruction
+        // for the last situation, it's the comparison result assigned to phi; otherwise, it's 1 assigned to phi
+        candidates.add(
+          Pair(
+            if (index == size - 1) IRBuilder.checki8Toi1(expr.value!!) else ConstantInt(8, 0),
+            IRBuilder.getInsertBlock()
+          )
         )
-      )
-      if (index == size - 1) {
-        IRBuilder.createBr(endBlock)
-      } else {
-        val rhsBlock = BasicBlock(renameLocal(if (index != size - 2) "land.lhs.true" else "land.rhs"), execFreq)
-        IRBuilder.createBr(expr.value!!, rhsBlock, endBlock)
-        IRBuilder.setInsertBlock(rhsBlock)
+        if (index == size - 1) {
+          IRBuilder.createBr(endBlock)
+        } else {
+          val rhsBlock = BasicBlock(renameLocal(if (index != size - 2) "land.lhs.true" else "land.rhs"), execFreq)
+          IRBuilder.createBr(expr.value!!, rhsBlock, endBlock)
+          IRBuilder.setInsertBlock(rhsBlock)
+        }
       }
+      IRBuilder.setInsertBlock(endBlock)
+      curr.value = IRBuilder.createPhi(renameLocal(".phi"), TypeFactory.getIntType(1), candidates)
+    } else {
+      var result: Value? = null
+      for (expr in curr.exprs) {
+        expr.accept(this)
+        result = if (result == null) {
+          expr.value
+        } else {
+          IRBuilder.createBinary(renameLocal(".and"), "and", result, expr.value!!)
+        }
+      }
+      curr.value = result
     }
-    IRBuilder.setInsertBlock(endBlock)
-    curr.value = IRBuilder.createPhi(renameLocal(".phi"), TypeFactory.getIntType(1), candidates)
   }
 
   override fun visit(curr: AssignExprNode) {

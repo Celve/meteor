@@ -4,7 +4,7 @@ import middleend.MiddleEndManager
 import middleend.basic.pointerNumBits
 import middleend.pass.IREmit
 
-const val OnlineJudge = true
+const val OnlineJudge = false
 
 fun main(args: Array<String>) {
   val buildOptions = if (OnlineJudge) {

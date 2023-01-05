@@ -5,7 +5,7 @@ import frontend.metadata.TypeMd
 import frontend.utils.SrcPos
 import middleend.basic.Value
 
-// although but, stmt should be put inside Stmt.kt, however, it's now
+// honestly, this is a stmt node, but it's actually a expr node, hence it's put in here
 class ShortNode(pos: SrcPos, val expr: ExprNode?) : BaseNode(pos) {
   override fun accept(visitor: ASTVisitor) {
     visitor.visit(this)
