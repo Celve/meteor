@@ -1,6 +1,6 @@
 package backend.basic
 
-abstract class Immediate
+open class Immediate : ASMValue(null)
 
 /**
  * 0-base.

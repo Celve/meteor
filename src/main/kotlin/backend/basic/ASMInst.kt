@@ -9,16 +9,32 @@ import kotlin.math.min
  * They all could be referred by other instructions, and they all are basic unit of computation.
  * The only difference is that Register could be overlapped (due to physical register), while value in LLVM cannot.
  */
-abstract class ASMInst(val comment: String) {
+abstract class ASMInst : ASMUser(null) {
   lateinit var parent: ASMBlock
+  protected val defList = mutableListOf<Register>()
 
-  abstract fun getRs(): List<Register>
+  fun getRd(): Register? {
+    return defList.firstOrNull()
+  }
 
-  abstract fun getRd(): List<Register>
+  // the *use* here is different from usee
+  open fun getUseList(): List<Register> {
+    return useeList.filterIsInstance<Register>() // filter imms, labels, etc.
+  }
 
-  abstract fun replaceRs(oldReg: Register, newReg: Register)
+  open fun getDefSet(): List<Register> {
+    return defList
+  }
 
-  abstract fun replaceRd(oldReg: Register, newReg: Register)
+  open fun replaceUse(old: ASMValue, new: ASMValue) {
+    useeList.replaceAll { if (it === old) new else it }
+    old.userSet.remove(this)
+    new.userSet.add(this)
+  }
+
+  open fun replaceDef(oldReg: Register, newReg: Register) {
+    defList.replaceAll { if (it === oldReg) newReg else it }
+  }
 
   fun insertAtIndexOf(newParent: ASMBlock, index: Int) {
     newParent.instList.add(index, this)
@@ -61,26 +77,19 @@ abstract class ASMInst(val comment: String) {
   abstract fun accept(visitor: ASMVisitor)
 }
 
-class ASMLoadInst(val byteNum: Int, var rd: Register, var imm: Immediate, var rs: Register, comment: String) :
-  ASMInst(comment) {
-  override fun getRs(): List<Register> {
-    return listOf(rs)
+class ASMLoadInst(val byteNum: Int, rd: Register, imm: Immediate, rs: Register) : ASMInst() {
+  init {
+    defList.add(rd)
+    link(this, imm)
+    link(this, rs)
   }
 
-  override fun getRd(): List<Register> {
-    return listOf(rd)
+  fun getImm(): Immediate {
+    return useeList[0] as Immediate
   }
 
-  override fun replaceRs(oldReg: Register, newReg: Register) {
-    if (rs == oldReg) {
-      rs = newReg
-    }
-  }
-
-  override fun replaceRd(oldReg: Register, newReg: Register) {
-    if (rd == oldReg) {
-      rd = newReg
-    }
+  fun getRs(): Register {
+    return useeList[1] as Register
   }
 
   override fun accept(visitor: ASMVisitor) {
@@ -92,57 +101,24 @@ class ASMLoadInst(val byteNum: Int, var rd: Register, var imm: Immediate, var rs
  * @param rs2 is used as source
  * @param rs1 is used as destination
  */
-class ASMStoreInst(val byteNum: Int, var rs2: Register, var imm: Immediate, var rs1: Register, comment: String) :
-  ASMInst(comment) {
-  override fun getRs(): List<Register> {
-    return listOf(rs1, rs2)
+class ASMStoreInst(val byteNum: Int, rs2: Register, imm: Immediate, rs1: Register) :
+  ASMInst() {
+  init {
+    link(this, rs2)
+    link(this, imm)
+    link(this, rs1)
   }
 
-  override fun getRd(): List<Register> {
-    return listOf()
+  fun getRs2(): Register {
+    return useeList[0] as Register
   }
 
-  override fun replaceRs(oldReg: Register, newReg: Register) {
-    if (rs1 == oldReg) {
-      rs1 = newReg
-    }
-    if (rs2 == oldReg) {
-      rs2 = newReg
-    }
+  fun getImm(): Immediate {
+    return useeList[1] as Immediate
   }
 
-  override fun replaceRd(oldReg: Register, newReg: Register) {
-  }
-
-  override fun accept(visitor: ASMVisitor) {
-    visitor.visit(this)
-  }
-}
-
-class ASMArithInst(val op: String, var rd: Register, var rs1: Register, var rs2: Register, comment: String) :
-  ASMInst(comment) {
-  override fun getRs(): List<Register> {
-    return listOf(rs1, rs2)
-  }
-
-  override fun getRd(): List<Register> {
-    return listOf(rd)
-  }
-
-
-  override fun replaceRs(oldReg: Register, newReg: Register) {
-    if (rs1 == oldReg) {
-      rs1 = newReg
-    }
-    if (rs2 == oldReg) {
-      rs2 = newReg
-    }
-  }
-
-  override fun replaceRd(oldReg: Register, newReg: Register) {
-    if (rd == oldReg) {
-      rd = newReg
-    }
+  fun getRs1(): Register {
+    return useeList[2] as Register
   }
 
   override fun accept(visitor: ASMVisitor) {
@@ -150,26 +126,19 @@ class ASMArithInst(val op: String, var rd: Register, var rs1: Register, var rs2:
   }
 }
 
-class ASMArithiInst(val op: String, var rd: Register, var imm: Immediate, var rs: Register, comment: String) :
-  ASMInst(comment) {
-  override fun getRs(): List<Register> {
-    return listOf(rs)
+class ASMArithInst(val op: String, rd: Register, rs1: Register, rs2: Register) : ASMInst() {
+  init {
+    defList.add(rd)
+    link(this, rs1)
+    link(this, rs2)
   }
 
-  override fun getRd(): List<Register> {
-    return listOf(rd)
+  fun getRs1(): Register {
+    return useeList[0] as Register
   }
 
-  override fun replaceRs(oldReg: Register, newReg: Register) {
-    if (rs == oldReg) {
-      rs = newReg
-    }
-  }
-
-  override fun replaceRd(oldReg: Register, newReg: Register) {
-    if (rd == oldReg) {
-      rd = newReg
-    }
+  fun getRs2(): Register {
+    return useeList[1] as Register
   }
 
   override fun accept(visitor: ASMVisitor) {
@@ -177,30 +146,19 @@ class ASMArithiInst(val op: String, var rd: Register, var imm: Immediate, var rs
   }
 }
 
-class ASMCmpInst(val op: String, var rd: Register, var rs1: Register, var rs2: Register, comment: String) :
-  ASMInst(comment) {
-  override fun getRs(): List<Register> {
-    return listOf(rs1, rs2)
+class ASMArithiInst(val op: String, rd: Register, rs: Register, imm: Immediate) : ASMInst() {
+  init {
+    defList.add(rd)
+    link(this, rs)
+    link(this, imm)
   }
 
-  override fun getRd(): List<Register> {
-    return listOf(rd)
+  fun getRs(): Register {
+    return useeList[0] as Register
   }
 
-
-  override fun replaceRs(oldReg: Register, newReg: Register) {
-    if (rs1 == oldReg) {
-      rs1 = newReg
-    }
-    if (rs2 == oldReg) {
-      rs2 = newReg
-    }
-  }
-
-  override fun replaceRd(oldReg: Register, newReg: Register) {
-    if (rd == oldReg) {
-      rd = newReg
-    }
+  fun getImm(): Immediate {
+    return useeList[1] as Immediate
   }
 
   override fun accept(visitor: ASMVisitor) {
@@ -208,27 +166,19 @@ class ASMCmpInst(val op: String, var rd: Register, var rs1: Register, var rs2: R
   }
 }
 
-class ASMCmpiInst(val op: String, var rd: Register, var rs1: Register, val imm: DeterminedImmediate, comment: String) :
-  ASMInst(comment) {
-  override fun getRs(): List<Register> {
-    return listOf(rs1)
+class ASMCmpInst(val op: String, rd: Register, rs1: Register, rs2: Register) : ASMInst() {
+  init {
+    defList.add(rd)
+    link(this, rs1)
+    link(this, rs2)
   }
 
-  override fun getRd(): List<Register> {
-    return listOf(rd)
+  fun getRs1(): Register {
+    return useeList[0] as Register
   }
 
-
-  override fun replaceRs(oldReg: Register, newReg: Register) {
-    if (rs1 == oldReg) {
-      rs1 = newReg
-    }
-  }
-
-  override fun replaceRd(oldReg: Register, newReg: Register) {
-    if (rd == oldReg) {
-      rd = newReg
-    }
+  fun getRs2(): Register {
+    return useeList[1] as Register
   }
 
   override fun accept(visitor: ASMVisitor) {
@@ -236,20 +186,44 @@ class ASMCmpiInst(val op: String, var rd: Register, var rs1: Register, val imm: 
   }
 }
 
-class ASMCallInst(val label: Label, comment: String) : ASMInst(comment) {
-  override fun getRs(): List<Register> {
-    return listOf(PhyReg("ra")) + (0 until min(8, (label as ASMFunc).argsNum)).map { PhyReg(10 + it) }
-//    return RegInfo.callerSavedRegList.map { PhyReg(it) }
-//    return listOf(PhyReg("ra"))
+class ASMCmpiInst(val op: String, rd: Register, rs: Register, imm: DeterminedImmediate) : ASMInst() {
+  init {
+    defList.add(rd)
+    link(this, rs)
+    link(this, imm)
   }
 
-  override fun getRd(): List<Register> {
+  fun getRs(): Register {
+    return useeList[0] as Register
+  }
+
+  fun getImm(): DeterminedImmediate {
+    return useeList[1] as DeterminedImmediate
+  }
+
+  override fun accept(visitor: ASMVisitor) {
+    visitor.visit(this)
+  }
+}
+
+class ASMCallInst(label: Label) : ASMInst() {
+  init {
+    link(this, label)
+  }
+
+  fun getLabel(): Label {
+    return useeList[0] as Label
+  }
+
+  // this operation is different from others
+  // because the call instruction might incur a lot of modifications on caller-saved registers
+  override fun getUseList(): List<Register> {
+    return listOf(PhyReg("ra")) + (0 until min(8, (getLabel() as ASMFunc).argsNum)).map { PhyReg(10 + it) }
+  }
+
+  override fun getDefSet(): List<Register> {
     return RegInfo.callerSavedRegList.map { PhyReg(it) }
   }
-
-  override fun replaceRs(oldReg: Register, newReg: Register) {}
-
-  override fun replaceRd(oldReg: Register, newReg: Register) {}
 
   override fun accept(visitor: ASMVisitor) {
     visitor.visit(this)
@@ -261,46 +235,18 @@ class ASMCallInst(val label: Label, comment: String) : ASMInst(comment) {
  * which decides whether to jump by judging whether it's zero or not.
  * Brz stands for beqz, bnez, ...
  */
-class ASMBzInst(val op: String, var rs: Register, val label: Label, comment: String) : ASMInst(comment) {
-  override fun getRs(): List<Register> {
-    return listOf(rs)
+class ASMBzInst(val op: String, rs: Register, label: Label) : ASMInst() {
+  init {
+    link(this, rs)
+    link(this, label)
   }
 
-  override fun getRd(): List<Register> {
-    return listOf()
+  fun getRs(): Register {
+    return useeList[0] as Register
   }
 
-
-  override fun replaceRs(oldReg: Register, newReg: Register) {
-    if (rs == oldReg) {
-      rs = newReg
-    }
-  }
-
-  override fun replaceRd(oldReg: Register, newReg: Register) {}
-
-  override fun accept(visitor: ASMVisitor) {
-    visitor.visit(this)
-  }
-}
-
-class ASMLiInst(var rd: Register, val imm: DeterminedImmediate, comment: String) : ASMInst(comment) {
-  override fun getRs(): List<Register> {
-    return listOf()
-  }
-
-  override fun getRd(): List<Register> {
-    return listOf(rd)
-  }
-
-
-  override fun replaceRs(oldReg: Register, newReg: Register) {
-  }
-
-  override fun replaceRd(oldReg: Register, newReg: Register) {
-    if (rd == oldReg) {
-      rd = newReg
-    }
+  fun getLabel(): Label {
+    return useeList[1] as Label
   }
 
   override fun accept(visitor: ASMVisitor) {
@@ -308,26 +254,14 @@ class ASMLiInst(var rd: Register, val imm: DeterminedImmediate, comment: String)
   }
 }
 
-class ASMMvInst(var rd: Register, var rs: Register, comment: String) : ASMInst(comment) {
-  override fun getRs(): List<Register> {
-    return listOf(rs)
+class ASMLiInst(rd: Register, imm: DeterminedImmediate) : ASMInst() {
+  init {
+    defList.add(rd)
+    link(this, imm)
   }
 
-  override fun getRd(): List<Register> {
-    return listOf(rd)
-  }
-
-
-  override fun replaceRs(oldReg: Register, newReg: Register) {
-    if (rs == oldReg) {
-      rs = newReg
-    }
-  }
-
-  override fun replaceRd(oldReg: Register, newReg: Register) {
-    if (rd == oldReg) {
-      rd = newReg
-    }
+  fun getImm(): DeterminedImmediate {
+    return useeList[0] as DeterminedImmediate
   }
 
   override fun accept(visitor: ASMVisitor) {
@@ -335,59 +269,38 @@ class ASMMvInst(var rd: Register, var rs: Register, comment: String) : ASMInst(c
   }
 }
 
-class ASMRetInst(comment: String) : ASMInst(comment) {
-  override fun getRs(): List<Register> {
+class ASMMvInst(rd: Register, rs: Register) : ASMInst() {
+  init {
+    defList.add(rd)
+    link(this, rs)
+  }
+
+  fun getRs(): Register {
+    return useeList[0] as Register
+  }
+
+  override fun accept(visitor: ASMVisitor) {
+    visitor.visit(this)
+  }
+}
+
+class ASMRetInst : ASMInst() {
+  override fun getUseList(): List<Register> {
     return listOf(PhyReg("ra"))
   }
 
-  override fun getRd(): List<Register> {
-    return listOf()
-  }
-
-
-  override fun replaceRs(oldReg: Register, newReg: Register) {}
-
-  override fun replaceRd(oldReg: Register, newReg: Register) {}
-
   override fun accept(visitor: ASMVisitor) {
     visitor.visit(this)
   }
 }
 
-class ASMJInst(val label: Label, comment: String) : ASMInst(comment) {
-  override fun getRs(): List<Register> {
-    return listOf()
+class ASMJInst(label: Label) : ASMInst() {
+  init {
+    link(this, label)
   }
 
-  override fun getRd(): List<Register> {
-    return listOf()
-  }
-
-  override fun replaceRs(oldReg: Register, newReg: Register) {}
-
-  override fun replaceRd(oldReg: Register, newReg: Register) {}
-
-  override fun accept(visitor: ASMVisitor) {
-    visitor.visit(this)
-  }
-}
-
-class ASMLaInst(var rd: Register, val symbol: ASMGlobalPointer, comment: String) : ASMInst(comment) {
-  override fun getRs(): List<Register> {
-    return listOf()
-  }
-
-  override fun getRd(): List<Register> {
-    return listOf(rd)
-  }
-
-
-  override fun replaceRs(oldReg: Register, newReg: Register) {}
-
-  override fun replaceRd(oldReg: Register, newReg: Register) {
-    if (rd == oldReg) {
-      rd = newReg
-    }
+  fun getLabel(): Label {
+    return useeList[0] as Label
   }
 
   override fun accept(visitor: ASMVisitor) {
@@ -395,26 +308,29 @@ class ASMLaInst(var rd: Register, val symbol: ASMGlobalPointer, comment: String)
   }
 }
 
-class ASMCmpzInst(val op: String, var rd: Register, var rs: Register, comment: String) : ASMInst(comment) {
-  override fun getRs(): List<Register> {
-    return listOf(rs)
+class ASMLaInst(rd: Register, symbol: ASMGlobalPointer) : ASMInst() {
+  init {
+    defList.add(rd)
+    link(this, symbol)
   }
 
-  override fun getRd(): List<Register> {
-    return listOf(rd)
+  fun getSymbol(): ASMGlobalPointer {
+    return useeList[0] as ASMGlobalPointer
   }
 
+  override fun accept(visitor: ASMVisitor) {
+    visitor.visit(this)
+  }
+}
 
-  override fun replaceRs(oldReg: Register, newReg: Register) {
-    if (rs == oldReg) {
-      rs = newReg
-    }
+class ASMCmpzInst(val op: String, rd: Register, rs: Register) : ASMInst() {
+  init {
+    defList.add(rd)
+    link(this, rs)
   }
 
-  override fun replaceRd(oldReg: Register, newReg: Register) {
-    if (rd == oldReg) {
-      rd = newReg
-    }
+  fun getRs(): Register {
+    return useeList[0] as Register
   }
 
   override fun accept(visitor: ASMVisitor) {

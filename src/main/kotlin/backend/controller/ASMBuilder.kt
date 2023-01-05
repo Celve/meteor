@@ -65,15 +65,15 @@ object ASMBuilder {
     return point
   }
 
-  fun createCallInst(func: ASMFunc, comment: String = "") {
-    val callInst = ASMCallInst(func, comment)
+  fun createCallInst(func: ASMFunc) {
+    val callInst = ASMCallInst(func)
     insertInst(callInst)
   }
 
   /**
    * This function is used to build almost every binary arithmetic instructions.
    */
-  fun createArithInst(op: String, rd: Register, rs1: Register, rs2: Register, comment: String = "") {
+  fun createArithInst(op: String, rd: Register, rs1: Register, rs2: Register) {
     val newOp = when (op) {
       "sdiv" -> "div"
       "srem" -> "rem"
@@ -81,45 +81,45 @@ object ASMBuilder {
       "ashr" -> "sra"
       else -> op
     }
-    val arithInst = ASMArithInst(newOp, rd, rs1, rs2, comment)
+    val arithInst = ASMArithInst(newOp, rd, rs1, rs2)
     insertInst(arithInst)
   }
 
-  fun createArithiInst(op: String, rd: Register, rs1: Register, imm: Immediate, comment: String = "") {
+  fun createArithiInst(op: String, rd: Register, rs: Register, imm: Immediate) {
     val newOp = when (op) {
       "shli" -> "slli"
       "ashri" -> "srai"
       else -> op
     }
-    val arithiInst = ASMArithiInst(newOp, rd, imm, rs1, comment)
+    val arithiInst = ASMArithiInst(newOp, rd, rs, imm)
     insertInst(arithiInst)
   }
 
-  fun createLiInst(rd: Register, imm: DeterminedImmediate, comment: String = "") {
-    val liInst = ASMLiInst(rd, imm, comment)
+  fun createLiInst(rd: Register, imm: DeterminedImmediate) {
+    val liInst = ASMLiInst(rd, imm)
     insertInst(liInst)
   }
 
-  fun createMvInst(rd: Register, rs: Register, comment: String = "") {
-    val mvInst = ASMMvInst(rd, rs, comment)
+  fun createMvInst(rd: Register, rs: Register) {
+    val mvInst = ASMMvInst(rd, rs)
     insertInst(mvInst)
   }
 
-  fun createLoadInst(byteNum: Int, rd: Register, offset: Immediate, rs: Register, comment: String = "") {
-    val loadInst = ASMLoadInst(byteNum, rd, offset, rs, comment)
+  fun createLoadInst(byteNum: Int, rd: Register, offset: Immediate, rs: Register) {
+    val loadInst = ASMLoadInst(byteNum, rd, offset, rs)
     insertInst(loadInst)
   }
 
-  fun createStoreInst(byteNum: Int, rs2: Register, offset: Immediate, rs1: Register, comment: String = "") {
-    val storeInst = ASMStoreInst(byteNum, rs2, offset, rs1, comment)
+  fun createStoreInst(byteNum: Int, rs2: Register, offset: Immediate, rs1: Register) {
+    val storeInst = ASMStoreInst(byteNum, rs2, offset, rs1)
     insertInst(storeInst)
   }
 
   /**
    * This function is used for building instruction j.
    */
-  fun createJInst(target: ASMBlock, comment: String = "") {
-    val jInst = ASMJInst(target, comment)
+  fun createJInst(target: ASMBlock) {
+    val jInst = ASMJInst(target)
     insertInst(jInst)
     target.addPredBlock(block)
   }
@@ -127,8 +127,8 @@ object ASMBuilder {
   /**
    * This function is used to build instructions like beqz, bnez, bltz, bgez, blez, bgtz.
    */
-  fun createBzInst(op: String, rs: Register, target: ASMBlock, comment: String = "") {
-    val bzInst = ASMBzInst(op, rs, target, comment)
+  fun createBzInst(op: String, rs: Register, target: ASMBlock) {
+    val bzInst = ASMBzInst(op, rs, target)
     insertInst(bzInst)
     target.addPredBlock(block)
   }
@@ -136,31 +136,31 @@ object ASMBuilder {
   /**
    * This function is used to build instruction slt.
    */
-  fun createCmpInst(op: String, rd: Register, rs1: Register, rs2: Register, comment: String = "") {
-    val cmpInst = ASMCmpInst(op, rd, rs1, rs2, comment)
+  fun createCmpInst(op: String, rd: Register, rs1: Register, rs2: Register) {
+    val cmpInst = ASMCmpInst(op, rd, rs1, rs2)
     insertInst(cmpInst)
   }
 
-  fun createCmpiInst(op: String, rd: Register, rs1: Register, imm: DeterminedImmediate, comment: String = "") {
-    val cmpiInst = ASMCmpiInst(op, rd, rs1, imm, comment)
+  fun createCmpiInst(op: String, rd: Register, rs1: Register, imm: DeterminedImmediate) {
+    val cmpiInst = ASMCmpiInst(op, rd, rs1, imm)
     insertInst(cmpiInst)
   }
 
   /**
    * This function is used to build instruction like seqz, snez.
    */
-  fun createCmpzInst(op: String, rd: Register, rs1: Register, comment: String = "") {
-    val cmpzInst = ASMCmpzInst(op, rd, rs1, comment)
+  fun createCmpzInst(op: String, rd: Register, rs1: Register) {
+    val cmpzInst = ASMCmpzInst(op, rd, rs1)
     insertInst(cmpzInst)
   }
 
-  fun createRet(comment: String = "") {
-    val retInst = ASMRetInst(comment)
+  fun createRet() {
+    val retInst = ASMRetInst()
     insertInst(retInst)
   }
 
-  fun createLaInst(rd: Register, symbol: ASMGlobalPointer, comment: String = "") {
-    val laInst = ASMLaInst(rd, symbol, comment)
+  fun createLaInst(rd: Register, symbol: ASMGlobalPointer) {
+    val laInst = ASMLaInst(rd, symbol)
     insertInst(laInst)
   }
 }

@@ -11,7 +11,7 @@ class Directive(val op: String, val argList: List<String>)
  * One if before the name, and the other is after the name.
  * The previous one includes something about metadata, while the latter one includes concreate data.
  */
-class ASMGlobalPointer(val name: String) {
+class ASMGlobalPointer(name: String): ASMValue(name) {
   val defDirList = mutableListOf<Directive>()
   val emitDirList = mutableListOf<Directive>()
 
@@ -28,6 +28,6 @@ class ASMGlobalPointer(val name: String) {
   }
 
   override fun toString(): String {
-    return name
+    return name!!
   }
 }

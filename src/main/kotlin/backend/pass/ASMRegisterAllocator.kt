@@ -130,12 +130,12 @@ object ASMRegisterAllocator : ASMVisitor() {
   private fun determineOffset() {
     for (block in asmFunc.blockList) {
       for (inst in block.instList) {
-        if (inst is ASMLoadInst && inst.imm is UndeterminedImmediate) {
-          inst.imm = (inst.imm as UndeterminedImmediate).get()
-        } else if (inst is ASMStoreInst && inst.imm is UndeterminedImmediate) {
-          inst.imm = (inst.imm as UndeterminedImmediate).get()
-        } else if (inst is ASMArithiInst && inst.imm is UndeterminedImmediate) {
-          inst.imm = (inst.imm as UndeterminedImmediate).get()
+        if (inst is ASMLoadInst && inst.getImm() is UndeterminedImmediate) {
+          inst.replaceUse(inst.getImm(), (inst.getImm() as UndeterminedImmediate).get())
+        } else if (inst is ASMStoreInst && inst.getImm() is UndeterminedImmediate) {
+          inst.replaceUse(inst.getImm(), (inst.getImm() as UndeterminedImmediate).get())
+        } else if (inst is ASMArithiInst && inst.getImm() is UndeterminedImmediate) {
+          inst.replaceUse(inst.getImm(), (inst.getImm() as UndeterminedImmediate).get())
         }
       }
     }
@@ -143,7 +143,7 @@ object ASMRegisterAllocator : ASMVisitor() {
 
   private fun eliminateUselessMv() {
     for (block in asmFunc.blockList) {
-      val removed = block.instList.filter { it is ASMMvInst && it.rd == it.rs }
+      val removed = block.instList.filter { it is ASMMvInst && it.getRd() == it.getRs() }
       block.instList.removeAll(removed)
     }
   }
@@ -151,10 +151,10 @@ object ASMRegisterAllocator : ASMVisitor() {
   private fun colorInstructions() {
     for (block in asmFunc.blockList) {
       for (inst in block.instList) {
-        val rs = inst.getRs()
-        val rd = inst.getRd()
-        rs.forEach { inst.replaceRs(it, regFactory.getPhyReg(color.getValue(it))) }
-        rd.forEach { inst.replaceRd(it, regFactory.getPhyReg(color.getValue(it))) }
+        val rs = inst.getUseList()
+        val rd = inst.getDefSet()
+        rs.forEach { inst.replaceUse(it, regFactory.getPhyReg(color.getValue(it))) }
+        rd.forEach { inst.replaceDef(it, regFactory.getPhyReg(color.getValue(it))) }
       }
     }
   }
@@ -214,10 +214,10 @@ object ASMRegisterAllocator : ASMVisitor() {
     block.defSet = mutableSetOf()
     block.useSet = mutableSetOf()
     for (inst in block.instList) {
-      block.defSet.addAll(inst.getRd())
+      block.defSet.addAll(inst.getDefSet())
       // the book misinterpreted this line
       // the use is the set of use that are not defined in the block
-      block.useSet.addAll(inst.getRs().subtract(block.defSet))
+      block.useSet.addAll(inst.getUseList().subtract(block.defSet))
     }
 //    block.useSet.removeAll(block.defSet)
     block.useSet += regFactory.getPhyReg(0)
@@ -256,11 +256,11 @@ object ASMRegisterAllocator : ASMVisitor() {
     for (block in asmFunc.blockList) {
       val lives = block.liveOutSet.toMutableSet()
       for (inst in block.instList.reversed()) {
-        val uses = inst.getRs()
-        val defs = inst.getRd()
+        val uses = inst.getUseList()
+        val defs = inst.getDefSet()
         if (inst is ASMMvInst) {
           // from mv especially, we ignore the use of rs, to implement coalesce
-          lives.removeAll(inst.getRs().toSet())
+          lives.removeAll(inst.getUseList().toSet())
           uses.forEach { moveList.getOrPut(it) { mutableListOf() }.add(inst) }
           defs.forEach { moveList.getOrPut(it) { mutableListOf() }.add(inst) }
           worklistMoves.add(inst)
@@ -376,15 +376,15 @@ object ASMRegisterAllocator : ASMVisitor() {
     for (block in func.blockList) {
       val removed = mutableListOf<ASMMvInst>()
       for (inst in block.instList) {
-        val rs = inst.getRs()
-        val rd = inst.getRd()
+        val rs = inst.getUseList()
+        val rd = inst.getDefSet()
         if (rs.any { it == origin }) {
-          inst.replaceRs(origin, target)
+          inst.replaceUse(origin, target)
         }
         if (rd.any { it == origin }) {
-          inst.replaceRd(origin, target)
+          inst.replaceDef(origin, target)
         }
-        if (inst is ASMMvInst && inst.rs == inst.rd) {
+        if (inst is ASMMvInst && inst.getRs() == inst.getRd()) {
           removed.add(inst)
         }
       }
@@ -395,8 +395,8 @@ object ASMRegisterAllocator : ASMVisitor() {
   private fun coalesce() {
     val mv = worklistMoves.first()
     worklistMoves.remove(mv)
-    var u = getAlias(mv.rs)
-    var v = getAlias(mv.rd)
+    var u = getAlias(mv.getRs())
+    var v = getAlias(mv.getRd()!!)
 
     if (v is PhyReg) {
       u = v.also { v = u } // swap u, v
@@ -486,10 +486,10 @@ object ASMRegisterAllocator : ASMVisitor() {
 
   private fun freezeMoves(u: Register) {
     for (mv in nodeMoves(u)) {
-      val v = if (getAlias(mv.rs) == getAlias(u)) {
-        getAlias(mv.rd)
+      val v = if (getAlias(mv.getRs()) == getAlias(u)) {
+        getAlias(mv.getRd()!!)
       } else {
-        getAlias(mv.rs)
+        getAlias(mv.getRs())
       }
       activeMoves.remove(mv)
       frozenMoves.add(mv)
@@ -556,21 +556,21 @@ object ASMRegisterAllocator : ASMVisitor() {
         val iterator = block.instList.listIterator()
         while (iterator.hasNext()) {
           val inst = iterator.next()
-          if (inst.getRd().contains(spilled) || inst.getRs().contains(spilled)) {
+          if (inst.getDefSet().contains(spilled) || inst.getUseList().contains(spilled)) {
             val newReg = regFactory.newVirReg()
             rewrittenNodes.add(newReg)
-            if (inst.getRs().contains(spilled)) { // use
-              inst.replaceRs(spilled, newReg)
-              val loadInst = ASMLoadInst(4, newReg, offset, regFactory.getPhyReg("sp"), "")
+            if (inst.getUseList().contains(spilled)) { // use
+              inst.replaceUse(spilled, newReg)
+              val loadInst = ASMLoadInst(4, newReg, offset, regFactory.getPhyReg("sp"))
               iterator.previous()
               iterator.add(loadInst) // it's really tricky
               iterator.next()
 //              ASMBuilder.setInsertPointBefore(inst)
 //              ASMBuilder.createLoadInst(4, newReg!!, Immediate(offset), regFactory.getPhyReg("sp"))
             }
-            if (inst.getRd().contains(spilled)) { // def
-              inst.replaceRd(spilled, newReg)
-              val storeInst = ASMStoreInst(4, newReg, offset, regFactory.getPhyReg("sp"), "")
+            if (inst.getDefSet().contains(spilled)) { // def
+              inst.replaceDef(spilled, newReg)
+              val storeInst = ASMStoreInst(4, newReg, offset, regFactory.getPhyReg("sp"))
               iterator.add(storeInst) // it's really tricky
 //              ASMBuilder.setInsertPointAfter(inst)
 //              ASMBuilder.createStoreInst(4, newReg!!, Immediate(offset), regFactory.getPhyReg("sp"))

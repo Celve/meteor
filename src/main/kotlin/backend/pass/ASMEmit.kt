@@ -46,7 +46,6 @@ object ASMEmit : ASMVisitor() {
   }
 
   override fun visit(block: ASMBlock) {
-//    println("execution frequency: ${block.executionFrequency}")
     println("${block.name}: ")
     block.instList.forEach { it.accept(this) }
     println("")
@@ -70,8 +69,7 @@ object ASMEmit : ASMVisitor() {
         "sd"
       }
     }
-    print("\t$instName ${inst.rs2}, ${inst.imm}(${inst.rs1})")
-    printPs(inst.comment)
+    println("\t$instName ${inst.getRs2()}, ${inst.getImm()}(${inst.getRs1()})")
   }
 
   override fun visit(inst: ASMLoadInst) {
@@ -81,67 +79,54 @@ object ASMEmit : ASMVisitor() {
       4 -> "lw"
       else -> "ld"
     }
-    print("\t$instName ${inst.rd}, ${inst.imm}(${inst.rs})")
-    printPs(inst.comment)
+    println("\t$instName ${inst.getRd()}, ${inst.getImm()}(${inst.getRs()})")
   }
 
   override fun visit(inst: ASMBzInst) {
-    print("\t${inst.op} ${inst.rs}, ${inst.label}")
-    printPs(inst.comment)
+    println("\t${inst.op} ${inst.getRs()}, ${inst.getLabel()}")
   }
 
   override fun visit(inst: ASMJInst) {
-    print("\tj ${inst.label}")
-    printPs(inst.comment)
+    println("\tj ${inst.getLabel()}")
   }
 
   override fun visit(inst: ASMRetInst) {
-    print("\tret")
-    printPs(inst.comment)
+    println("\tret")
   }
 
   override fun visit(inst: ASMArithInst) {
-    print("\t${inst.op} ${inst.rd}, ${inst.rs1}, ${inst.rs2}")
-    printPs(inst.comment)
+    println("\t${inst.op} ${inst.getRd()}, ${inst.getRs1()}, ${inst.getRs2()}")
   }
 
   override fun visit(inst: ASMArithiInst) {
-    print("\t${inst.op} ${inst.rd}, ${inst.rs}, ${inst.imm}")
-    printPs(inst.comment)
+    println("\t${inst.op} ${inst.getRd()}, ${inst.getRs()}, ${inst.getImm()}")
   }
 
   override fun visit(inst: ASMCmpInst) {
-    print("\t${inst.op} ${inst.rd}, ${inst.rs1}, ${inst.rs2}")
-    printPs(inst.comment)
+    println("\t${inst.op} ${inst.getRd()}, ${inst.getRs1()}, ${inst.getRs2()}")
   }
 
   override fun visit(inst: ASMCmpiInst) {
-    print("\t${inst.op} ${inst.rd}, ${inst.rs1}, ${inst.imm}")
-    printPs(inst.comment)
+    println("\t${inst.op} ${inst.getRd()}, ${inst.getRs()}, ${inst.getImm()}")
   }
 
   override fun visit(inst: ASMCallInst) {
-    print("\tcall ${inst.label.name}")
-    printPs(inst.comment)
+    println("\tcall ${inst.getLabel().name}")
   }
 
   override fun visit(inst: ASMLiInst) {
-    print("\tli ${inst.rd}, ${inst.imm}")
-    printPs(inst.comment)
+    println("\tli ${inst.getRd()}, ${inst.getImm()}")
   }
 
   override fun visit(inst: ASMMvInst) {
-    print("\tmv ${inst.rd}, ${inst.rs}")
-    printPs(inst.comment)
+    println("\tmv ${inst.getRd()}, ${inst.getRs()}")
   }
 
   override fun visit(inst: ASMLaInst) {
-    print("\tla ${inst.rd}, ${inst.symbol}")
-    printPs(inst.comment)
+    println("\tla ${inst.getRd()}, ${inst.getSymbol()}")
   }
 
   override fun visit(inst: ASMCmpzInst) {
-    print("\t${inst.op} ${inst.rd}, ${inst.rs}")
-    printPs(inst.comment)
+    println("\t${inst.op} ${inst.getRd()}, ${inst.getRs()}")
   }
 }

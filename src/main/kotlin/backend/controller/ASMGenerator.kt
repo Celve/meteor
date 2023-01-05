@@ -89,7 +89,7 @@ class ASMGenerator : IRVisitor() {
     val newGlobalVar = ASMGlobalPointer(nameWithAddr.split('.').first())
     module.addGlobalPtr(nameWithAddr, newGlobalVar)
 
-    newGlobalVar.addDef(Directive(".type", listOf(newGlobalVar.name, "@object")))
+    newGlobalVar.addDef(Directive(".type", listOf(newGlobalVar.name!!, "@object")))
     newGlobalVar.addDef(Directive(".data", listOf()))
     newGlobalVar.addDef(Directive(".global", listOf(newGlobalVar.name)))
 
@@ -102,7 +102,7 @@ class ASMGenerator : IRVisitor() {
     val newGlobalVar = ASMGlobalPointer(constStr.name!!)
     module.addGlobalPtr(constStr.name!!, newGlobalVar)
 
-    newGlobalVar.addDef(Directive(".type", listOf(newGlobalVar.name, "@object")))
+    newGlobalVar.addDef(Directive(".type", listOf(newGlobalVar.name!!, "@object")))
     newGlobalVar.addDef(Directive(".rodata", listOf()))
 
     newGlobalVar.addEmit(Directive(".asciz", listOf("\"${constStr.str}\"")))
