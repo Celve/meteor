@@ -9,6 +9,7 @@ abstract class ASMVisitor {
   abstract fun visit(block: ASMBlock)
   abstract fun visit(inst: ASMStoreInst)
   abstract fun visit(inst: ASMLoadInst)
+  abstract fun visit(inst: ASMBrInst)
   abstract fun visit(inst: ASMBzInst)
   abstract fun visit(inst: ASMJInst)
   abstract fun visit(inst: ASMRetInst)

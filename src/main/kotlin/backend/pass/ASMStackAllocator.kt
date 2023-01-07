@@ -111,6 +111,10 @@ class ASMStackAllocator : ASMVisitor() {
     supplementAsRd(inst.getRd()!!, rdReg)
   }
 
+  override fun visit(inst: ASMBrInst) {
+    TODO("Not yet implemented")
+  }
+
   override fun visit(inst: ASMBzInst) {
     val func = ASMBuilder.getCurrentFunc()
     val rsReg = replaceWithAsRs(inst.getRs(), regFactory.getPhyReg("t0"))

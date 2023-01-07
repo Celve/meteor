@@ -11,10 +11,10 @@ import kotlin.math.min
  */
 abstract class ASMInst : ASMUser(null) {
   lateinit var parent: ASMBlock
-  protected val defList = mutableListOf<Register>()
+  protected var def: Register? = null
 
   fun getRd(): Register? {
-    return defList.firstOrNull()
+    return def
   }
 
   // the *use* here is different from usee
@@ -23,7 +23,11 @@ abstract class ASMInst : ASMUser(null) {
   }
 
   open fun getDefSet(): List<Register> {
-    return defList
+    return if (def == null) {
+      listOf()
+    } else {
+      listOf(def!!)
+    }
   }
 
   open fun replaceUse(old: ASMValue, new: ASMValue) {
@@ -32,8 +36,10 @@ abstract class ASMInst : ASMUser(null) {
     new.userSet.add(this)
   }
 
-  open fun replaceDef(oldReg: Register, newReg: Register) {
-    defList.replaceAll { if (it === oldReg) newReg else it }
+  open fun replaceDef(old: Register, new: Register) {
+    if (def == old) {
+      def = new
+    }
   }
 
   fun insertAtIndexOf(newParent: ASMBlock, index: Int) {
@@ -79,7 +85,7 @@ abstract class ASMInst : ASMUser(null) {
 
 class ASMLoadInst(val byteNum: Int, rd: Register, imm: Immediate, rs: Register) : ASMInst() {
   init {
-    defList.add(rd)
+    def = rd
     link(this, imm)
     link(this, rs)
   }
@@ -128,7 +134,7 @@ class ASMStoreInst(val byteNum: Int, rs2: Register, imm: Immediate, rs1: Registe
 
 class ASMArithInst(val op: String, rd: Register, rs1: Register, rs2: Register) : ASMInst() {
   init {
-    defList.add(rd)
+    def = rd
     link(this, rs1)
     link(this, rs2)
   }
@@ -148,7 +154,7 @@ class ASMArithInst(val op: String, rd: Register, rs1: Register, rs2: Register) :
 
 class ASMArithiInst(val op: String, rd: Register, rs: Register, imm: Immediate) : ASMInst() {
   init {
-    defList.add(rd)
+    def = rd
     link(this, rs)
     link(this, imm)
   }
@@ -168,7 +174,7 @@ class ASMArithiInst(val op: String, rd: Register, rs: Register, imm: Immediate) 
 
 class ASMCmpInst(val op: String, rd: Register, rs1: Register, rs2: Register) : ASMInst() {
   init {
-    defList.add(rd)
+    def = rd
     link(this, rs1)
     link(this, rs2)
   }
@@ -188,7 +194,7 @@ class ASMCmpInst(val op: String, rd: Register, rs1: Register, rs2: Register) : A
 
 class ASMCmpiInst(val op: String, rd: Register, rs: Register, imm: DeterminedImmediate) : ASMInst() {
   init {
-    defList.add(rd)
+    def = rd
     link(this, rs)
     link(this, imm)
   }
@@ -230,6 +236,30 @@ class ASMCallInst(label: Label) : ASMInst() {
   }
 }
 
+class ASMBrInst(val op: String, rs1: Register, rs2: Register, label: Label): ASMInst() {
+  init {
+    link(this, rs1)
+    link(this, rs2)
+    link(this, label)
+  }
+
+  fun getRs1(): Register {
+    return useeList[0] as Register
+  }
+
+  fun getRs2(): Register {
+    return useeList[1] as Register
+  }
+
+  fun getLabel(): Label {
+    return useeList[2] as Label
+  }
+
+  override fun accept(visitor: ASMVisitor) {
+    visitor.visit(this)
+  }
+}
+
 /**
  * ASMBrzInst stands for some branch instructions in pseudo instructions,
  * which decides whether to jump by judging whether it's zero or not.
@@ -256,7 +286,7 @@ class ASMBzInst(val op: String, rs: Register, label: Label) : ASMInst() {
 
 class ASMLiInst(rd: Register, imm: DeterminedImmediate) : ASMInst() {
   init {
-    defList.add(rd)
+    def = rd
     link(this, imm)
   }
 
@@ -271,7 +301,7 @@ class ASMLiInst(rd: Register, imm: DeterminedImmediate) : ASMInst() {
 
 class ASMMvInst(rd: Register, rs: Register) : ASMInst() {
   init {
-    defList.add(rd)
+    def = rd
     link(this, rs)
   }
 
@@ -310,7 +340,7 @@ class ASMJInst(label: Label) : ASMInst() {
 
 class ASMLaInst(rd: Register, symbol: ASMGlobalPointer) : ASMInst() {
   init {
-    defList.add(rd)
+    def = rd
     link(this, symbol)
   }
 
@@ -325,7 +355,7 @@ class ASMLaInst(rd: Register, symbol: ASMGlobalPointer) : ASMInst() {
 
 class ASMCmpzInst(val op: String, rd: Register, rs: Register) : ASMInst() {
   init {
-    defList.add(rd)
+    def = rd
     link(this, rs)
   }
 

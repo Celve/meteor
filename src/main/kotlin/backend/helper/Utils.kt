@@ -1,6 +1,18 @@
 package backend.helper
 
 object Utils {
+  fun convertBr(op: String): String {
+    return when(op) {
+      "eq" -> "beq"
+      "ne" -> "bne"
+      "slt" -> "blt"
+      "sle" -> "ble"
+      "sgt" -> "bgt"
+      "sge" -> "bge"
+      else -> throw Exception("unexpected operator")
+    }
+  }
+
   fun calculate(op: String, rs: Int, rt: Int): Int {
     return when (op) {
       "add" -> rs + rt

@@ -270,8 +270,17 @@ class ASMGenerator : IRVisitor() {
 
   override fun visit(inst: BranchInst) {
     val func = ASMBuilder.getCurrentFunc()
-    if (inst.getCond() == null) { // unconditional br
+    val cond = inst.getCond()
+    if (cond == null) { // unconditional br
       ASMBuilder.createJInst(func.getBlockByPureName(inst.getTrueBlock().name!!)!!)
+    } else if (cond.userList.size == 1 && cond is CmpInst) {
+      ASMBuilder.createBrInst(
+        Utils.convertBr(cond.cond),
+        getRegOfValue(cond.getLhs())!!,
+        getRegOfValue(cond.getRhs())!!,
+        func.getBlockByPureName(inst.getTrueBlock().name!!)!!,
+      )
+      ASMBuilder.createJInst(func.getBlockByPureName(inst.getFalseBlock()!!.name!!)!!)
     } else { // conditional br
       val condReg = getRegOfValue(inst.getCond()!!)!!
       val trueBlock = func.getBlockByPureName(inst.getTrueBlock().name!!)!!
@@ -348,6 +357,10 @@ class ASMGenerator : IRVisitor() {
   }
 
   override fun visit(inst: CmpInst) {
+    if (inst.userList.size == 1 && inst.userList.first() is BranchInst) {
+      // it's a cmp in branch
+      return
+    }
     val virReg = getRegOfInst(inst)
     val (cond, lhs, rhs) = if (inst.getLhs() is ConstantInt) {
       Triple(Utils.revCond(inst.cond), inst.getRhs(), inst.getLhs())

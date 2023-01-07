@@ -376,14 +376,7 @@ object ASMRegisterAllocator : ASMVisitor() {
     for (block in func.blockList) {
       val removed = mutableListOf<ASMMvInst>()
       for (inst in block.instList) {
-        val rs = inst.getUseList()
-        val rd = inst.getDefSet()
-        if (rs.any { it == origin }) {
-          inst.replaceUse(origin, target)
-        }
-        if (rd.any { it == origin }) {
-          inst.replaceDef(origin, target)
-        }
+        inst.replaceDef(origin, target)
         if (inst is ASMMvInst && inst.getRs() == inst.getRd()) {
           removed.add(inst)
         }
@@ -603,6 +596,10 @@ object ASMRegisterAllocator : ASMVisitor() {
   }
 
   override fun visit(inst: ASMLoadInst) {
+    TODO("Not yet implemented")
+  }
+
+  override fun visit(inst: ASMBrInst) {
     TODO("Not yet implemented")
   }
 

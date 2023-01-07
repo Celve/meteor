@@ -124,6 +124,12 @@ object ASMBuilder {
     target.addPredBlock(block)
   }
 
+  fun createBrInst(op: String, rs1: Register, rs2: Register, target: ASMBlock) {
+    val brInst = ASMBrInst(op, rs1, rs2, target)
+    insertInst(brInst)
+    target.addPredBlock(block)
+  }
+
   /**
    * This function is used to build instructions like beqz, bnez, bltz, bgez, blez, bgtz.
    */

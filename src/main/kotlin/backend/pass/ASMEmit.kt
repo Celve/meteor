@@ -82,6 +82,10 @@ object ASMEmit : ASMVisitor() {
     println("\t$instName ${inst.getRd()}, ${inst.getImm()}(${inst.getRs()})")
   }
 
+  override fun visit(inst: ASMBrInst) {
+    println("\t${inst.op} ${inst.getRs1()}, ${inst.getRs2()}, ${inst.getLabel()}")
+  }
+
   override fun visit(inst: ASMBzInst) {
     println("\t${inst.op} ${inst.getRs()}, ${inst.getLabel()}")
   }
