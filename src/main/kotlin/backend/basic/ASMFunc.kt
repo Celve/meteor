@@ -1,6 +1,6 @@
 package backend.basic
 
-import backend.controller.ASMVisitor
+import backend.pass.ASMVisitor
 
 /**
  * The intention to maintain a class for holding function in assembly code it to make it clearer to distinguish between code blocks.
@@ -8,7 +8,7 @@ import backend.controller.ASMVisitor
  * @see middleend.basic.Func
  */
 class ASMFunc(name: String) : Label(name) {
-  val blockList = mutableListOf<ASMBlock>()
+  var blockList = mutableListOf<ASMBlock>()
   var argsNum = 0
   var usedVirRegNum = 0
   var stackAlloca = 0

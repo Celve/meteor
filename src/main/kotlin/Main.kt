@@ -39,6 +39,6 @@ fun main(args: Array<String>) {
 
     val progNode = FrontEndManager.visit(inputStream)
     val topModule = MiddleEndManager.visit(progNode, testIR, buildOptions)
-    BackEndManager.visit(topModule, testASM)
+    BackEndManager.visit(topModule, testASM, buildOptions)
   }
 }

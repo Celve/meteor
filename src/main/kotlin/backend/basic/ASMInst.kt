@@ -1,6 +1,6 @@
 package backend.basic
 
-import backend.controller.ASMVisitor
+import backend.pass.ASMVisitor
 import kotlin.math.min
 
 /**
@@ -236,7 +236,7 @@ class ASMCallInst(label: Label) : ASMInst() {
   }
 }
 
-class ASMBrInst(val op: String, rs1: Register, rs2: Register, label: Label): ASMInst() {
+class ASMBrInst(val op: String, rs1: Register, rs2: Register, label: Label) : ASMInst() {
   init {
     link(this, rs1)
     link(this, rs2)

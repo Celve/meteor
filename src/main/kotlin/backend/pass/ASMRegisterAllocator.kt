@@ -2,7 +2,6 @@ package backend.pass
 
 import backend.basic.*
 import backend.controller.ASMBuilder
-import backend.controller.ASMVisitor
 import backend.helper.RegFactory
 
 object ASMRegisterAllocator : ASMVisitor() {
@@ -267,8 +266,8 @@ object ASMRegisterAllocator : ASMVisitor() {
         }
 
         with(executionFrequency) {
-          uses.forEach { set(it, getValue(it) + block.executionFrequency) }
-          defs.forEach { set(it, getValue(it) + block.executionFrequency) }
+          uses.forEach { set(it, getValue(it) + block.execFreq) }
+          defs.forEach { set(it, getValue(it) + block.execFreq) }
         }
 
         // connect the two overlapped live ranges only in the latter's definition
@@ -555,6 +554,7 @@ object ASMRegisterAllocator : ASMVisitor() {
             if (inst.getUseList().contains(spilled)) { // use
               inst.replaceUse(spilled, newReg)
               val loadInst = ASMLoadInst(4, newReg, offset, regFactory.getPhyReg("sp"))
+              loadInst.parent = block
               iterator.previous()
               iterator.add(loadInst) // it's really tricky
               iterator.next()
@@ -564,6 +564,7 @@ object ASMRegisterAllocator : ASMVisitor() {
             if (inst.getDefSet().contains(spilled)) { // def
               inst.replaceDef(spilled, newReg)
               val storeInst = ASMStoreInst(4, newReg, offset, regFactory.getPhyReg("sp"))
+              storeInst.parent = block
               iterator.add(storeInst) // it's really tricky
 //              ASMBuilder.setInsertPointAfter(inst)
 //              ASMBuilder.createStoreInst(4, newReg!!, Immediate(offset), regFactory.getPhyReg("sp"))

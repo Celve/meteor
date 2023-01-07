@@ -1,7 +1,6 @@
 package backend.pass
 
 import backend.basic.*
-import backend.controller.ASMVisitor
 
 object ASMEmit : ASMVisitor() {
   override fun visit(module: ASMModule) {

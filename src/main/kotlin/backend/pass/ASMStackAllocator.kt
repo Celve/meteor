@@ -2,7 +2,6 @@ package backend.pass
 
 import backend.basic.*
 import backend.controller.ASMBuilder
-import backend.controller.ASMVisitor
 import backend.helper.RegFactory
 
 /**
@@ -46,7 +45,7 @@ class ASMStackAllocator : ASMVisitor() {
     ASMBuilder.setCurrentFunc(newFunc)
     regFactory.position = func
 
-    func.blockList.forEach { newFunc.addBlock(ASMBlock(it.pureName, newFunc, it.executionFrequency)) }
+    func.blockList.forEach { newFunc.addBlock(ASMBlock(it.pureName, newFunc, it.execFreq)) }
 
     vir2Offset = hashMapOf()
     stackAlloca = func.stackAlloca + func.usedVirRegNum * 4

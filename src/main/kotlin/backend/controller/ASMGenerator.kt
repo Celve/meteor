@@ -41,9 +41,13 @@ class ASMGenerator : IRVisitor() {
    */
   fun getRegOfValue(value: Value): Register? {
     return if (value is ConstantInt) {
-      val virReg = regFactory.newVirReg()
-      ASMBuilder.createLiInst(virReg, DeterminedImmediate(value.value))
-      virReg
+      if (value.value == 0) {
+        regFactory.getPhyReg(0)
+      } else {
+        val virReg = regFactory.newVirReg()
+        ASMBuilder.createLiInst(virReg, DeterminedImmediate(value.value))
+        virReg
+      }
     } else if (value is ConstantNull) {
       val virReg = regFactory.newVirReg()
       ASMBuilder.createLiInst(

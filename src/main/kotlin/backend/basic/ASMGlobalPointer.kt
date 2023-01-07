@@ -1,6 +1,6 @@
 package backend.basic
 
-import backend.controller.ASMVisitor
+import backend.pass.ASMVisitor
 
 class Directive(val op: String, val argList: List<String>)
 
@@ -11,7 +11,7 @@ class Directive(val op: String, val argList: List<String>)
  * One if before the name, and the other is after the name.
  * The previous one includes something about metadata, while the latter one includes concreate data.
  */
-class ASMGlobalPointer(name: String): ASMValue(name) {
+class ASMGlobalPointer(name: String) : ASMValue(name) {
   val defDirList = mutableListOf<Directive>()
   val emitDirList = mutableListOf<Directive>()
 

@@ -1,8 +1,8 @@
 package backend.basic
 
-import backend.controller.ASMVisitor
+import backend.pass.ASMVisitor
 
-class ASMBlock(val pureName: String, val parent: ASMFunc, val executionFrequency: Int) :
+class ASMBlock(val pureName: String, val parent: ASMFunc, val execFreq: Int) :
   Label("${parent.name}.$pureName") {
   val instList = mutableListOf<ASMInst>()
   var liveInSet = setOf<Register>()
