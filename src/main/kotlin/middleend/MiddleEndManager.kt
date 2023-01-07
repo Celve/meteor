@@ -44,6 +44,9 @@ object MiddleEndManager {
       Eliminator.visit(module)
     }
     Checker.visit(module)
+    if (buildOptions.contains("--peephole")) {
+      Peephole.visit(module)
+    }
 
     if (testing) {
       IREmit.visit(module)
