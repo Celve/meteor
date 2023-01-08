@@ -24,10 +24,6 @@ object MiddleEndManager {
       Inliner.visit(module)
     }
     Checker.visit(module)
-    if (buildOptions.contains("--licm")) {
-      LoopInvarCodeMotion.visit(module)
-    }
-    Checker.visit(module)
     if (buildOptions.contains("--sccp")) {
       ConstPropagator.visit(module)
     }
@@ -38,6 +34,10 @@ object MiddleEndManager {
     Checker.visit(module)
     if (buildOptions.contains("--dvnt")) {
       DomValueNumbering.visit(module)
+    }
+    Checker.visit(module)
+    if (buildOptions.contains("--licm") && buildOptions.contains("--dvnt")) {
+      LoopInvarCodeMotion.visit(module) // must be placed after dvnt
     }
     Checker.visit(module)
     if (buildOptions.contains("--adce")) {

@@ -5,8 +5,10 @@ import middleend.struct.Loop
 
 object LoopInvarCodeMotion : IRVisitor() {
   private lateinit var currFunc: Func
+  private lateinit var module: TopModule
 
   override fun visit(topModule: TopModule) {
+    module = topModule
     topModule.funcMap.forEach { it.value.accept(this) }
   }
 
@@ -16,12 +18,16 @@ object LoopInvarCodeMotion : IRVisitor() {
 
   private fun collectInvariants(loop: Loop): List<Instruction> {
     var invariants = listOf<Instruction>()
-    val defs = loop.body.flatMap { it.instList }.toSet()
-    val insts = loop.body.flatMap { it.instList }
+    val instList = loop.body.flatMap { it.instList }
+    val defSet = instList.toSet()
+    val modifiedSet = instList.filterIsInstance<StoreInst>().map { it.getAddr() }
+    val noCall = !instList.any { it is CallInst && !module.builtinFuncMap.contains(it.getCallee().name) }
     var lastSize = 0
     while (true) {
-      invariants = insts.filter { it is BinaryInst || it is CmpInst }
-        .filter { inst -> inst.useeList.all { it is Constant || invariants.contains(it) || !defs.contains(it) } }
+      invariants =
+        instList.filter { it is BinaryInst || it is CmpInst || (it is LoadInst && noCall) || it is GetElementPtrInst }
+          .filter { inst -> inst.useeList.all { it is Constant || invariants.contains(it) || !defSet.contains(it) } }
+          .filter { it !is LoadInst || !modifiedSet.contains(it.getAddr()) }
       if (invariants.size != lastSize) {
         lastSize = invariants.size
       } else {

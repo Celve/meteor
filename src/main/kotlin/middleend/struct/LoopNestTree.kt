@@ -3,13 +3,14 @@ package middleend.struct
 import middleend.basic.BasicBlock
 import middleend.basic.Func
 
-class Loop(val header: BasicBlock, var body: Set<BasicBlock>) {
+class Loop(val header: BasicBlock, unorderedBody: Set<BasicBlock>) {
+  var body = unorderedBody.sortedBy { header.parent.blockList.indexOf(it) }
   var exit = body.filter { it.nextBlockSet.any { next -> !body.contains(next) } }.toSet()
   val succs = hashSetOf<Loop>()
   val preds = hashSetOf<Loop>()
 
   fun union(other: Set<BasicBlock>) {
-    body = body.union(other)
+    body = (body + other).sortedBy { header.parent.blockList.indexOf(it) }
     exit = body.filter { it.nextBlockSet.any { next -> !body.contains(next) } }.toSet()
   }
 }
