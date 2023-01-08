@@ -14,6 +14,7 @@ object Checker : IRVisitor() {
   override fun visit(func: Func) {
     val instList = func.blockList.flatMap { it.instList }
     instList.forEach { inst -> inst.userList.all { instList.contains(it) } }
+    instList.forEach { inst -> inst.useeList.filterIsInstance<Instruction>().all { instList.contains(it) } }
     for (block in func.blockList) {
       assert(block.parent == func)
       block.accept(this)

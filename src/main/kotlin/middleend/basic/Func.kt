@@ -6,6 +6,7 @@ import middleend.pass.IRVisitor
 import middleend.struct.DomTree
 import middleend.struct.LivenessAnalyzer
 import middleend.struct.LoopNestTree
+import middleend.struct.ValNum
 
 class Func(name: String, val funcType: FuncType, val argList: List<Value>) : GlobalValue(name, funcType) {
   // ensure that entry block is always the first block and the return block is always the last block
@@ -16,6 +17,7 @@ class Func(name: String, val funcType: FuncType, val argList: List<Value>) : Glo
   val revDomTree = DomTree(this, true)
   val loopNestTree = LoopNestTree(this)
   val livenessAnalyzer = LivenessAnalyzer(this)
+  val valNum = ValNum()
 
   override fun replicate(): Value {
     TODO("Not yet implemented")

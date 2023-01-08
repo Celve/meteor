@@ -110,5 +110,9 @@ object Peephole : IRVisitor() {
 
   override fun visit(inst: PCopyInst) {}
 
-  override fun visit(inst: MvInst) {}
+  override fun visit(inst: MvInst) {
+//    if (inst.userList.size == 1) {
+//      inst.parent.removeInst(inst, inst.getSrc())
+//    }
+  }
 }
