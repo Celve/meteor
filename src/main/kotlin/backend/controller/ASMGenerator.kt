@@ -489,6 +489,7 @@ class ASMGenerator : IRVisitor() {
       ASMBuilder.createLiInst(virReg, DeterminedImmediate((inst.getSrc() as ConstantInt).value))
     } else {
       ASMBuilder.createMvInst(virReg, getRegOfValue(inst.getSrc())!!)
+      linkValAndOffset(inst, getOffsetOfValue(inst.getSrc()))
     }
   }
 }

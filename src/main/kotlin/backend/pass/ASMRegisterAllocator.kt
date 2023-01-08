@@ -93,7 +93,7 @@ object ASMRegisterAllocator : ASMVisitor() {
 
   val rewrittenNodes = hashSetOf<Register>()
 
-  val crossCallNodes = hashSetOf<Register>()
+  val crossCallNodes = hashMapOf<Register, Int>().withDefault { 0 }
 
   val executionFrequency = hashMapOf<Register, Double>().withDefault { 0.0 }
 
@@ -110,7 +110,7 @@ object ASMRegisterAllocator : ASMVisitor() {
   private fun processCalleeSaved() {
     val entryBlock = asmFunc.blockList.first()
     val exitBlock = asmFunc.blockList.last()
-    val insertedRegList = RegInfo.calleeSavedRegList + 1
+    val insertedRegList = RegInfo.calleeSavedRegList.reversed() + 1
     for (reg in insertedRegList) {
       val virReg = RegFactory.newVirReg()
       val phyReg = RegFactory.getPhyReg(reg)
@@ -258,8 +258,7 @@ object ASMRegisterAllocator : ASMVisitor() {
         if (inst is ASMMvInst) {
           // from mv especially, we ignore the use of rs, to implement coalesce
           lives.removeAll(inst.getUseList().toSet())
-          uses.forEach { moveList.getOrPut(it) { mutableListOf() }.add(inst) }
-          defs.forEach { moveList.getOrPut(it) { mutableListOf() }.add(inst) }
+          uses.union(defs).forEach { moveList.getOrPut(it) { mutableListOf() }.add(inst) }
           worklistMoves.add(inst)
         }
 
@@ -281,14 +280,14 @@ object ASMRegisterAllocator : ASMVisitor() {
 
         // check which nodes are crossCallNode
         if (inst is ASMCallInst) {
-          crossCallNodes.addAll(lives)
+          lives.forEach { crossCallNodes[it] = crossCallNodes.getValue(it) + block.execFreq }
         }
       }
     }
   }
 
-  private fun addEdge(lhs: Register, rhs: Register) {
-    if (!adjSet.contains(Pair(lhs, rhs)) && lhs != rhs) {
+  private fun addEdge(lhs: Register, rhs: Register): Boolean {
+    return if (!adjSet.contains(Pair(lhs, rhs)) && lhs != rhs) {
       adjSet.add(Pair(lhs, rhs))
       adjSet.add(Pair(rhs, lhs))
       if (lhs !is PhyReg) { // it's useless, because it cannot be simplified, and it can save space
@@ -299,6 +298,9 @@ object ASMRegisterAllocator : ASMVisitor() {
         adjList.getOrPut(rhs) { hashSetOf() }.add(lhs)
         degree[rhs] = degree.getValue(rhs) + 1
       }
+      true
+    } else {
+      false
     }
   }
 
@@ -367,21 +369,6 @@ object ASMRegisterAllocator : ASMVisitor() {
     }
   }
 
-  private fun eliminateMv(mv: ASMMvInst, origin: Register, target: Register) {
-    val mvBlock = mv.parent
-    val func = mvBlock.parent
-    for (block in func.blockList) {
-      val removed = mutableListOf<ASMMvInst>()
-      for (inst in block.instList) {
-        inst.replaceDef(origin, target)
-        if (inst is ASMMvInst && inst.getRs() == inst.getRd()) {
-          removed.add(inst)
-        }
-      }
-      block.instList.removeAll(removed)
-    }
-  }
-
   private fun coalesce() {
     val mv = worklistMoves.first()
     worklistMoves.remove(mv)
@@ -403,7 +390,6 @@ object ASMRegisterAllocator : ASMVisitor() {
       || (u !is PhyReg && conservative(adjacent(u).union(adjacent(v)).toList()))
     ) {
       coalescedMoves.add(mv)
-//      eliminateMv(mv, v, u)
       combine(u, v)
       addWorklist(u)
     } else {
@@ -458,8 +444,9 @@ object ASMRegisterAllocator : ASMVisitor() {
     moveList.getOrPut(u) { mutableListOf() }.addAll(moveList.getValue(v))
     enableMoves(setOf(v))
     for (neighbor in adjacent(v)) {
-      addEdge(neighbor, u)
-      decrementDegree(neighbor)
+      if (addEdge(neighbor, u)) {
+        decrementDegree(neighbor)
+      }
     }
     if (degree.getValue(u) >= k && freezeWorklist.contains(u)) {
       freezeWorklist.remove(u)
@@ -497,12 +484,37 @@ object ASMRegisterAllocator : ASMVisitor() {
       .minByOrNull { executionFrequency.getValue(it) / degree.getValue(it) }
   }
 
-  private fun selectColorWithHeuristic(reg: Register, candidate: HashSet<Int>): Int {
-    return if (crossCallNodes.contains(reg)) {
-      candidate.find { it in RegInfo.calleeSavedRegList } ?: candidate.first()
-    } else {
-      candidate.find { it in RegInfo.callerSavedRegList } ?: candidate.first()
+  private fun selectColorWithHeuristic(reg: Register, candidates: HashSet<Int>): Int {
+    val crossCallTimes = crossCallNodes.getValue(reg)
+    val relativeMoveList = moveList.getValue(reg)
+    val reg2Cost = hashMapOf<Int, Int>()
+
+    candidates.forEach { reg2Cost[it] = 0 }
+
+    relativeMoveList.forEach {
+      val rs = getAlias(it.getRs())
+      val rd = getAlias(it.getRd()!!)
+      if (rs is PhyReg && reg2Cost.contains(rs.id)) {
+        reg2Cost[rs.id] = reg2Cost[rs.id]!! - it.parent.execFreq
+      }
+      if (rd is PhyReg && reg2Cost.contains(rd.id)) {
+        reg2Cost[rd.id] = reg2Cost[rd.id]!! - it.parent.execFreq
+      }
     }
+
+    val ranking = reg2Cost.toList()
+      .map { (reg, cost) ->
+        reg to cost + (if (!RegInfo.calleeSavedRegList.contains(reg)) (crossCallTimes - 1) * 2 else 0)
+      }
+      .sortedBy { it.second }
+
+    return ranking.first().first
+
+//    return if (crossCallNodes.contains(reg)) {
+//      candidates.find { it in RegInfo.calleeSavedRegList } ?: candidates.first()
+//    } else {
+//      candidates.find { it in RegInfo.callerSavedRegList } ?: candidates.first()
+//    }
   }
 
   /**
@@ -520,7 +532,7 @@ object ASMRegisterAllocator : ASMVisitor() {
       val top = selectedStack.last()
       selectedStack.removeLast()
       val okColors = RegInfo.assignableRegList.toHashSet()
-      adjList.getValue(top).map { getAlias(it) }.filter { it is PhyReg || coloredNodes.contains(it) }
+      adjList.getValue(top).map { getAlias(it) }.distinct().filter { it is PhyReg || coloredNodes.contains(it) }
         .forEach { okColors.remove(color.getValue(it)) } // remove adjacent existed color
       if (okColors.isEmpty()) {
         spilledNodes.add(top)

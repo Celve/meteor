@@ -20,7 +20,6 @@ object BackEndManager {
     }
     if (buildOptions.contains("--gcp")) {
       GlobalCodePlacement.visit(module)
-      Checker.visit(module)
     }
 
     if (testing) {
