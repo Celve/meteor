@@ -17,6 +17,20 @@ object DomValueNumbering : IRVisitor() {
 
   override fun visit(constStr: ConstantStr) {}
 
+  private fun equal(value: Value, integer: Int): Boolean {
+    return value is ConstantInt && value.value == integer
+  }
+
+  private fun isInvariant(inst: BinaryInst): Boolean {
+    return when (inst.op) {
+      "add" -> equal(inst.getLhs(), 0) || equal(inst.getRhs(), 0)
+      "sub" -> equal(inst.getRhs(), 0)
+      "mul" -> equal(inst.getLhs(), 1) || equal(inst.getRhs(), 1)
+      "sdiv" -> equal(inst.getRhs(), 1)
+      else -> false
+    }
+  }
+
   private fun valueNumbering(block: BasicBlock, parentTable: HashPatternTable?) {
     val hashTable = HashPatternTable(parentTable)
 
@@ -49,23 +63,27 @@ object DomValueNumbering : IRVisitor() {
     }
 
     for (inst in block.instList.filter { it is BinaryInst || it is CmpInst || it is GetElementPtrInst }) {
-      val operands = inst.useeList.map { valNum.get(it)!! }
-      val op = when (inst) {
-        is BinaryInst -> inst.op
-        is CmpInst -> inst.cond
-        is GetElementPtrInst -> "getelementptr"
-        else -> throw Exception("unreachable")
-      }
-      val result = hashTable.get(op, operands)
-      if (result != null) { // redundant
-        changed = true
+      if (inst is BinaryInst && isInvariant(inst)) {
+        block.removeInst(inst, if (inst.getLhs() !is ConstantInt) inst.getLhs() else inst.getRhs())
+      } else {
+        val operands = inst.useeList.map { valNum.get(it)!! }
+        val op = when (inst) {
+          is BinaryInst -> inst.op
+          is CmpInst -> inst.cond
+          is GetElementPtrInst -> "getelementptr"
+          else -> throw Exception("unreachable")
+        }
+        val result = hashTable.get(op, operands)
+        if (result != null) { // redundant
+          changed = true
 //        val mvInst = MvInst(inst.name!!, result)
 //        valNum.alias(mvInst, result)
 //        block.replaceInst(inst, mvInst)
 //        hashTable.add(op, operands, mvInst)
-        block.removeInst(inst, result)
-      } else {
-        hashTable.add(op, operands, inst)
+          block.removeInst(inst, result)
+        } else {
+          hashTable.add(op, operands, inst)
+        }
       }
     }
 
