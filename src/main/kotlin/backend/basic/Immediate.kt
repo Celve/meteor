@@ -45,3 +45,15 @@ data class DeterminedImmediate(val value: Int) : Immediate() {
     return value.toString()
   }
 }
+
+data class RelocationHi(val target: ASMGlobalPointer) : Immediate() {
+  override fun toString(): String {
+    return "%hi($target)"
+  }
+}
+
+data class RelocationLo(val target: ASMGlobalPointer) : Immediate() {
+  override fun toString(): String {
+    return "%lo($target)"
+  }
+}

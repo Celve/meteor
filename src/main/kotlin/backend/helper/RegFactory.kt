@@ -5,7 +5,7 @@ import backend.basic.PhyReg
 import backend.basic.VirReg
 
 
-class RegFactory {
+object RegFactory {
   var virRegId = 0
   val id2Vir = hashMapOf<Int, VirReg>()
   val id2Phy = hashMapOf<Int, PhyReg>()

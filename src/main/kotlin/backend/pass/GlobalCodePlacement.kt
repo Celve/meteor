@@ -105,4 +105,8 @@ object GlobalCodePlacement : ASMVisitor() {
   override fun visit(inst: ASMCmpzInst) {
     TODO("Not yet implemented")
   }
+
+  override fun visit(inst: ASMLuiInst) {
+    TODO("Not yet implemented")
+  }
 }

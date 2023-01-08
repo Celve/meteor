@@ -1,6 +1,8 @@
 package backend.controller
 
 import backend.basic.*
+import backend.helper.RegFactory
+import backend.helper.Utils
 
 /**
  * ASMBuilder is a really general singleton class that is used to build assembly code.
@@ -74,25 +76,62 @@ object ASMBuilder {
    * This function is used to build almost every binary arithmetic instructions.
    */
   fun createArithInst(op: String, rd: Register, rs1: Register, rs2: Register) {
-    val newOp = when (op) {
-      "sdiv" -> "div"
-      "srem" -> "rem"
-      "shl" -> "sll"
-      "ashr" -> "sra"
-      else -> op
-    }
-    val arithInst = ASMArithInst(newOp, rd, rs1, rs2)
+    val arithInst = ASMArithInst(op, rd, rs1, rs2)
     insertInst(arithInst)
   }
 
   fun createArithiInst(op: String, rd: Register, rs: Register, imm: Immediate) {
-    val newOp = when (op) {
-      "shli" -> "slli"
-      "ashri" -> "srai"
-      else -> op
+    when (op) {
+      "addi", "slli", "srai" -> {
+        if (imm !is DeterminedImmediate || imm.value != 0) {
+          insertInst(ASMArithiInst(op, rd, rs, imm))
+        } else {
+          insertInst(ASMMvInst(rd, rs))
+        }
+      }
+
+      "subi" -> {
+        if (imm !is DeterminedImmediate || imm.value != 0) {
+          val sub = when (imm) {
+            is DeterminedImmediate -> DeterminedImmediate(-imm.value)
+            is UndeterminedImmediate -> -imm
+            else -> throw Exception("Unknown immediate type")
+          }
+          insertInst(ASMArithiInst("addi", rd, rs, sub))
+        } else {
+          insertInst(ASMMvInst(rd, rs))
+        }
+      }
+
+      "andi", "ori", "xori" -> insertInst(ASMArithiInst(op, rd, rs, imm))
+
+      "muli", "divi" -> {
+        val dim = imm as DeterminedImmediate
+        if (imm.value != 1) {
+          val (isPowerOf2, power) = Utils.isPowerOf2(imm.value)
+          if (isPowerOf2) {
+            when (op) {
+              "muli" -> insertInst(ASMArithiInst("slli", rd, rs, DeterminedImmediate(power)))
+              "divi" -> insertInst(ASMArithiInst("srai", rd, rs, DeterminedImmediate(power)))
+            }
+          } else {
+            val virReg = RegFactory.newVirReg()
+            insertInst(ASMLiInst(virReg, dim))
+            insertInst(ASMArithInst(op.dropLast(1), rd, rs, virReg))
+          }
+        } else {
+          insertInst(ASMMvInst(rd, rs))
+        }
+      }
+
+      "remi" -> {
+        val virReg = RegFactory.newVirReg()
+        insertInst(ASMLiInst(virReg, imm as DeterminedImmediate))
+        insertInst(ASMArithInst(op.dropLast(1), rd, rs, virReg))
+      }
+
+      else -> throw Exception("Unknown op: $op")
     }
-    val arithiInst = ASMArithiInst(newOp, rd, rs, imm)
-    insertInst(arithiInst)
   }
 
   fun createLiInst(rd: Register, imm: DeterminedImmediate) {
@@ -168,5 +207,9 @@ object ASMBuilder {
   fun createLaInst(rd: Register, symbol: ASMGlobalPointer) {
     val laInst = ASMLaInst(rd, symbol)
     insertInst(laInst)
+  }
+
+  fun createLuiInst(rd: Register, imm: Immediate) {
+    insertInst(ASMLuiInst(rd, imm))
   }
 }

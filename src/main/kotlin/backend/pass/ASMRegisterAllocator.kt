@@ -97,13 +97,11 @@ object ASMRegisterAllocator : ASMVisitor() {
 
   val executionFrequency = hashMapOf<Register, Double>().withDefault { 0.0 }
 
-  var regFactory = RegFactory() // it's a temporary init value, which would be replaced in visit(module)
   var asmModule = ASMModule() // it would be updated in visit(module)
   var asmFunc = ASMFunc("initial") // it would be updated in visit(func)
   var raVirReg: VirReg? = null
 
   override fun visit(module: ASMModule) {
-    regFactory = module.regFactory
     asmModule = module
 
     module.funcList.forEach { it.accept(this) }
@@ -114,8 +112,8 @@ object ASMRegisterAllocator : ASMVisitor() {
     val exitBlock = asmFunc.blockList.last()
     val insertedRegList = RegInfo.calleeSavedRegList + 1
     for (reg in insertedRegList) {
-      val virReg = regFactory.newVirReg()
-      val phyReg = regFactory.getPhyReg(reg)
+      val virReg = RegFactory.newVirReg()
+      val phyReg = RegFactory.getPhyReg(reg)
       if (reg == 1) {
         raVirReg = virReg
       }
@@ -152,8 +150,8 @@ object ASMRegisterAllocator : ASMVisitor() {
       for (inst in block.instList) {
         val rs = inst.getUseList()
         val rd = inst.getDefSet()
-        rs.forEach { inst.replaceUse(it, regFactory.getPhyReg(color.getValue(it))) }
-        rd.forEach { inst.replaceDef(it, regFactory.getPhyReg(color.getValue(it))) }
+        rs.forEach { inst.replaceUse(it, RegFactory.getPhyReg(color.getValue(it))) }
+        rd.forEach { inst.replaceDef(it, RegFactory.getPhyReg(color.getValue(it))) }
       }
     }
   }
@@ -219,7 +217,7 @@ object ASMRegisterAllocator : ASMVisitor() {
       block.useSet.addAll(inst.getUseList().subtract(block.defSet))
     }
 //    block.useSet.removeAll(block.defSet)
-    block.useSet += regFactory.getPhyReg(0)
+    block.useSet += RegFactory.getPhyReg(0)
   }
 
   private fun livenessAnalysis() {
@@ -305,7 +303,7 @@ object ASMRegisterAllocator : ASMVisitor() {
   }
 
   private fun makeWorklist() {
-    // FIXME: please optimize this part, because every function only a subset of regFactory's generated registers
+    // FIXME: please optimize this part, because every function only a subset of RegFactory's generated registers
     for (virReg in initial) {
       if (degree.getValue(virReg) >= k) {
         spillWorklist.add(virReg)
@@ -549,25 +547,25 @@ object ASMRegisterAllocator : ASMVisitor() {
         while (iterator.hasNext()) {
           val inst = iterator.next()
           if (inst.getDefSet().contains(spilled) || inst.getUseList().contains(spilled)) {
-            val newReg = regFactory.newVirReg()
+            val newReg = RegFactory.newVirReg()
             rewrittenNodes.add(newReg)
             if (inst.getUseList().contains(spilled)) { // use
               inst.replaceUse(spilled, newReg)
-              val loadInst = ASMLoadInst(4, newReg, offset, regFactory.getPhyReg("sp"))
+              val loadInst = ASMLoadInst(4, newReg, offset, RegFactory.getPhyReg("sp"))
               loadInst.parent = block
               iterator.previous()
               iterator.add(loadInst) // it's really tricky
               iterator.next()
 //              ASMBuilder.setInsertPointBefore(inst)
-//              ASMBuilder.createLoadInst(4, newReg!!, Immediate(offset), regFactory.getPhyReg("sp"))
+//              ASMBuilder.createLoadInst(4, newReg!!, Immediate(offset), RegFactory.getPhyReg("sp"))
             }
             if (inst.getDefSet().contains(spilled)) { // def
               inst.replaceDef(spilled, newReg)
-              val storeInst = ASMStoreInst(4, newReg, offset, regFactory.getPhyReg("sp"))
+              val storeInst = ASMStoreInst(4, newReg, offset, RegFactory.getPhyReg("sp"))
               storeInst.parent = block
               iterator.add(storeInst) // it's really tricky
 //              ASMBuilder.setInsertPointAfter(inst)
-//              ASMBuilder.createStoreInst(4, newReg!!, Immediate(offset), regFactory.getPhyReg("sp"))
+//              ASMBuilder.createStoreInst(4, newReg!!, Immediate(offset), RegFactory.getPhyReg("sp"))
             }
           }
         }
@@ -649,6 +647,10 @@ object ASMRegisterAllocator : ASMVisitor() {
   }
 
   override fun visit(inst: ASMCmpzInst) {
+    TODO("Not yet implemented")
+  }
+
+  override fun visit(inst: ASMLuiInst) {
     TODO("Not yet implemented")
   }
 }

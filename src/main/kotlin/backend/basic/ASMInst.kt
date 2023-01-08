@@ -367,3 +367,18 @@ class ASMCmpzInst(val op: String, rd: Register, rs: Register) : ASMInst() {
     visitor.visit(this)
   }
 }
+
+class ASMLuiInst(rd: Register, imm: Immediate) : ASMInst() {
+  init {
+    def = rd
+    link(this, imm)
+  }
+
+  fun getImm(): Immediate {
+    return useeList[0] as Immediate
+  }
+
+  override fun accept(visitor: ASMVisitor) {
+    visitor.visit(this)
+  }
+}

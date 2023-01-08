@@ -1,8 +1,41 @@
 package backend.helper
 
 object Utils {
+  fun isPowerOf2(value: Int): Pair<Boolean, Int> {
+    var value = value
+    var cnt = 0
+    while (value > 0) {
+      if (value and 1 == 1) {
+        return Pair(value == 1, cnt)
+      }
+      value = value shr 1
+      cnt++
+    }
+    return Pair(false, 0)
+  }
+
+  fun convertArith(op: String): String {
+    return when (op) {
+      "sdiv" -> "div"
+      "srem" -> "rem"
+      "shl" -> "sll"
+      "ashr" -> "sra"
+      else -> op
+    }
+  }
+
+  fun convertArithi(op: String): String {
+    return when (op) {
+      "shl" -> "slli"
+      "ashr" -> "srai"
+      "sdiv" -> "divi"
+      "srem" -> "remi"
+      else -> "${op}i"
+    }
+  }
+
   fun convertBr(op: String): String {
-    return when(op) {
+    return when (op) {
       "eq" -> "beq"
       "ne" -> "bne"
       "slt" -> "blt"

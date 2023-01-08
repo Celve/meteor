@@ -3,6 +3,12 @@ package backend.basic
 open class ASMUser(name: String?) : ASMValue(name) {
   val useeList = mutableListOf<ASMValue>()
 
+  fun eliminate() {
+    useeList.forEach { it.userSet.remove(this) }
+    useeList.clear()
+  }
+
+
   companion object {
     fun link(user: ASMUser, usee: ASMValue) {
       user.useeList.add(usee)

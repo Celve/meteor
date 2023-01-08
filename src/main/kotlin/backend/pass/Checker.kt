@@ -35,7 +35,7 @@ object Checker : ASMVisitor() {
     val succSet = block.instList.filterIsInstance<ASMBrInst>().map { it.getLabel() } +
         block.instList.filterIsInstance<ASMBzInst>().map { it.getLabel() } +
         block.instList.filterIsInstance<ASMJInst>().map { it.getLabel() }
-    assert(succSet == block.succList)
+    assert(succSet.sortedBy { it.name } == block.succList.sortedBy { it.name })
   }
 
   override fun visit(inst: ASMStoreInst) {
@@ -95,6 +95,10 @@ object Checker : ASMVisitor() {
   }
 
   override fun visit(inst: ASMCmpzInst) {
+    TODO("Not yet implemented")
+  }
+
+  override fun visit(inst: ASMLuiInst) {
     TODO("Not yet implemented")
   }
 }

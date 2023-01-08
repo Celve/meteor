@@ -50,14 +50,6 @@ object ASMEmit : ASMVisitor() {
     println("")
   }
 
-  fun printPs(comment: String) {
-    if (comment != "") {
-      println("\t\t; ${comment}")
-    } else {
-      println("")
-    }
-  }
-
   override fun visit(inst: ASMStoreInst) {
     val instName = when (inst.byteNum) {
       1 -> "sb"
@@ -131,5 +123,9 @@ object ASMEmit : ASMVisitor() {
 
   override fun visit(inst: ASMCmpzInst) {
     println("\t${inst.op} ${inst.getRd()}, ${inst.getRs()}")
+  }
+
+  override fun visit(inst: ASMLuiInst) {
+    println("\tlui ${inst.getRd()}, ${inst.getImm()}")
   }
 }

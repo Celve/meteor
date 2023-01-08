@@ -15,13 +15,16 @@ object Eliminator : ASMVisitor() {
       changed = false
       func.blockList.toList().forEach { block ->
         if (block.instList.size == 1 && block.instList.first() is ASMJInst) {
-          val target = (block.instList.first() as ASMJInst).getLabel() as ASMBlock
           changed = true
+          val target = (block.instList.first() as ASMJInst).getLabel() as ASMBlock
+          target.predList.remove(block)
           block.userSet.filterIsInstance<ASMInst>().forEach {
             it.parent.succList.remove(block)
             it.parent.succList.add(target)
+            target.predList.add(it.parent)
           }
           block.substituteAll(target)
+          block.instList.last().eliminate()
           assert(func.blockList.remove(block))
         }
       }
@@ -89,6 +92,10 @@ object Eliminator : ASMVisitor() {
   }
 
   override fun visit(inst: ASMCmpzInst) {
+    TODO("Not yet implemented")
+  }
+
+  override fun visit(inst: ASMLuiInst) {
     TODO("Not yet implemented")
   }
 }

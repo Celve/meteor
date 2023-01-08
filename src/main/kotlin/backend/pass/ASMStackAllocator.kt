@@ -14,13 +14,11 @@ import backend.helper.RegFactory
  */
 class ASMStackAllocator : ASMVisitor() {
   private var vir2Offset = hashMapOf<VirReg, Int>()
-  private var regFactory = RegFactory()
   private var stackAlloca = 0
   private var limitedStackAlloca = 0
   private val newModule = ASMModule()
 
   override fun visit(module: ASMModule) {
-    regFactory = module.regFactory
     module.globalPtr.forEach { it.value.accept(this) }
     module.funcList.forEach { it.accept(this) }
     module.funcList = newModule.funcList
@@ -34,16 +32,16 @@ class ASMStackAllocator : ASMVisitor() {
   override fun visit(func: ASMFunc) {
     // because ra's consistency is necessary in function call
     // therefore even if we allocate variable on stack, we have to maintain it
-    val raVirReg = regFactory.newVirReg()
+    val raVirReg = RegFactory.newVirReg()
     ASMBuilder.setInsertPointBefore(func.blockList.first().instList.first())
-    ASMBuilder.createMvInst(raVirReg, regFactory.getPhyReg("ra"))
+    ASMBuilder.createMvInst(raVirReg, RegFactory.getPhyReg("ra"))
     ASMBuilder.setInsertPointBefore(func.blockList.first().instList.last())
-    ASMBuilder.createMvInst(regFactory.getPhyReg("ra"), raVirReg)
+    ASMBuilder.createMvInst(RegFactory.getPhyReg("ra"), raVirReg)
 
     val newFunc = ASMFunc(func.name!!)
     newModule.addFunc(newFunc)
     ASMBuilder.setCurrentFunc(newFunc)
-    regFactory.position = func
+    RegFactory.position = func
 
     func.blockList.forEach { newFunc.addBlock(ASMBlock(it.pureName, newFunc, it.execFreq)) }
 
@@ -77,7 +75,7 @@ class ASMStackAllocator : ASMVisitor() {
         4,
         phyReg,
         DeterminedImmediate(getOffset(pendingReg as VirReg)),
-        regFactory.getPhyReg("sp")
+        RegFactory.getPhyReg("sp")
       )
       phyReg
     }
@@ -93,19 +91,19 @@ class ASMStackAllocator : ASMVisitor() {
 
   private fun supplementAsRd(pendingReg: Register, phyReg: PhyReg) {
     if (pendingReg is VirReg) {
-      ASMBuilder.createStoreInst(4, phyReg, DeterminedImmediate(getOffset(pendingReg)), regFactory.getPhyReg("sp"))
+      ASMBuilder.createStoreInst(4, phyReg, DeterminedImmediate(getOffset(pendingReg)), RegFactory.getPhyReg("sp"))
     }
   }
 
   override fun visit(inst: ASMStoreInst) {
-    val rs1Reg = replaceWithAsRs(inst.getRs1(), regFactory.getPhyReg("t0"))
-    val rs2Reg = replaceWithAsRs(inst.getRs2(), regFactory.getPhyReg("t1"))
+    val rs1Reg = replaceWithAsRs(inst.getRs1(), RegFactory.getPhyReg("t0"))
+    val rs2Reg = replaceWithAsRs(inst.getRs2(), RegFactory.getPhyReg("t1"))
     ASMBuilder.createStoreInst(inst.byteNum, rs2Reg, inst.getImm(), rs1Reg)
   }
 
   override fun visit(inst: ASMLoadInst) {
-    val rsReg = replaceWithAsRs(inst.getRs(), regFactory.getPhyReg("t0"))
-    val rdReg = replaceWithAsRd(inst.getRd()!!, regFactory.getPhyReg("t1"))
+    val rsReg = replaceWithAsRs(inst.getRs(), RegFactory.getPhyReg("t0"))
+    val rdReg = replaceWithAsRd(inst.getRd()!!, RegFactory.getPhyReg("t1"))
     ASMBuilder.createLoadInst(inst.byteNum, rdReg, inst.getImm(), rsReg)
     supplementAsRd(inst.getRd()!!, rdReg)
   }
@@ -116,7 +114,7 @@ class ASMStackAllocator : ASMVisitor() {
 
   override fun visit(inst: ASMBzInst) {
     val func = ASMBuilder.getCurrentFunc()
-    val rsReg = replaceWithAsRs(inst.getRs(), regFactory.getPhyReg("t0"))
+    val rsReg = replaceWithAsRs(inst.getRs(), RegFactory.getPhyReg("t0"))
     ASMBuilder.createBzInst(inst.op, rsReg, func.getBlockByCompositeName(inst.getLabel().name!!)!!)
   }
 
@@ -130,32 +128,32 @@ class ASMStackAllocator : ASMVisitor() {
   }
 
   override fun visit(inst: ASMArithInst) {
-    val rs1Reg = replaceWithAsRs(inst.getRs1(), regFactory.getPhyReg("t0"))
-    val rs2Reg = replaceWithAsRs(inst.getRs2(), regFactory.getPhyReg("t1"))
-    val rdReg = replaceWithAsRd(inst.getRd()!!, regFactory.getPhyReg("t2"))
+    val rs1Reg = replaceWithAsRs(inst.getRs1(), RegFactory.getPhyReg("t0"))
+    val rs2Reg = replaceWithAsRs(inst.getRs2(), RegFactory.getPhyReg("t1"))
+    val rdReg = replaceWithAsRd(inst.getRd()!!, RegFactory.getPhyReg("t2"))
     ASMBuilder.createArithInst(inst.op, rdReg, rs1Reg, rs2Reg)
     supplementAsRd(inst.getRd()!!, rdReg)
   }
 
   override fun visit(inst: ASMArithiInst) {
     if (inst.getRs() == PhyReg("sp") && inst.getRd() == PhyReg("sp")) {
-      val spReg = regFactory.getPhyReg("sp")
+      val spReg = RegFactory.getPhyReg("sp")
       ASMBuilder.createArithiInst("addi", spReg, spReg, DeterminedImmediate(limitedStackAlloca))
       limitedStackAlloca = -limitedStackAlloca
     } else if (inst.getRs() == PhyReg("sp")) {
       // this case would never occur, due to the optimization of the generator
     } else {
-      val rsReg = replaceWithAsRs(inst.getRs(), regFactory.getPhyReg("t0"))
-      val rdReg = replaceWithAsRd(inst.getRd()!!, regFactory.getPhyReg("t1"))
+      val rsReg = replaceWithAsRs(inst.getRs(), RegFactory.getPhyReg("t0"))
+      val rdReg = replaceWithAsRd(inst.getRd()!!, RegFactory.getPhyReg("t1"))
       ASMBuilder.createArithiInst(inst.op, rdReg, rsReg, inst.getImm())
       supplementAsRd(inst.getRd()!!, rdReg)
     }
   }
 
   override fun visit(inst: ASMCmpInst) {
-    val rs1Reg = replaceWithAsRs(inst.getRs1(), regFactory.getPhyReg("t0"))
-    val rs2Reg = replaceWithAsRs(inst.getRs2(), regFactory.getPhyReg("t1"))
-    val rdReg = replaceWithAsRd(inst.getRd()!!, regFactory.getPhyReg("t2"))
+    val rs1Reg = replaceWithAsRs(inst.getRs1(), RegFactory.getPhyReg("t0"))
+    val rs2Reg = replaceWithAsRs(inst.getRs2(), RegFactory.getPhyReg("t1"))
+    val rdReg = replaceWithAsRd(inst.getRd()!!, RegFactory.getPhyReg("t2"))
     ASMBuilder.createCmpInst(inst.op, rdReg, rs1Reg, rs2Reg)
     supplementAsRd(inst.getRd()!!, rdReg)
   }
@@ -169,14 +167,14 @@ class ASMStackAllocator : ASMVisitor() {
   }
 
   override fun visit(inst: ASMLiInst) {
-    val rdReg = replaceWithAsRd(inst.getRd()!!, regFactory.getPhyReg("t0"))
+    val rdReg = replaceWithAsRd(inst.getRd()!!, RegFactory.getPhyReg("t0"))
     ASMBuilder.createLiInst(rdReg, inst.getImm())
     supplementAsRd(inst.getRd()!!, rdReg)
   }
 
   override fun visit(inst: ASMMvInst) {
-    val rsReg = replaceWithAsRs(inst.getRs(), regFactory.getPhyReg("t0"))
-    val rdReg = replaceWithAsRd(inst.getRd()!!, regFactory.getPhyReg("t1"))
+    val rsReg = replaceWithAsRs(inst.getRs(), RegFactory.getPhyReg("t0"))
+    val rdReg = replaceWithAsRd(inst.getRd()!!, RegFactory.getPhyReg("t1"))
     if (rsReg != rdReg) {
       ASMBuilder.createMvInst(rdReg, rsReg)
       supplementAsRd(inst.getRd()!!, rdReg)
@@ -184,15 +182,19 @@ class ASMStackAllocator : ASMVisitor() {
   }
 
   override fun visit(inst: ASMLaInst) {
-    val rdReg = replaceWithAsRd(inst.getRd()!!, regFactory.getPhyReg("t0"))
+    val rdReg = replaceWithAsRd(inst.getRd()!!, RegFactory.getPhyReg("t0"))
     ASMBuilder.createLaInst(rdReg, inst.getSymbol())
     supplementAsRd(inst.getRd()!!, rdReg)
   }
 
   override fun visit(inst: ASMCmpzInst) {
-    val rsReg = replaceWithAsRs(inst.getRs(), regFactory.getPhyReg("t0"))
-    val rdReg = replaceWithAsRd(inst.getRd()!!, regFactory.getPhyReg("t1"))
+    val rsReg = replaceWithAsRs(inst.getRs(), RegFactory.getPhyReg("t0"))
+    val rdReg = replaceWithAsRd(inst.getRd()!!, RegFactory.getPhyReg("t1"))
     ASMBuilder.createCmpzInst(inst.op, rdReg, rsReg)
     supplementAsRd(inst.getRd()!!, rdReg)
+  }
+
+  override fun visit(inst: ASMLuiInst) {
+    TODO("Not yet implemented")
   }
 }
