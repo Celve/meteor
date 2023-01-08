@@ -39,9 +39,9 @@ object Localizer : IRVisitor() {
 
   override fun visit(globalVar: GlobalVariable) {
     globalVar2ReadScc[globalVar] =
-      globalVar.userList.filterIsInstance<LoadInst>().map { callGraph.sccId[it.parent.parent]!! }.toHashSet()
+      globalVar.userList.filterIsInstance<LoadInst>().map { callGraph.sccId.getValue(it.parent.parent) }.toHashSet()
     globalVar2WriteScc[globalVar] =
-      globalVar.userList.filterIsInstance<StoreInst>().map { callGraph.sccId[it.parent.parent]!! }.toHashSet()
+      globalVar.userList.filterIsInstance<StoreInst>().map { callGraph.sccId.getValue(it.parent.parent) }.toHashSet()
     globalVars.add(globalVar)
   }
 
@@ -78,11 +78,11 @@ object Localizer : IRVisitor() {
     // add load or store around a call inst
     val callInstList = func.blockList.flatMap { it.instList.filterIsInstance<CallInst>() }
     for (callInst in callInstList) {
-      if (globalVar2ReadScc[globalVar]!!.contains(callGraph.sccId[callInst.getCallee()]!!) && storeInstList.isNotEmpty()) {
+      if (globalVar2ReadScc[globalVar]!!.contains(callGraph.sccId.getValue(callInst.getCallee())) && storeInstList.isNotEmpty()) {
         callInst.parent.addInst(callInst.parent.instList.indexOf(callInst), StoreInst(aliasInst, globalVar))
       }
 
-      if (globalVar2WriteScc[globalVar]!!.contains(callGraph.sccId[callInst.getCallee()]!!) && loadInstList.isNotEmpty()) {
+      if (globalVar2WriteScc[globalVar]!!.contains(callGraph.sccId.getValue(callInst.getCallee())) && loadInstList.isNotEmpty()) {
         callInst.parent.addInst(callInst.parent.instList.indexOf(callInst) + 1, LoadInst(aliasInst.name!!, globalVar))
       }
     }

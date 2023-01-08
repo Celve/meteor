@@ -14,7 +14,7 @@ class CallGraph(val module: TopModule) {
 
   val dfn = mutableMapOf<Func, Int>().withDefault { 0 }
   val low = mutableMapOf<Func, Int>().withDefault { 0 }
-  val sccId = hashMapOf<Func, Int>()
+  val sccId = mutableMapOf<Func, Int>().withDefault { 0 } // 0 means that it's not in any scc
   val sccSet = hashMapOf<Int, HashSet<Func>>()
   val stack = mutableListOf<Func>()
   val inStack = mutableMapOf<Func, Boolean>().withDefault { false }
@@ -36,8 +36,7 @@ class CallGraph(val module: TopModule) {
     }
     if (low[func] == dfn[func]) {
       var topFunc: Func
-      sccCnt++
-      sccSet[sccCnt] = hashSetOf()
+      sccSet[++sccCnt] = hashSetOf()
       do {
         topFunc = stack.removeLast()
         inStack[topFunc] = false
