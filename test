@@ -168,6 +168,8 @@ if __name__ == "__main__":
             build_options.add("--localize")
         elif argv.startswith("--peephole"):
             build_options.add("--peephole")
+        elif argv.startswith("--gcp"):
+            build_options.add("--gcp")
         elif argv.startswith("--O2"):
             build_options.add("--svn")
             build_options.add("--inline")
@@ -178,6 +180,7 @@ if __name__ == "__main__":
             build_options.add("--dvnt")
             build_options.add("--localize")
             build_options.add("--peephole")
+            build_options.add("--gcp")
         elif argv.startswith("--result"):
             _, result_dir = argv.split("=")
             if not result_dir.endswith("/"):
