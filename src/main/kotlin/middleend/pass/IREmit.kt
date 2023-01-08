@@ -113,7 +113,7 @@ object IREmit : IRVisitor() {
     if (inst.getPtr().type !is PointerType) {
       println(inst.getPtr())
     }
-    println("%${inst.name} = getelementptr inbounds ${Utils.getPointee(inst.getPtr().type)}, ${inst.getPtr().type} ${inst.getPtr()}, i32 ${inst.getOffset()}$extra")
+    println("%${inst.name} = getelementptr inbounds ${Utils.getPointee(inst.ptrType)}, ${inst.ptrType} ${inst.getPtr()}, i32 ${inst.getOffset()}$extra")
   }
 
   override fun visit(inst: ZExtInst) {

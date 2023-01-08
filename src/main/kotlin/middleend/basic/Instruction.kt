@@ -287,6 +287,8 @@ class GetElementPtrInst(val op: String, name: String, ptr: Value, offset: Value,
       else -> throw Exception("the operation is forbidden")
     }, name
   ) {
+  val ptrType = ptr.type
+
   init { // ptr, offset, index?
     link(this, ptr)
     link(this, offset)

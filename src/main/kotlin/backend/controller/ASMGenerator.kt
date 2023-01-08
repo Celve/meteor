@@ -312,14 +312,14 @@ class ASMGenerator : IRVisitor() {
     when (inst.op) {
       "ptr" -> {
         // it's a pointer to an array
-        val elemSize = (inst.getPtr().type as PointerType).pointeeTy!!.getAlign() // TODO: I don't know if it's right
+        val elemSize = (inst.ptrType as PointerType).pointeeTy!!.getAlign() // TODO: I don't know if it's right
         val indexReg = getRegOfValue(inst.getOffset())!!
         ASMBuilder.createArithiInst("muli", shiftReg, indexReg, DeterminedImmediate(elemSize))
         ASMBuilder.createArithInst("add", shiftReg, getRegOfValue(inst.getPtr())!!, shiftReg)
       }
 
       "array" -> {
-        val elemSize = ((inst.getPtr().type as PointerType).pointeeTy as ArrayType).containedType.getAlign()
+        val elemSize = ((inst.ptrType as PointerType).pointeeTy as ArrayType).containedType.getAlign()
         val offsetReg = getRegOfValue(inst.getIndex()!!)!!
         ASMBuilder.createArithiInst("muli", shiftReg, offsetReg, DeterminedImmediate(elemSize))
         ASMBuilder.createArithInst("add", shiftReg, getRegOfValue(inst.getPtr())!!, shiftReg)
@@ -328,7 +328,7 @@ class ASMGenerator : IRVisitor() {
       else -> { // it must be struct
         // the calculation of offset of struct is to add them up
         val offset = inst.getIndex()!!.value
-        val structType = (inst.getPtr().type as PointerType).pointeeTy as StructType
+        val structType = (inst.ptrType as PointerType).pointeeTy as StructType
         val elemSizeSum = structType.symbolList.take(offset).sumOf { it.second.getAlign() }
 //        ASMBuilder.createArithiInst("addi", shiftReg, getRegOfValue(inst.getPtr())!!, DeterminedImmediate(elemSizeSum))
         ASMBuilder.createMvInst(shiftReg, getRegOfValue(inst.getPtr())!!)
