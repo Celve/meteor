@@ -1,13 +1,12 @@
 package middleend.pass
 
 import middleend.basic.*
-import middleend.helper.HashPatternTable
+import middleend.helper.NumTable
 import middleend.struct.ValNum
 
 object DomValueNumbering : IRVisitor() {
   private lateinit var currFunc: Func
   private lateinit var valNum: ValNum
-  private var changed = false
 
   override fun visit(topModule: TopModule) {
     topModule.funcMap.forEach { it.value.accept(this) }
@@ -17,91 +16,44 @@ object DomValueNumbering : IRVisitor() {
 
   override fun visit(constStr: ConstantStr) {}
 
-  private fun equal(value: Value, integer: Int): Boolean {
-    return value is ConstantInt && value.value == integer
-  }
-
-  private fun isInvariant(inst: BinaryInst): Boolean {
-    return when (inst.op) {
-      "add" -> equal(inst.getLhs(), 0) || equal(inst.getRhs(), 0)
-      "sub" -> equal(inst.getRhs(), 0)
-      "mul" -> equal(inst.getLhs(), 1) || equal(inst.getRhs(), 1)
-      "sdiv" -> equal(inst.getRhs(), 1)
-      else -> false
-    }
-  }
-
-  private fun valueNumbering(block: BasicBlock, parentTable: HashPatternTable?) {
-    val hashTable = HashPatternTable(parentTable)
+  private fun valueNumbering(block: BasicBlock, parentTable: NumTable?) {
+    val numTable = NumTable(parentTable)
 
     for (phiInst in block.instList.filterIsInstance<PhiInst>()) {
-      val operands = phiInst.useeList
       if (phiInst.getPredList().map { it.first }.distinct().size == 1) {
-        changed = true
-//        valNum.alias(phiInst, operands.first())
-//        block.replaceInst(phiInst, MvInst(phiInst.name!!, operands.first()))
-        block.removeInst(phiInst, operands.first())
+        block.removeInst(phiInst, phiInst.useeList.first())
       } else {
-        val nums = operands.map { valNum.get(it)!! }
-        val result = hashTable.get("phi", nums)
+        val result = numTable.get(valNum.get(phiInst))
         if (result != null) { // redundant
-          changed = true
-//          val mvInst = MvInst(phiInst.name!!, result)
-//          valNum.alias(mvInst, result)
-//          block.replaceInst(phiInst, mvInst)
-//          hashTable.add("phi", nums, mvInst)
           block.removeInst(phiInst, result)
         } else {
-          hashTable.add("phi", nums, phiInst)
+          numTable.add(valNum.get(phiInst), phiInst)
         }
       }
     }
 
-    block.instList.filterIsInstance<MvInst>().forEach {
-      block.removeInst(it, it.getSrc())
-//      valNum.alias(it, it.getSrc())
-    }
+    block.instList.filterIsInstance<MvInst>().forEach { block.removeInst(it, it.getSrc()) }
 
     for (inst in block.instList.filter { it is BinaryInst || it is CmpInst || it is GetElementPtrInst }) {
-      if (inst is BinaryInst && isInvariant(inst)) {
-        block.removeInst(inst, if (inst.getLhs() !is ConstantInt) inst.getLhs() else inst.getRhs())
+      val result = numTable.get(valNum.get(inst))
+      if (result != null) { // redundant
+        block.removeInst(inst, result)
       } else {
-        val operands = inst.useeList.map { valNum.get(it)!! }
-        val op = when (inst) {
-          is BinaryInst -> inst.op
-          is CmpInst -> inst.cond
-          is GetElementPtrInst -> "getelementptr"
-          else -> throw Exception("unreachable")
-        }
-        val result = hashTable.get(op, operands)
-        if (result != null) { // redundant
-          changed = true
-//        val mvInst = MvInst(inst.name!!, result)
-//        valNum.alias(mvInst, result)
-//        block.replaceInst(inst, mvInst)
-//        hashTable.add(op, operands, mvInst)
-          block.removeInst(inst, result)
-        } else {
-          hashTable.add(op, operands, inst)
-        }
+        numTable.add(valNum.get(inst), inst)
       }
     }
 
     for (succ in currFunc.domTree.successors.getValue(block)) {
-      valueNumbering(succ, hashTable)
+      valueNumbering(succ, numTable)
     }
   }
 
   override fun visit(func: Func) {
     currFunc = func
     valNum = func.valNum
+    valNum.build()
     func.domTree.build()
-    func.argList.forEach { valNum.new(it) }
-    func.blockList.forEach { it.instList.forEach { inst -> valNum.new(inst) } }
-    do {
-      changed = false
-      valueNumbering(func.getEntryBlock(), null)
-    } while (changed)
+    valueNumbering(func.getEntryBlock(), null)
   }
 
   override fun visit(block: BasicBlock) {

@@ -14,14 +14,14 @@ class PatternTable(val parent: PatternTable?) {
   }
 }
 
-class HashPatternTable(val parent: HashPatternTable?) {
-  private val table = hashMapOf<Pair<String, List<String>>, Value>()
+class NumTable(val parent: NumTable?) {
+  private val table = hashMapOf<String, Value>()
 
-  fun add(operator: String, operands: List<String>, result: Value) {
-    table[Pair(operator, operands)] = result
+  fun add(num: String, result: Value) {
+    table[num] = result
   }
 
-  fun get(operator: String, operands: List<String>): Value? {
-    return table[Pair(operator, operands)] ?: parent?.get(operator, operands)
+  fun get(num: String): Value? {
+    return table[num] ?: parent?.get(num)
   }
 }

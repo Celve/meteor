@@ -17,7 +17,7 @@ class Func(name: String, val funcType: FuncType, val argList: List<Value>) : Glo
   val revDomTree = DomTree(this, true)
   val loopNestTree = LoopNestTree(this)
   val livenessAnalyzer = LivenessAnalyzer(this)
-  val valNum = ValNum()
+  val valNum = ValNum(this)
 
   override fun replicate(): Value {
     TODO("Not yet implemented")
