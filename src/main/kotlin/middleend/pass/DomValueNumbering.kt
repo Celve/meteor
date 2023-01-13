@@ -16,6 +16,20 @@ object DomValueNumbering : IRVisitor() {
 
   override fun visit(constStr: ConstantStr) {}
 
+  private fun equal(value: Value, integer: Int): Boolean {
+    return value is ConstantInt && value.value == integer
+  }
+
+  private fun isInvariant(inst: BinaryInst): Boolean {
+    return when (inst.op) {
+      "add" -> equal(inst.getLhs(), 0) || equal(inst.getRhs(), 0)
+      "sub" -> equal(inst.getRhs(), 0)
+      "mul" -> equal(inst.getLhs(), 1) || equal(inst.getRhs(), 1)
+      "sdiv" -> equal(inst.getRhs(), 1)
+      else -> false
+    }
+  }
+
   private fun valueNumbering(block: BasicBlock, parentTable: NumTable?) {
     val numTable = NumTable(parentTable)
 
@@ -35,11 +49,15 @@ object DomValueNumbering : IRVisitor() {
     block.instList.filterIsInstance<MvInst>().forEach { block.removeInst(it, it.getSrc()) }
 
     for (inst in block.instList.filter { it is BinaryInst || it is CmpInst || it is GetElementPtrInst }) {
-      val result = numTable.get(valNum.get(inst))
-      if (result != null) { // redundant
-        block.removeInst(inst, result)
+      if (inst is BinaryInst && isInvariant(inst)) {
+        block.removeInst(inst, if (inst.getLhs() !is ConstantInt) inst.getLhs() else inst.getRhs())
       } else {
-        numTable.add(valNum.get(inst), inst)
+        val result = numTable.get(valNum.get(inst))
+        if (result != null) { // redundant
+          block.removeInst(inst, result)
+        } else {
+          numTable.add(valNum.get(inst), inst)
+        }
       }
     }
 
