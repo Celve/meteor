@@ -1,0 +1,28 @@
+/*
+Test Package: Codegen
+Author: Pikachu
+Time: 2020-02-02
+Input:
+=== input ===
+1
+=== end ===
+Output:
+=== output ===
+0
+2
+=== end ===
+ExitCode: 0
+InstLimit: -1
+Origin Package: Codeforces 1145A #52445759
+*/
+
+int main() {
+  int[][] a = new int[5][5];
+  int[] p = a[1];
+  if (getInt() != 1) {
+    p = a[2];
+  }
+  printlnInt(p[1]);
+  a[1][1] = 2;
+  printlnInt(p[1]);
+}
