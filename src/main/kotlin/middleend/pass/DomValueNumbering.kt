@@ -137,5 +137,4 @@ object DomValueNumbering : IRVisitor() {
   override fun visit(inst: MvInst) {
     TODO("Not yet implemented")
   }
-
 }

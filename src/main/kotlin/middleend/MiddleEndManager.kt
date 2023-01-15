@@ -40,6 +40,11 @@ object MiddleEndManager {
       LoopInvarCodeMotion.visit(module) // must be placed after dvnt
     }
     Checker.visit(module)
+    if (buildOptions.contains("--dmnt")) {
+//      IREmit.visit(module)
+      DomMemNumbering.visit(module)
+    }
+    Checker.visit(module)
     if (buildOptions.contains("--adce")) {
       Eliminator.visit(module)
     }

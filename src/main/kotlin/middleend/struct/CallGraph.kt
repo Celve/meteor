@@ -11,7 +11,6 @@ class CallGraph(val module: TopModule) {
   val scc2CalleeSet = mutableMapOf<Int, HashSet<Int>>().withDefault { hashSetOf() }
   val scc2CallerSet = mutableMapOf<Int, HashSet<Int>>().withDefault { hashSetOf() }
 
-
   val dfn = mutableMapOf<Func, Int>().withDefault { 0 }
   val low = mutableMapOf<Func, Int>().withDefault { 0 }
   val sccId = mutableMapOf<Func, Int>().withDefault { 0 } // 0 means that it's not in any scc

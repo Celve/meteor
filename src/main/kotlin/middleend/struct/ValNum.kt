@@ -3,9 +3,13 @@ package middleend.struct
 import middleend.basic.*
 
 class ValNum(val func: Func) {
-  private val valNum = hashMapOf<Value, String>()
+  private val table = hashMapOf<Value, String>()
   private var cnt = 0
   private val totalPatternTable = hashMapOf<Pair<String, List<String>>, Value>()
+
+  fun toValSetTable(): HashMap<Value, Set<String>> {
+    return table.map { it.key to setOf(it.value) }.toMap() as HashMap
+  }
 
   fun get(value: Value): String {
     return when (value) {
@@ -14,16 +18,16 @@ class ValNum(val func: Func) {
       is ConstantStr -> "c${value.name}"
       is ConstantInt -> "i${value.value}"
       is ConstantNull -> "null"
-      else -> valNum[value]!!
+      else -> table[value]!!
     }
   }
 
   private fun alias(new: Value, old: Value) {
-    valNum[new] = get(old)
+    table[new] = get(old)
   }
 
   private fun new(value: Value) {
-    valNum[value] = "v${cnt++}"
+    table[value] = "v${cnt++}"
   }
 
   private fun isTargetInst(inst: Instruction): Boolean {
@@ -55,37 +59,37 @@ class ValNum(val func: Func) {
   }
 
   fun build() {
+    table.clear()
     val workList = func.blockList.toMutableList() // duplicate it
     func.argList.forEach { new(it) }
-    func.blockList.flatMap { it.instList }.forEach { new(it) }
+    func.blockList.flatMap { it.instList.filter { it.isDef() } }.forEach { new(it) }
     while (workList.isNotEmpty()) {
       val block = workList.removeFirst()
-      var changed = false
+      val affected = hashSetOf<BasicBlock>()
       block.instList.filter { it.isDef() && isTargetInst(it) }.forEach { inst ->
         if (inst is BinaryInst && isInvariant(inst)) {
           val invariant = if (inst.getLhs() !is ConstantInt) inst.getLhs() else inst.getRhs()
           if (get(inst) != get(invariant)) {
             alias(inst, invariant)
-            changed = true
+            affected.addAll(inst.userList.filterIsInstance<Instruction>().map { it.parent })
           }
         } else if (inst is MvInst) {
           if (get(inst) != get(inst.getSrc())) {
             alias(inst, inst.getSrc())
-            changed = true
+            affected.addAll(inst.userList.filterIsInstance<Instruction>().map { it.parent })
           }
         } else {
           val result = totalPatternTable[Pair(getToken(inst), inst.useeList.map { get(it) })]
           if (result != null && get(result) != get(inst)) {
             alias(inst, result)
-            changed = true
+            affected.addAll(inst.userList.filterIsInstance<Instruction>().map { it.parent })
           } else if (result == null) {
             totalPatternTable[Pair(getToken(inst), inst.useeList.map { get(it) })] = inst
           }
         }
       }
-      if (changed) {
-        workList.addAll(block.nextBlockSet)
-      }
+      workList.addAll(affected)
     }
+//    table.forEach { (key, value) -> println("$key -> $value") }
   }
 }

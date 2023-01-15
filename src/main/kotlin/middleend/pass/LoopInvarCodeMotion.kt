@@ -1,9 +1,13 @@
 package middleend.pass
 
 import middleend.basic.*
+import middleend.struct.EqSet
 import middleend.struct.Loop
+import middleend.struct.ValNum
 
 object LoopInvarCodeMotion : IRVisitor() {
+  private lateinit var eqSet: EqSet
+  private lateinit var valNum: ValNum
   private lateinit var currFunc: Func
   private lateinit var module: TopModule
 
@@ -20,14 +24,14 @@ object LoopInvarCodeMotion : IRVisitor() {
     var invariants = listOf<Instruction>()
     val instList = loop.body.flatMap { it.instList }
     val defSet = instList.toSet()
-    val modifiedSet = instList.filterIsInstance<StoreInst>().map { it.getAddr() }
+    val modifiedSet = instList.filterIsInstance<StoreInst>().flatMap { eqSet.get(it.getAddr()) }
     val noCall = !instList.any { it is CallInst && !module.builtinFuncMap.contains(it.getCallee().name) }
     var lastSize = 0
     while (true) {
       invariants =
         instList.filter { it is BinaryInst || it is CmpInst || (it is LoadInst && noCall) || it is GetElementPtrInst }
           .filter { inst -> inst.useeList.all { it is Constant || invariants.contains(it) || !defSet.contains(it) } }
-          .filter { it !is LoadInst || !modifiedSet.contains(it.getAddr()) }
+          .filter { it !is LoadInst || !modifiedSet.contains(valNum.get(it.getAddr())) }
       if (invariants.size != lastSize) {
         lastSize = invariants.size
       } else {
@@ -89,6 +93,9 @@ object LoopInvarCodeMotion : IRVisitor() {
 
   override fun visit(func: Func) {
     currFunc = func
+    valNum = func.valNum
+    eqSet = func.eqSet
+    eqSet.build()
     func.loopNestTree.build()
     func.loopNestTree.roots.forEach { moveInvariants(it) }
   }

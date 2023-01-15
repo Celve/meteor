@@ -3,10 +3,7 @@ package middleend.basic
 import middleend.helper.SSATable
 import middleend.helper.ValueTable
 import middleend.pass.IRVisitor
-import middleend.struct.DomTree
-import middleend.struct.LivenessAnalyzer
-import middleend.struct.LoopNestTree
-import middleend.struct.ValNum
+import middleend.struct.*
 
 class Func(name: String, val funcType: FuncType, val argList: List<Value>) : GlobalValue(name, funcType) {
   // ensure that entry block is always the first block and the return block is always the last block
@@ -18,6 +15,7 @@ class Func(name: String, val funcType: FuncType, val argList: List<Value>) : Glo
   val loopNestTree = LoopNestTree(this)
   val livenessAnalyzer = LivenessAnalyzer(this)
   val valNum = ValNum(this)
+  val eqSet = EqSet(this)
 
   override fun replicate(): Value {
     TODO("Not yet implemented")
