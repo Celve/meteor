@@ -21,6 +21,7 @@ class IRGenerator : ASTVisitor() {
   private var initFunc: Func? = null
   private var localSymbolTable = ValueTable()
   private var globalSymbolTable = ValueTable()
+  private var str2Const = hashMapOf<String, ConstantStr>()
 
   private fun renameGlobal(name: String): String {
     return globalSymbolTable.rename(name)
@@ -486,7 +487,13 @@ class IRGenerator : ASTVisitor() {
 
       /** const str */
       1 -> {
-        val const = ConstantStr(curr.literal.substring(1, curr.literal.length - 1), renameGlobal(".str"))
+        val str = curr.literal.substring(1, curr.literal.length - 1)
+        val const = if (str2Const[str] == null) {
+          str2Const[str] = ConstantStr(str, renameGlobal(".str"))
+          str2Const[str]!!
+        } else {
+          str2Const[str]!!
+        }
         topModule.setConst(const.name!!, const)
         IRBuilder.createGEP("array", renameLocal(".strl"), const, ConstantInt(32, 0), ConstantInt(32, 0))
       }
