@@ -7,22 +7,7 @@ class EqSet(val func: Func) {
   private val eqSets = mutableListOf<HashSet<String>>()
   private val num2Set = hashMapOf<String, HashSet<String>>()
   private val graph = DirectedGraph<String>()
-  private val totalAliasTable = hashMapOf<Pair<String, String>, HashSet<String>>()
-  private val totalPtrTable = hashMapOf<String, HashSet<String>>()
   private var changed = false
-
-  private fun addAlias(ptr: String, operand: String, value: String) {
-    totalAliasTable.getOrPut(ptr to operand) { hashSetOf() }.add(value)
-    totalPtrTable.getOrPut(ptr) { hashSetOf() }.add(value)
-  }
-
-  private fun getAlias(ptr: String, operand: String): Set<String> {
-    return totalAliasTable[ptr to operand] ?: setOf()
-  }
-
-  private fun getPtr(ptr: String): Set<String> {
-    return totalPtrTable[ptr] ?: setOf()
-  }
 
   fun get(value: Value): Set<String> {
     return when (value) {
@@ -50,6 +35,10 @@ class EqSet(val func: Func) {
 
       blockList.flatMap { it.instList.filterIsInstance<MvInst>() }.forEach {
         graph.addBidEdge(valNum.get(it.getSrc()), valNum.get(it))
+      }
+
+      blockList.flatMap { it.instList.filterIsInstance<BitCastInst>() }.forEach {
+        graph.addBidEdge(valNum.get(it.getCastee()), valNum.get(it))
       }
 
       graph.tarjan()
@@ -165,6 +154,5 @@ class EqSet(val func: Func) {
       fixLoad()
       fixStore()
     } while (changed)
-//    println(eqSets.filter { it.size > 1 })
   }
 }
