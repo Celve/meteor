@@ -91,6 +91,23 @@ object Peephole : IRVisitor() {
           }
         }
       }
+
+
+      "srem" -> {
+        val rhs = inst.getRhs()
+        if (rhs is ConstantInt) {
+          val value = (inst.getRhs() as ConstantInt).value
+          val (isPowerOf2, cnt) = isPowerOf2(value)
+          if (value == 1) {
+            block.removeInst(inst, ConstantInt(32, 0))
+          } else if (isPowerOf2) {
+            inst.parent.replaceInst(
+              inst,
+              BinaryInst(func.mulTable.rename(".and"), "and", inst.getLhs(), ConstantInt(32, value - 1))
+            )
+          }
+        }
+      }
     }
   }
 
