@@ -126,15 +126,11 @@ object ConstPropagator : IRVisitor() {
         val falseBlock = inst.getFalseBlock()
         if (cond is ConstantInt) {
           if (cond.value == 0) {
-            block.replaceInst(inst, BranchInst(falseBlock!!, null, null))
-            block.removeNextBlock(trueBlock)
-            trueBlock.removePrevBlock(block)
+            block.replaceBrInst(inst, BranchInst(falseBlock!!, null, null))
             trueBlock.instList.filterIsInstance<PhiInst>().forEach { it.removePred(block) }
           } else {
-            block.replaceInst(inst, BranchInst(trueBlock, null, null))
-            block.removeNextBlock(falseBlock!!)
-            falseBlock.removePrevBlock(block)
-            falseBlock.instList.filterIsInstance<PhiInst>().forEach { it.removePred(block) }
+            block.replaceBrInst(inst, BranchInst(trueBlock, null, null))
+            falseBlock!!.instList.filterIsInstance<PhiInst>().forEach { it.removePred(block) }
           }
         }
       }

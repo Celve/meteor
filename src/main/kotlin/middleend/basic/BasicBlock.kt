@@ -41,6 +41,26 @@ class BasicBlock(name: String, val execFreq: Int) : Value(TypeFactory.getLabelTy
     instList.remove(inst)
   }
 
+  private fun cutEdge(from: BasicBlock, to: BasicBlock) {
+    from.nextBlockSet.remove(to)
+    to.prevBlockSet.remove(from)
+  }
+
+  private fun linkEdge(from: BasicBlock, to: BasicBlock) {
+    from.nextBlockSet.add(to)
+    to.prevBlockSet.add(from)
+  }
+
+  fun removeBrInst(inst: BranchInst, sub: Value? = null) {
+    val block = inst.parent
+    cutEdge(block, inst.getTrueBlock())
+    val falseBlock = inst.getFalseBlock()
+    if (falseBlock != null) {
+      cutEdge(block, falseBlock)
+    }
+    removeInst(inst, sub)
+  }
+
   fun replaceInst(oldInst: Instruction, newInst: Instruction) {
     val index = instList.indexOf(oldInst)
     if (index == -1) {
@@ -50,6 +70,21 @@ class BasicBlock(name: String, val execFreq: Int) : Value(TypeFactory.getLabelTy
     oldInst.substituteAll(newInst)
     instList[index] = newInst
     newInst.parent = this
+  }
+
+  fun replaceBrInst(oldInst: BranchInst, newInst: BranchInst) {
+    val block = oldInst.parent
+    cutEdge(block, oldInst.getTrueBlock())
+    val oldFalseBlock = oldInst.getFalseBlock()
+    if (oldFalseBlock != null) {
+      cutEdge(block, oldFalseBlock)
+    }
+    linkEdge(block, newInst.getTrueBlock())
+    val newFalseBlock = newInst.getFalseBlock()
+    if (newFalseBlock != null) {
+      linkEdge(block, newFalseBlock)
+    }
+    replaceInst(oldInst, newInst)
   }
 
   fun getIndexInFunc(): Int {

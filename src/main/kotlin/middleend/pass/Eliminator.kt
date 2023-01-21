@@ -57,13 +57,7 @@ object Eliminator : IRVisitor() {
       val terminator = block.getTerminator()
       if (terminator is BranchInst && !terminator.isJump() && !markedSet.contains(terminator)) {
         val validNextBlock = func.revDomTree.idoms.getValue(block)
-        block.nextBlockSet.forEach { it.prevBlockSet.remove(block) }
-        block.nextBlockSet.clear()
-
-        block.nextBlockSet.add(validNextBlock)
-        validNextBlock.prevBlockSet.add(block)
-
-        block.replaceInst(terminator, BranchInst(validNextBlock, null, null))
+        block.replaceBrInst(terminator, BranchInst(validNextBlock, null, null))
       }
     }
   }
@@ -81,8 +75,7 @@ object Eliminator : IRVisitor() {
     if (terminator is BranchInst && !terminator.isJump()) { // it's a conditional branch
       val trueBlock = terminator.getTrueBlock()
       if (trueBlock == terminator.getFalseBlock()) { // case 1
-        val newTerminator = BranchInst(trueBlock, null, null)
-        block.replaceInst(terminator, newTerminator)
+        block.replaceBrInst(terminator, BranchInst(trueBlock, null, null))
         return true
       }
     }
@@ -168,14 +161,7 @@ object Eliminator : IRVisitor() {
         val cond = jumpTerminator.getCond()!!
         val falseBlock = jumpTerminator.getFalseBlock()!!
 
-        block.replaceInst(terminator, BranchInst(trueBlock, cond, falseBlock))
-
-        jumpBlock.removePrevBlock(block)
-        block.removeNextBlock(jumpBlock)
-        block.addNextBlock(trueBlock)
-        trueBlock.addPrevBlock(block)
-        block.addNextBlock(falseBlock)
-        falseBlock.addPrevBlock(block)
+        block.replaceBrInst(terminator, BranchInst(trueBlock, cond, falseBlock))
 
         trueBlock.instList.filterIsInstance<PhiInst>().forEach {
           val value = it.getPred(jumpBlock)!!.first
