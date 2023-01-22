@@ -4,6 +4,7 @@ import middleend.basic.BasicBlock
 import middleend.basic.Func
 
 class DomTree(val func: Func, val reversed: Boolean) {
+  val domeds = hashMapOf<BasicBlock, HashSet<BasicBlock>>().withDefault { hashSetOf() }
   val doms = hashMapOf<BasicBlock, HashSet<BasicBlock>>()
   val idoms = hashMapOf<BasicBlock, BasicBlock>()
   val domFrontiers = hashMapOf<BasicBlock, MutableList<BasicBlock>>().withDefault { mutableListOf() }
@@ -11,7 +12,7 @@ class DomTree(val func: Func, val reversed: Boolean) {
 
   // used to calculate the postorder of the spanning DFS tree
   val blockListInPostorder = mutableListOf<BasicBlock>()
-  private val block2Postorder = hashMapOf<BasicBlock, Int>()
+  val block2Postorder = hashMapOf<BasicBlock, Int>()
   private val visitedSet = hashSetOf<BasicBlock>()
   private var startNode = BasicBlock("init", 0)
 
@@ -147,6 +148,10 @@ class DomTree(val func: Func, val reversed: Boolean) {
         doms[block]!!.add(runner)
         runner = idoms[runner]!!
       }
+    }
+
+    for (block in blockListInPostorder) {
+      doms[block]!!.forEach { domeds.getOrPut(it) { hashSetOf() }.add(block) }
     }
   }
 }

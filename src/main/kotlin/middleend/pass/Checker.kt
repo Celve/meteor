@@ -74,8 +74,10 @@ object Checker : IRVisitor() {
     val trueBlock = inst.getTrueBlock()
     val falseBlock = inst.getFalseBlock()
     assert(trueBlock.prevBlockSet.contains(inst.parent) && inst.parent.nextBlockSet.contains(trueBlock))
+    assert(inst.parent.parent.blockList.contains(trueBlock))
     if (falseBlock != null) {
       assert(falseBlock.prevBlockSet.contains(inst.parent) && inst.parent.nextBlockSet.contains(falseBlock))
+      assert(inst.parent.parent.blockList.contains(falseBlock))
     }
   }
 

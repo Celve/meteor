@@ -41,8 +41,10 @@ object MiddleEndManager {
     }
     Checker.visit(module)
     if (buildOptions.contains("--dmnt")) {
-//      IREmit.visit(module)
       DomMemNumbering.visit(module)
+    }
+    if (buildOptions.contains("--sr")) {
+      StrengthReduction.visit(module)
     }
     Checker.visit(module)
     if (buildOptions.contains("--adce")) {

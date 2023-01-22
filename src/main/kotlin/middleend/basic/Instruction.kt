@@ -37,6 +37,8 @@ abstract class Instruction(type: Type, name: String? = null) : User(type, name) 
     throw Exception("cannot find instruction in its parent basic block")
   }
 
+  abstract fun clone(name: String?): Instruction
+
   abstract fun accept(irVisitor: IRVisitor)
 }
 
@@ -59,6 +61,10 @@ class BinaryInst(name: String, val op: String, rs: Value, rt: Value) :
     return BinaryInst(name!!, op, getLhs().duplicate(), getRhs().duplicate())
   }
 
+  override fun clone(name: String?): Instruction {
+    return BinaryInst(name!!, op, getLhs(), getRhs())
+  }
+
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
@@ -70,6 +76,10 @@ class AllocaInst(name: String, val varType: Type) : Instruction(TypeFactory.getP
   }
 
   override fun replicate(): Instruction {
+    return AllocaInst(name!!, varType)
+  }
+
+  override fun clone(name: String?): Instruction {
     return AllocaInst(name!!, varType)
   }
 
@@ -89,6 +99,10 @@ class LoadInst(name: String, addr: Value) : Instruction(Utils.getPointee(addr.ty
 
   override fun replicate(): Instruction {
     return LoadInst(name!!, getAddr().duplicate())
+  }
+
+  override fun clone(name: String?): Instruction {
+    return LoadInst(name!!, getAddr())
   }
 
   override fun accept(irVisitor: IRVisitor) {
@@ -112,6 +126,10 @@ class StoreInst(value: Value, addr: Value) : Instruction(TypeFactory.getVoidType
 
   override fun replicate(): Instruction {
     return StoreInst(getValue().duplicate(), getAddr().duplicate())
+  }
+
+  override fun clone(name: String?): Instruction {
+    return StoreInst(getValue(), getAddr())
   }
 
   override fun accept(irVisitor: IRVisitor) {
@@ -139,6 +157,10 @@ class CmpInst(name: String, val cond: String, rs: Value, rt: Value) :
     return CmpInst(name!!, cond, getLhs().duplicate(), getRhs().duplicate())
   }
 
+  override fun clone(name: String?): Instruction {
+    return CmpInst(name!!, cond, getLhs(), getRhs())
+  }
+
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
@@ -156,6 +178,10 @@ class TruncInst(name: String, originalVal: Value, val toTy: Type) :
 
   override fun replicate(): Instruction {
     return TruncInst(name!!, getOriginalVal().duplicate(), toTy)
+  }
+
+  override fun clone(name: String?): Instruction {
+    return TruncInst(name!!, getOriginalVal(), toTy)
   }
 
   override fun accept(irVisitor: IRVisitor) {
@@ -176,6 +202,10 @@ class ReturnInst(type: Type, retVal: Value?) : Instruction(type) {
 
   override fun replicate(): Instruction {
     return ReturnInst(type, getRetVal()?.duplicate())
+  }
+
+  override fun clone(name: String?): Instruction {
+    return ReturnInst(type, getRetVal())
   }
 
   override fun accept(irVisitor: IRVisitor) {
@@ -246,6 +276,10 @@ class BranchInst(trueBlock: BasicBlock, cond: Value?, falseBlock: BasicBlock?) :
     return true
   }
 
+  override fun clone(name: String?): Instruction {
+    return BranchInst(getTrueBlock(), getCond(), getFalseBlock())
+  }
+
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
@@ -268,6 +302,10 @@ class CallInst(name: String?, func: Func, argList: List<Value>) :
 
   override fun replicate(): Instruction {
     return CallInst(name, getCallee(), getArgList().map { it.duplicate() })
+  }
+
+  override fun clone(name: String?): Instruction {
+    return CallInst(name, getCallee(), getArgList())
   }
 
   override fun accept(irVisitor: IRVisitor) {
@@ -317,6 +355,10 @@ class GetElementPtrInst(val op: String, name: String, ptr: Value, offset: Value,
       getOffset().duplicate(),
       getIndex()?.duplicate() as ConstantInt?
     )
+  }
+
+  override fun clone(name: String?): Instruction {
+    return GetElementPtrInst(op, name!!, getPtr(), getOffset(), getIndex())
   }
 
   override fun accept(irVisitor: IRVisitor) {
@@ -386,6 +428,10 @@ class PhiInst(name: String, type: Type, predList: MutableList<Pair<Value, BasicB
     )
   }
 
+  override fun clone(name: String?): Instruction {
+    return PhiInst(name!!, type, getPredList().toMutableList())
+  }
+
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
@@ -406,6 +452,10 @@ class BitCastInst(name: String, castee: Value, toTy: Type) : Instruction(toTy, n
     return BitCastInst(name!!, getCastee().duplicate(), type)
   }
 
+  override fun clone(name: String?): Instruction {
+    return BitCastInst(name!!, getCastee(), type)
+  }
+
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
@@ -424,13 +474,17 @@ class ZExtInst(name: String, originalVal: Value, toTy: Type) : Instruction(toTy,
     return ZExtInst(name!!, getOriginalVal().duplicate(), type)
   }
 
+  override fun clone(name: String?): Instruction {
+    return ZExtInst(name!!, getOriginalVal(), type)
+  }
+
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
 }
 
 class PCopyInst : Instruction(TypeFactory.getVoidType(), null) {
-  val destList = mutableListOf<Value>()
+  private val destList = mutableListOf<Value>()
 
   fun addAssignment(rd: Value, rs: Value) {
     destList.add(rd)
@@ -458,6 +512,12 @@ class PCopyInst : Instruction(TypeFactory.getVoidType(), null) {
     return inst
   }
 
+  override fun clone(name: String?): Instruction {
+    val inst = PCopyInst()
+    getAssignmentList().forEach { inst.addAssignment(it.first, it.second) }
+    return inst
+  }
+
   override fun accept(irVisitor: IRVisitor) {
     irVisitor.visit(this)
   }
@@ -478,6 +538,10 @@ class MvInst(name: String, rs: Value) : Instruction(rs.type, name) {
 
   override fun replicate(): Instruction {
     return MvInst(name!!, getSrc().duplicate())
+  }
+
+  override fun clone(name: String?): Instruction {
+    return MvInst(name!!, type, getSrc())
   }
 
   override fun accept(irVisitor: IRVisitor) {
