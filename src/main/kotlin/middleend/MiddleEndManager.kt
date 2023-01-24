@@ -16,43 +16,45 @@ object MiddleEndManager {
     Transformer.visit(module)
     if (buildOptions.contains("--localize")) {
       Localizer.visit(module)
+      Checker.visit(module)
     }
-    Checker.visit(module)
     SSAConstructor.visit(module)
     Checker.visit(module)
     if (buildOptions.contains("--inline")) {
       Inliner.visit(module)
+      Checker.visit(module)
     }
-    Checker.visit(module)
     if (buildOptions.contains("--sccp")) {
       ConstPropagator.visit(module)
+      Checker.visit(module)
     }
-    Checker.visit(module)
     if (buildOptions.contains("--svn")) {
       SuperValueNumbering.visit(module)
+      Checker.visit(module)
     }
-    Checker.visit(module)
     if (buildOptions.contains("--dvnt")) {
       DomValueNumbering.visit(module)
+      Checker.visit(module)
     }
-    Checker.visit(module)
     if (buildOptions.contains("--licm") && buildOptions.contains("--dvnt")) {
       LoopInvarCodeMotion.visit(module) // must be placed after dvnt
+      Checker.visit(module)
     }
-    Checker.visit(module)
     if (buildOptions.contains("--dmnt")) {
       DomMemNumbering.visit(module)
+      Checker.visit(module)
     }
     if (buildOptions.contains("--sr")) {
       StrengthReduction.visit(module)
+      Checker.visit(module)
     }
-    Checker.visit(module)
     if (buildOptions.contains("--adce")) {
       Eliminator.visit(module)
+      Checker.visit(module)
     }
-    Checker.visit(module)
     if (buildOptions.contains("--peephole")) {
       Peephole.visit(module)
+      Checker.visit(module)
     }
 
     if (testing) {
