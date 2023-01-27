@@ -135,8 +135,13 @@ object ASMBuilder {
   }
 
   fun createLiInst(rd: Register, imm: DeterminedImmediate) {
-    val liInst = ASMLiInst(rd, imm)
-    insertInst(liInst)
+    if (imm.value == 0) {
+      val mvInst = ASMMvInst(rd, RegFactory.getPhyReg(0))
+      insertInst(mvInst)
+    } else {
+      val liInst = ASMLiInst(rd, imm)
+      insertInst(liInst)
+    }
   }
 
   fun createMvInst(rd: Register, rs: Register) {
