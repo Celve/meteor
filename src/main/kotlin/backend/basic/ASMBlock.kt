@@ -17,6 +17,18 @@ class ASMBlock(val pureName: String, val parent: ASMFunc, val execFreq: Int) :
     block.succList.add(this)
   }
 
+  fun removeInst(inst: ASMInst) {
+    inst.eliminate()
+    instList.remove(inst)
+  }
+
+  fun replaceInst(oldInst: ASMInst, newInst: ASMInst) {
+    oldInst.eliminate()
+    newInst.parent = this
+    val index = instList.indexOf(oldInst)
+    instList[index] = newInst
+  }
+
   fun accept(visitor: ASMVisitor) {
     visitor.visit(this)
   }

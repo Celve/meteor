@@ -14,6 +14,10 @@ object BackEndManager {
 
     ASMRegisterAllocator.visit(module)
     Checker.visit(module)
+    if (buildOptions.contains("--peephole")) {
+      Peephole.visit(module)
+      Checker.visit(module)
+    }
     if (buildOptions.contains("--adce")) {
       Eliminator.visit(module)
       Checker.visit(module)
