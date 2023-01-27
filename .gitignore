@@ -55,3 +55,6 @@ debug/
 src/main/resources/testcases/codegen/test.mx
 std
 temp/
+
+### Testcases ###
+src/main/resources/testcases/issued/
