@@ -6,7 +6,8 @@ import middleend.struct.DirectedGraph
 
 object StrengthReduction : IRVisitor() {
   private val lookupTable = hashMapOf<Triple<String, Value, Value>, Instruction>()
-  private val header = hashMapOf<Value, Instruction>()
+  private val header =
+    hashMapOf<Value, PhiInst>() // header contains the base phi instruction of induction variables
   private lateinit var currFunc: Func
 
   override fun visit(topModule: TopModule) {
@@ -87,8 +88,15 @@ object StrengthReduction : IRVisitor() {
   private fun classifyIV(valueSet: HashSet<Value>) {
     val operationSet = valueSet.filterIsInstance<Instruction>().toHashSet()
     if (isValidUpdate(operationSet)) {
-      val h = operationSet.minByOrNull { currFunc.revDomTree.block2Postorder[it.parent]!! }!!
-      operationSet.forEach { header[it] = h }
+      val postOrder = currFunc.domTree.block2Postorder
+      val h = operationSet.minWithOrNull { lhs, rhs ->
+        if (postOrder[lhs.parent]!! != postOrder[rhs.parent]!!) {
+          postOrder[rhs.parent]!! - postOrder[lhs.parent]!!// bigger is better
+        } else {
+          lhs.parent.instList.indexOf(lhs) - rhs.parent.instList.indexOf(rhs) // smaller is better
+        }
+      }!!
+      operationSet.forEach { header[it] = h as PhiInst }
     } else {
       operationSet.forEach {
         val result = getIvAndRc(it)
@@ -130,7 +138,7 @@ object StrengthReduction : IRVisitor() {
           operand2 is Instruction -> currFunc.domTree.domeds.getValue(operand2.parent)
           else -> throw Exception("Invalid operands")
         }
-        val insertedBlock = blockSet.minByOrNull { currFunc.revDomTree.block2Postorder[it]!! }!!
+        val insertedBlock = blockSet.maxByOrNull { currFunc.domTree.block2Postorder[it]!! }!!
         insertedBlock.addInst(insertedBlock.instList.size - 1, binaryInst)
         binaryInst
       }
@@ -172,7 +180,6 @@ object StrengthReduction : IRVisitor() {
   override fun visit(func: Func) {
     currFunc = func
     func.domTree.build()
-    func.revDomTree.build()
     lookupTable.clear()
     header.clear()
 

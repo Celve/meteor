@@ -22,7 +22,7 @@ object LoopInvarCodeMotion : IRVisitor() {
 
   private fun collectInvariants(loop: Loop): List<Instruction> {
     var invariants = listOf<Instruction>()
-    val instList = loop.body.flatMap { it.instList }
+    val instList = loop.allBlocks.flatMap { it.instList }
     val defSet = instList.toSet()
     val modifiedSet = instList.filterIsInstance<StoreInst>().flatMap { eqSet.get(it.getAddr()) }
     val noCall = !instList.any { it is CallInst && !module.builtinFuncMap.contains(it.getCallee().name) }
@@ -42,16 +42,18 @@ object LoopInvarCodeMotion : IRVisitor() {
   }
 
   private fun moveInvariants(loop: Loop) {
+    loop.succLoops.forEach { moveInvariants(it) }
+
     val invariants = collectInvariants(loop)
     val doms = currFunc.domTree.doms
-    val exitsDom = loop.exit.map { doms.getValue(it).toSet() }.reduce { lhs, rhs -> lhs.intersect(rhs) }
+    val exitsDom = loop.exitingBlocks.map { doms.getValue(it).toSet() }.reduce { lhs, rhs -> lhs.intersect(rhs) }
     val movable = invariants.filter { exitsDom.contains(it.parent) }
 
-    val header = loop.header
-    val prevBlockSet = header.prevBlockSet.filter { !loop.body.contains(it) }
+    val header = loop.headerBlock
+    val prevBlockSet = header.prevBlockSet.filter { !loop.allBlocks.contains(it) }
     if (movable.isNotEmpty() && prevBlockSet.size == 1) {
       // CFG
-      val preHeader = BasicBlock(currFunc.mulTable.rename("preheader"), loop.header.execFreq)
+      val preHeader = BasicBlock(currFunc.mulTable.rename("preheader"), loop.headerBlock.execFreq)
       val preLoop = prevBlockSet.first()
       preHeader.parent = currFunc
       preLoop.removeNextBlock(header)
@@ -76,7 +78,7 @@ object LoopInvarCodeMotion : IRVisitor() {
         it.addAssignment(value, preHeader)
       }
 
-      currFunc.blockList.add(currFunc.blockList.indexOf(loop.header), preHeader)
+      currFunc.blockList.add(currFunc.blockList.indexOf(loop.headerBlock), preHeader)
 
       movable.forEach {
         it.parent.instList.remove(it)
@@ -86,9 +88,8 @@ object LoopInvarCodeMotion : IRVisitor() {
       val branchInst = BranchInst(header, null, null)
       branchInst.parent = preHeader
       preHeader.instList.add(branchInst)
+      loop.preHeaderBlock = preHeader
     }
-
-    loop.succs.forEach { moveInvariants(it) }
   }
 
   override fun visit(func: Func) {

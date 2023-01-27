@@ -3,15 +3,16 @@ package middleend.struct
 import middleend.basic.BasicBlock
 import middleend.basic.Func
 
-class Loop(val header: BasicBlock, unorderedBody: Set<BasicBlock>) {
-  var body = unorderedBody.sortedBy { header.parent.blockList.indexOf(it) }
-  var exit = body.filter { it.nextBlockSet.any { next -> !body.contains(next) } }.toSet()
-  val succs = hashSetOf<Loop>()
-  val preds = hashSetOf<Loop>()
+class Loop(val headerBlock: BasicBlock, unorderedBody: Set<BasicBlock>) {
+  lateinit var preHeaderBlock: BasicBlock // preHeaderBlock is not inside the loop
+  var allBlocks = unorderedBody.sortedBy { headerBlock.parent.blockList.indexOf(it) }
+  var exitingBlocks = allBlocks.filter { it.nextBlockSet.any { next -> !allBlocks.contains(next) } }.toSet() // exisitn
+  val succLoops = hashSetOf<Loop>()
+  val predLoops = hashSetOf<Loop>()
 
   fun union(other: Set<BasicBlock>) {
-    body = (body + other).sortedBy { header.parent.blockList.indexOf(it) }
-    exit = body.filter { it.nextBlockSet.any { next -> !body.contains(next) } }.toSet()
+    allBlocks = (allBlocks + other).sortedBy { headerBlock.parent.blockList.indexOf(it) }
+    exitingBlocks = allBlocks.filter { it.nextBlockSet.any { next -> !allBlocks.contains(next) } }.toSet()
   }
 }
 
@@ -35,7 +36,7 @@ class LoopNestTree(val func: Func) {
 
   private fun overflow(start: BasicBlock, limit: BasicBlock): List<BasicBlock> {
     val queue = mutableListOf(start)
-    val visited = hashSetOf<BasicBlock>(start)
+    val visited = hashSetOf(start)
     while (queue.isNotEmpty()) {
       val block = queue.first()
       queue.removeFirst()
@@ -68,15 +69,15 @@ class LoopNestTree(val func: Func) {
   }
 
   private fun constructTree() {
-    val loopsBySize = header2Loop.values.sortedBy { it.body.size }
+    val loopsBySize = header2Loop.values.sortedBy { it.allBlocks.size }
     for (succ in loopsBySize) {
-      val pred = loopsBySize.firstOrNull { it != succ && it.body.contains(succ.header) }
+      val pred = loopsBySize.firstOrNull { it != succ && it.allBlocks.contains(succ.headerBlock) }
       if (pred != null) {
-        pred.succs.add(succ)
-        succ.preds.add(pred)
+        pred.succLoops.add(succ)
+        succ.predLoops.add(pred)
       }
     }
-    loopsBySize.filter { it.preds.isEmpty() }.forEach { roots.add(it) }
+    loopsBySize.filter { it.predLoops.isEmpty() }.forEach { roots.add(it) }
   }
 
   fun build() {
