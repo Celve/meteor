@@ -8,7 +8,19 @@ const val OnlineJudge = false
 
 fun main(args: Array<String>) {
   val buildOptions = if (OnlineJudge) {
-    hashSetOf("--inline", "--licm", "--sccp", "--dvnt", "--adce", "--asm", "--localize")
+    hashSetOf(
+      "--inline",
+      "--licm",
+      "--sccp",
+      "--dvnt",
+      "--adce",
+      "--asm",
+      "--localize",
+      "--peephole",
+      "--gcp",
+      "--dmnt",
+      "--sr"
+    )
   } else {
     args.toHashSet()
   }
