@@ -190,7 +190,7 @@ object Inliner : IRVisitor() {
     callInst.eliminate()
     caller.blockList.add(callerBlockPos + 1, newCallerBlock)
     callerBlock.instList.removeAll(callerBlock.instList.subList(splitPos, callerBlock.instList.size))
-    callerBlock.substituteOnly(newCallerBlock) { it is PhiInst }
+    callerBlock.substitutedByWhen(newCallerBlock) { it is PhiInst }
 
     newCallerBlock.nextBlockSet.addAll(callerBlock.nextBlockSet)
     callerBlock.nextBlockSet.clear()
@@ -206,7 +206,7 @@ object Inliner : IRVisitor() {
     if (returnValue.getRetVal() != null) {
       val newCall = MvInst(callInst.name!!, returnValue.getRetVal()!!)
       newCall.parent = calleeReturnBlock
-      callInst.substituteAll(newCall)
+      callInst.substitutedBy(newCall)
       calleeReturnBlock.instList.add(newCall)
     }
     val callee2Caller = BranchInst(newCallerBlock, null, null)

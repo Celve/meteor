@@ -26,7 +26,7 @@ open class Value(var type: Type, var name: String? = null) {
     return Value(type, name)
   }
 
-  fun substituteAll(value: Value) {
+  open fun substitutedBy(value: Value) {
     value.userList.addAll(userList)
     for (user in userList) {
       user.useeList.replaceAll { if (it === this) value else it }
@@ -34,7 +34,7 @@ open class Value(var type: Type, var name: String? = null) {
     userList.clear()
   }
 
-  fun substituteAllExcept(value: Value, except: Set<User>) {
+  open fun substitutedByExcept(value: Value, except: Set<User>) {
     for (user in userList) {
       if (!except.contains(user)) {
         value.userList.add(user)
@@ -44,7 +44,7 @@ open class Value(var type: Type, var name: String? = null) {
     userList = except.toMutableList()
   }
 
-  fun substituteAllExcept(value: Value, except: (User) -> Boolean) {
+  open fun substitutedByExcept(value: Value, except: (User) -> Boolean) {
     for (user in userList) {
       if (!except(user)) {
         value.userList.add(user)
@@ -54,14 +54,14 @@ open class Value(var type: Type, var name: String? = null) {
     userList = userList.filter { except(it) }.toMutableList()
   }
 
-  fun substituteOnly(value: Value, only: (User) -> Boolean) {
+  open fun substitutedByWhen(value: Value, cond: (User) -> Boolean) {
     for (user in userList) {
-      if (only(user)) {
+      if (cond(user)) {
         value.userList.add(user)
         user.useeList.replaceAll { if (it === this) value else it }
       }
     }
-    userList = userList.filter { !only(it) }.toMutableList()
+    userList = userList.filter { !cond(it) }.toMutableList()
   }
 
   override fun toString(): String {

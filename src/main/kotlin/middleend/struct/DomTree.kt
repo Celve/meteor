@@ -14,7 +14,7 @@ class DomTree(val func: Func, val reversed: Boolean) {
   val blockListInPostorder = mutableListOf<BasicBlock>()
   val block2Postorder = hashMapOf<BasicBlock, Int>()
   private val visitedSet = hashSetOf<BasicBlock>()
-  private var startNode = BasicBlock("init", 0)
+  private lateinit var startNode: BasicBlock
 
   private fun getNextBlockSet(block: BasicBlock): Set<BasicBlock> {
     return if (reversed) {
@@ -70,7 +70,10 @@ class DomTree(val func: Func, val reversed: Boolean) {
   fun build() {
     idoms.clear() // initialize
     successors.clear()
-    
+    doms.clear()
+    domeds.clear()
+    domFrontiers.clear()
+
     startNode = if (reversed) {
       func.blockList.last()
     } else {

@@ -6,8 +6,7 @@ import middleend.struct.DirectedGraph
 
 object StrengthReduction : IRVisitor() {
   private val lookupTable = hashMapOf<Triple<String, Value, Value>, Instruction>()
-  private val header =
-    hashMapOf<Value, PhiInst>() // header contains the base phi instruction of induction variables
+  private lateinit var header: HashMap<Instruction, PhiInst> // header contains the base phi instruction of induction variables
   private lateinit var currFunc: Func
 
   override fun visit(topModule: TopModule) {
@@ -181,6 +180,7 @@ object StrengthReduction : IRVisitor() {
     currFunc = func
     func.domTree.build()
     lookupTable.clear()
+    header = func.indVar.all2Phi
     header.clear()
 
     val instList = func.blockList.flatMap { block -> block.instList.filter { it.isDef() } }

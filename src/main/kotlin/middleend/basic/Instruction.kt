@@ -264,6 +264,44 @@ class BranchInst(trueBlock: BasicBlock, cond: Value?, falseBlock: BasicBlock?) :
     link(this, falseBlock)
   }
 
+  private fun cutBlocks() {
+    parent.removeNextBlock(getTrueBlock())
+    getTrueBlock().removePrevBlock(parent)
+    if (getFalseBlock() != null) {
+      parent.removeNextBlock(getFalseBlock()!!)
+      getFalseBlock()!!.removePrevBlock(parent)
+    }
+  }
+
+  private fun linkBlocks() {
+    parent.addNextBlock(getTrueBlock())
+    getTrueBlock().addPrevBlock(parent)
+    if (getFalseBlock() != null) {
+      parent.addNextBlock(getFalseBlock()!!)
+      getFalseBlock()!!.addPrevBlock(parent)
+    }
+  }
+
+
+  // for maintenance of nextBlockSet and prevBlockSet
+  override fun replace(from: Value, to: Value) {
+    cutBlocks()
+    super.replace(from, to)
+    linkBlocks()
+  }
+
+  override fun replaceAll(applier: (Value) -> Value) {
+    cutBlocks()
+    super.replaceAll(applier)
+    linkBlocks()
+  }
+
+  // it's not been decided yet whether to bind branch inst with block such deep
+//  override fun eliminate() {
+//    cutBlocks()
+//    super.eliminate()
+//  }
+
   override fun replicate(): Instruction {
     return BranchInst(
       getTrueBlock().duplicate() as BasicBlock,

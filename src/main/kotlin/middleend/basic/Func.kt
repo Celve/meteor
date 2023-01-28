@@ -16,6 +16,7 @@ class Func(name: String, val funcType: FuncType, val argList: List<Value>) : Glo
   val livenessAnalyzer = LivenessAnalyzer(this)
   val valNum = ValNum(this)
   val eqSet = EqSet(this)
+  val indVar = IndVar(this)
 
   override fun replicate(): Value {
     TODO("Not yet implemented")
@@ -30,7 +31,12 @@ class Func(name: String, val funcType: FuncType, val argList: List<Value>) : Glo
     return blockList.last()
   }
 
+  fun getIndexOfBlock(block: BasicBlock): Int {
+    return blockList.indexOf(block)
+  }
+
   fun addBasicBlockAtIndex(index: Int, basicBlock: BasicBlock) {
+    basicBlock.parent = this
     blockList.add(index, basicBlock)
   }
 

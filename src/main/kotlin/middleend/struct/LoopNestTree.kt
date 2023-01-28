@@ -35,17 +35,19 @@ class LoopNestTree(val func: Func) {
   }
 
   private fun overflow(start: BasicBlock, limit: BasicBlock): List<BasicBlock> {
-    val queue = mutableListOf(start)
-    val visited = hashSetOf(start)
-    while (queue.isNotEmpty()) {
-      val block = queue.first()
-      queue.removeFirst()
-
-      val pending = block.prevBlockSet.filter { !visited.contains(it) && it != limit }
-      pending.forEach { visited.add(it) }
-      queue.addAll(pending)
+    return if (start == limit) {
+      listOf(start)
+    } else {
+      val queue = mutableListOf(start)
+      val visited = hashSetOf(start)
+      while (queue.isNotEmpty()) {
+        val block = queue.removeFirst()
+        val pending = block.prevBlockSet.filter { !visited.contains(it) && it != limit }
+        pending.forEach { visited.add(it) }
+        queue.addAll(pending)
+      }
+      visited.filter { func.domTree.doms[it]!!.contains(limit) }
     }
-    return visited.filter { func.domTree.doms[it]!!.contains(limit) }
   }
 
   private fun collectNaturalLoops() {
@@ -57,6 +59,7 @@ class LoopNestTree(val func: Func) {
   }
 
   private fun combineLoops() {
+    header2Loop.clear()
     for (naturalLoop in naturalLoops) {
       val header = naturalLoop.first()
       val body = naturalLoop.toHashSet()
@@ -69,6 +72,7 @@ class LoopNestTree(val func: Func) {
   }
 
   private fun constructTree() {
+    roots.clear()
     val loopsBySize = header2Loop.values.sortedBy { it.allBlocks.size }
     for (succ in loopsBySize) {
       val pred = loopsBySize.firstOrNull { it != succ && it.allBlocks.contains(succ.headerBlock) }

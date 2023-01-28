@@ -24,10 +24,10 @@ object ConstPropagator : IRVisitor() {
     }
   }
 
-  val varWorkList = mutableListOf<Value>()
-  val blockWorkList = mutableListOf<BasicBlock>()
-  val varStateMap = mutableMapOf<Value, VarState>().withDefault { VarState.NoEvidence }
-  val blockStateMap = mutableMapOf<BasicBlock, Boolean>().withDefault { false }
+  private val varWorkList = mutableListOf<Value>()
+  private val blockWorkList = mutableListOf<BasicBlock>()
+  private val varStateMap = mutableMapOf<Value, VarState>().withDefault { VarState.NoEvidence }
+  private val blockStateMap = mutableMapOf<BasicBlock, Boolean>().withDefault { false }
 
   override fun visit(topModule: TopModule) {
     topModule.funcMap.forEach { it.value.accept(this) }
@@ -57,6 +57,8 @@ object ConstPropagator : IRVisitor() {
   private fun getDetermined(value: Value): Int? {
     return if (value is ConstantInt) {
       value.value
+    } else if (value is ConstantNull) {
+      null
     } else {
       (varStateMap.getValue(value) as VarState.Determined).value
     }
@@ -105,10 +107,10 @@ object ConstPropagator : IRVisitor() {
     varStateMap.forEach {
       if (it.value is VarState.Determined) {
         val value = (it.value as VarState.Determined).value
-        if (value == null) {
-          it.key.substituteAll(ConstantNull())
+        if (value == null) { // for null
+          it.key.substitutedBy(ConstantNull())
         } else {
-          it.key.substituteAll(ConstantInt(it.key.type.getNumBits(), value))
+          it.key.substitutedBy(ConstantInt(it.key.type.getNumBits(), value))
         }
         if (it.key is Instruction) {
           val block = (it.key as Instruction).parent

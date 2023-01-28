@@ -3,8 +3,8 @@ package middleend.pass
 import middleend.basic.*
 
 object Eliminator : IRVisitor() {
-  val workList = mutableListOf<Instruction>()
-  val markedSet = hashSetOf<Value>()
+  private val workList = mutableListOf<Instruction>()
+  private val markedSet = hashSetOf<Value>()
 
   override fun visit(topModule: TopModule) {
     topModule.funcMap.forEach { it.value.accept(this) }
@@ -32,18 +32,15 @@ object Eliminator : IRVisitor() {
 
   private fun mark(func: Func) {
     workList.clear()
-    func.blockList.forEach { block -> block.instList.forEach { if (isCritical(it)) take(it) } }
+    markedSet.clear()
+    func.blockList.flatMap { it.instList }.filter { isCritical(it) }.forEach { take(it) }
 
     while (workList.isNotEmpty()) {
       val inst = workList.first()
       workList.removeFirst()
       inst.useeList.forEach { take(it) }
-      func.revDomTree.domFrontiers.getValue(inst.parent).forEach {
-        val terminator = it.getTerminator()
-        if (terminator is BranchInst) {
-          take(terminator)
-        }
-      }
+      func.revDomTree.domFrontiers.getValue(inst.parent).map { it.getTerminator() }.filterIsInstance<BranchInst>()
+        .forEach { take(it) }
     }
   }
 
@@ -100,7 +97,7 @@ object Eliminator : IRVisitor() {
           }
         }
 
-        block.substituteOnly(jumpBlock) { it is BranchInst }
+        block.substitutedByWhen(jumpBlock) { it is BranchInst }
         block.prevBlockSet.forEach {
           it.nextBlockSet.remove(block)
           it.nextBlockSet.add(jumpBlock)
@@ -132,12 +129,12 @@ object Eliminator : IRVisitor() {
           it.removePrevBlock(block)
           it.addPrevBlock(prevBlock)
         }
-        block.substituteAll(prevBlock)
+        block.substitutedBy(prevBlock)
         block.prevBlockSet.clear()
         block.nextBlockSet.clear()
         func.blockList.remove(block)
 
-        prevBlock.name = "${prevBlock.name}$${block.name}"
+        prevBlock.name = func.mulTable.rename("${prevBlock.name}$${block.name}")
 
         prevBlock.instList.removeLast() // remove branch instruction
         prevBlock.instList.addAll(block.instList)
@@ -185,7 +182,6 @@ object Eliminator : IRVisitor() {
       func.domTree.build()
       for (block in func.domTree.blockListInPostorder) {
         changed = changed || foldRedundantBr(block) // case 1
-        Checker.visit(block)
         changed = when {
           removeEmptyBlock(block) -> true
           combineBlocks(block) -> true

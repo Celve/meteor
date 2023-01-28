@@ -43,6 +43,7 @@ object Checker : IRVisitor() {
       } else {
         assert(block.nextBlockSet.size == 2)
       }
+      block.nextBlockSet.forEach { assert(terminator.useeList.contains(it)) }
     } else {
       assert(terminator is ReturnInst)
     }

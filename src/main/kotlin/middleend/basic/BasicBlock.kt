@@ -35,7 +35,7 @@ class BasicBlock(name: String, val execFreq: Int) : Value(TypeFactory.getLabelTy
   fun removeInst(inst: Instruction, sub: Value? = null) {
     assert(inst.name == null || sub != null)
     if (sub != null) {
-      inst.substituteAll(sub)
+      inst.substitutedBy(sub)
     }
     inst.eliminate()
     instList.remove(inst)
@@ -67,7 +67,7 @@ class BasicBlock(name: String, val execFreq: Int) : Value(TypeFactory.getLabelTy
       throw Exception("cannot find instruction in basic block")
     }
     oldInst.eliminate()
-    oldInst.substituteAll(newInst)
+    oldInst.substitutedBy(newInst)
     instList[index] = newInst
     newInst.parent = this
   }
