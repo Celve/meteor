@@ -52,12 +52,14 @@ object Inliner : IRVisitor() {
     var changed: Int
     do {
       topModule.callGraph.build()
+      topModule.funcMap.values.forEach { it.loopNestTree.build() }
       changed =
         topModule.funcMap.values.sumOf { attempt(it, true) }
     } while (changed > 0)
 
     do {
       topModule.callGraph.build()
+      topModule.funcMap.values.forEach { it.loopNestTree.build() }
       changed =
         topModule.funcMap.values.sumOf { attempt(it, false) }
     } while (changed > 0)
@@ -140,15 +142,6 @@ object Inliner : IRVisitor() {
           old2Value[newInst.name!!] = newInst
           newInst.name = rename(newInst.name!!)
         }
-        if (inst !is PhiInst) {
-          newInst.replaceAll {
-            if (it.isDef() && it.type !is FuncType) {
-              old2Value[it.name!!] ?: it
-            } else {
-              it
-            }
-          }
-        }
 
         if (inst is AllocaInst) {
           val callerEntryBlock = caller.blockList.first()
@@ -167,6 +160,16 @@ object Inliner : IRVisitor() {
             if (falseBlock != null) {
               newCalleeBlock.addNextBlock(falseBlock)
               falseBlock.addPrevBlock(newCalleeBlock)
+            }
+          }
+        }
+
+        if (inst !is PhiInst) {
+          newInst.replaceAll {
+            if (it.isDef() && it.type !is FuncType) {
+              old2Value[it.name!!] ?: it
+            } else {
+              it
             }
           }
         }
