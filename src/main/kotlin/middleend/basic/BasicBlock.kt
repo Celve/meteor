@@ -16,6 +16,68 @@ class BasicBlock(name: String, var execFreq: Int) : Value(TypeFactory.getLabelTy
     return BasicBlock(name!!, execFreq)
   }
 
+  override fun replicate(): Value {
+    val newBlock = BasicBlock(name!!, execFreq)
+    instList.forEach {
+      val newInst = it.replicate() as Instruction
+      newInst.parent = newBlock
+      newBlock.instList.add(newInst)
+      if (newInst is BranchInst) {
+        newBlock.addNextBlock(newInst.getTrueBlock())
+        newInst.getFalseBlock()?.let {
+          newBlock.addNextBlock(it)
+        }
+      }
+    }
+    return newBlock
+  }
+
+//  override fun substitutedBy(value: Value) {
+//    value.userList.addAll(userList)
+//    for (user in userList) {
+//      if (user is BranchInst) user.cutBlocks()
+//      user.useeList.replaceAll { if (it === this) value else it }
+//      if (user is BranchInst) user.linkBlocks()
+//    }
+//    userList.clear()
+//  }
+//
+//  override fun substitutedByExcept(value: Value, except: (User) -> Boolean) {
+//    for (user in userList) {
+//      if (!except(user)) {
+//        value.userList.add(user)
+//        if (user is BranchInst) user.cutBlocks()
+//        user.useeList.replaceAll { if (it === this) value else it }
+//        if (user is BranchInst) user.linkBlocks()
+//      }
+//    }
+//    userList = userList.filter { except(it) }.toMutableList()
+//  }
+//
+//  override fun substitutedByExcept(value: Value, except: Set<User>) {
+//    for (user in userList) {
+//      if (!except.contains(user)) {
+//        value.userList.add(user)
+//        if (user is BranchInst) user.cutBlocks()
+//        user.useeList.replaceAll { if (it === this) value else it }
+//        if (user is BranchInst) user.linkBlocks()
+//      }
+//    }
+//    userList = except.toMutableList()
+//  }
+//
+//  override fun substitutedByWhen(value: Value, cond: (User) -> Boolean) {
+//    for (user in userList) {
+//      if (cond(user)) {
+//        value.userList.add(user)
+//        if (user is BranchInst) user.cutBlocks()
+//        user.useeList.replaceAll { if (it === this) value else it }
+//        if (user is BranchInst) user.linkBlocks()
+//      }
+//    }
+//    userList = userList.filter { !cond(it) }.toMutableList()
+//  }
+
   fun hasTerminator(): Boolean {
     return instList.isNotEmpty() && instList.last().isTerminator()
   }
@@ -52,11 +114,10 @@ class BasicBlock(name: String, var execFreq: Int) : Value(TypeFactory.getLabelTy
   }
 
   fun removeBrInst(inst: BranchInst, sub: Value? = null) {
-    val block = inst.parent
-    cutEdge(block, inst.getTrueBlock())
+    cutEdge(this, inst.getTrueBlock())
     val falseBlock = inst.getFalseBlock()
     if (falseBlock != null) {
-      cutEdge(block, falseBlock)
+      cutEdge(this, falseBlock)
     }
     removeInst(inst, sub)
   }
@@ -72,17 +133,17 @@ class BasicBlock(name: String, var execFreq: Int) : Value(TypeFactory.getLabelTy
     newInst.parent = this
   }
 
-  fun replaceBrInst(oldInst: BranchInst, newInst: BranchInst) {
-    val block = oldInst.parent
-    cutEdge(block, oldInst.getTrueBlock())
+  fun replaceBrInst(newInst: BranchInst) {
+    val oldInst = getTerminator() as BranchInst
+    cutEdge(this, oldInst.getTrueBlock())
     val oldFalseBlock = oldInst.getFalseBlock()
     if (oldFalseBlock != null) {
-      cutEdge(block, oldFalseBlock)
+      cutEdge(this, oldFalseBlock)
     }
-    linkEdge(block, newInst.getTrueBlock())
+    linkEdge(this, newInst.getTrueBlock())
     val newFalseBlock = newInst.getFalseBlock()
     if (newFalseBlock != null) {
-      linkEdge(block, newFalseBlock)
+      linkEdge(this, newFalseBlock)
     }
     replaceInst(oldInst, newInst)
   }
@@ -146,9 +207,25 @@ class BasicBlock(name: String, var execFreq: Int) : Value(TypeFactory.getLabelTy
       dst.addPrevBlock(src)
     }
 
-    fun unlink(src: BasicBlock, dst: BasicBlock) {
+    fun cut(src: BasicBlock, dst: BasicBlock) {
       src.removeNextBlock(dst)
       dst.removePrevBlock(src)
+    }
+
+    fun insert(src: BasicBlock, dst: BasicBlock, slice: Slice) {
+      val srcBrInst = src.getTerminator() as BranchInst
+      srcBrInst.replace(dst, slice.blockList.first())
+
+      val exitingBlocks = slice.getExitingBlocks()
+      if (exitingBlocks.size != 1) {
+        throw Exception("slice has more than one exiting block")
+      }
+      val ebBrInst = exitingBlocks.first().getTerminator() as BranchInst
+      val outsideBlocks = ebBrInst.useeList.filterIsInstance<BasicBlock>().filter { it !in slice.blockList }
+      if (outsideBlocks.size != 1) {
+        throw Exception("exiting block has more than one outside block")
+      }
+      ebBrInst.replace(outsideBlocks.first(), dst)
     }
   }
 }

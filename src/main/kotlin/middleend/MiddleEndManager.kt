@@ -61,12 +61,14 @@ object MiddleEndManager {
       Checker.visit(module)
     }
     if (buildOptions.contains("--sr")) {
-      LoopUnfolding.visit(module)
-      Checker.visit(module)
-      Eliminator.visit(module) // a lot of useless basic block might occur
-      Checker.visit(module)
-      ConstPropagator.visit(module)
-      Checker.visit(module)
+      repeat(2) {
+        LoopUnfolding.visit(module)
+        Checker.visit(module)
+        Eliminator.visit(module) // a lot of useless basic block might occur
+        Checker.visit(module)
+        ConstPropagator.visit(module)
+        Checker.visit(module)
+      }
     }
 
     if (testing) {

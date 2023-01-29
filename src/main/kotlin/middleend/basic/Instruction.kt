@@ -264,7 +264,7 @@ class BranchInst(trueBlock: BasicBlock, cond: Value?, falseBlock: BasicBlock?) :
     link(this, falseBlock)
   }
 
-  private fun cutBlocks() {
+  internal fun cutBlocks() {
     parent.removeNextBlock(getTrueBlock())
     getTrueBlock().removePrevBlock(parent)
     if (getFalseBlock() != null) {
@@ -273,7 +273,7 @@ class BranchInst(trueBlock: BasicBlock, cond: Value?, falseBlock: BasicBlock?) :
     }
   }
 
-  private fun linkBlocks() {
+  internal fun linkBlocks() {
     parent.addNextBlock(getTrueBlock())
     getTrueBlock().addPrevBlock(parent)
     if (getFalseBlock() != null) {
@@ -281,7 +281,6 @@ class BranchInst(trueBlock: BasicBlock, cond: Value?, falseBlock: BasicBlock?) :
       getFalseBlock()!!.addPrevBlock(parent)
     }
   }
-
 
   // for maintenance of nextBlockSet and prevBlockSet
   override fun replace(from: Value, to: Value) {
@@ -431,6 +430,14 @@ class PhiInst(name: String, type: Type, predList: MutableList<Pair<Value, BasicB
       predList.add(Pair(useeList[2 * i], useeList[2 * i + 1] as BasicBlock))
     }
     return predList
+  }
+
+  fun getValueList(): List<Value> {
+    return useeList.filterIndexed { index, _ -> index % 2 == 0 }
+  }
+
+  fun getBlockList(): List<BasicBlock> {
+    return useeList.filterIndexed { index, _ -> index % 2 == 1 }.map { it as BasicBlock }
   }
 
   fun getPred(index: Int): Pair<Value, BasicBlock> {

@@ -34,7 +34,7 @@ object SSADestructor : IRVisitor() {
           branchInst.setFalseBlock(middleBlock)
         }
 
-        BasicBlock.unlink(prevBlock, block)
+        BasicBlock.cut(prevBlock, block)
         BasicBlock.link(prevBlock, middleBlock)
         BasicBlock.link(middleBlock, block)
 

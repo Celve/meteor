@@ -2,16 +2,13 @@ package middleend.pass
 
 import middleend.basic.*
 import middleend.helper.Utils
-import middleend.struct.IndVar
 import middleend.struct.Loop
 
-// this optimization requires strength reduction
+// a clear and easy to understand version of loop unfolding
 object LoopUnfolding : IRVisitor() {
   private lateinit var currModule: TopModule
   private lateinit var currFunc: Func
-  private lateinit var indVar: IndVar
-  private val valueMap = hashMapOf<String, Value>()
-  private val mul2Mul = hashMapOf<String, String>()
+  private var valueTable = hashMapOf<String, Value>()
 
   override fun visit(topModule: TopModule) {
     currModule = topModule
@@ -23,227 +20,114 @@ object LoopUnfolding : IRVisitor() {
   override fun visit(constStr: ConstantStr) {}
 
   private fun rename(name: String): String {
-    val withoutSSA = Utils.eliminateVersionWithDot(name)
-    return currFunc.ssaTable.rename(withoutSSA)
+    return currFunc.ssaTable.rename(Utils.eliminateVersionWithDot(name))
   }
 
-  /**
-   * @return true if the loop is ended
-   */
-  private fun checkBrInst(block: BasicBlock, loopBlock: BasicBlock, outBlock: BasicBlock): Boolean {
-    val brInst = block.getTerminator() as BranchInst
-    val cond = valueMap[brInst.getCond()!!.name]
-    val result = if (cond is CmpInst) {
-      Utils.calculate(cond.cond, (cond.getLhs() as ConstantInt).value, (cond.getRhs() as ConstantInt).value)
-    } else {
-      throw Exception("Unexpected condition: $cond")
-    }
-    block.removeInst(cond, ConstantInt(8, 0))
-    return if (result == 0 && brInst.getFalseBlock()!!.name!! == outBlock.name!!) {
-      block.replaceBrInst(brInst, BranchInst(outBlock, null, null))
-      true
-    } else if (result == 1 && brInst.getTrueBlock().name!! == outBlock.name!!) {
-      block.replaceBrInst(brInst, BranchInst(outBlock, null, null))
-      true
-    } else {
-      block.replaceBrInst(brInst, BranchInst(loopBlock, null, null))
-      false
-    }
-  }
-
-  private fun isIV(inst: Value): Boolean {
-    if (inst is PhiInst) {
-      val valueList = inst.getPredList().map { it.first }
-      if (valueList.size == 2 && valueList.any { it is ConstantInt } && valueList.any { it !is ConstantInt }) {
-        val inc = valueList.find { it !is ConstantInt }!!
-        return inc is BinaryInst && inc.useeList.contains(inst) && inc.useeList.any { it is ConstantInt }
-      }
-    } else if (inst is BinaryInst) {
-      if (inst.getLhs() is Constant || inst.getRhs() is Constant) {
-        val phiInst = inst.useeList.filterIsInstance<PhiInst>().firstOrNull()
-        if (phiInst != null) {
-          val valueList = phiInst.getPredList().map { it.first }
-          return valueList.size == 2 && valueList.any { it is ConstantInt } && valueList.contains(inst)
-        }
-      }
-    }
-    return false
-  }
-
-  // guarantee that the first of list is phi instruction
-  private fun getCycle(inst: Value): List<Instruction> {
-    return if (inst is PhiInst) {
-      listOf(inst, inst.useeList.filterIsInstance<BinaryInst>().first())
-    } else if (inst is BinaryInst) {
-      listOf(inst.useeList.filterIsInstance<PhiInst>().first(), inst)
-    } else {
-      throw Exception("Unexpected instruction: $inst")
-    }
-  }
-
-  private fun unfold(loop: Loop, ivs: List<Instruction>) {
-    // initialization
+  private fun unfold(loop: Loop, times: Int) {
+    val allSlice = Slice(mutableListOf())
+    val headerBlock = loop.headerBlock
     val allBlocks = loop.allBlocks
-    val copyBlocks = allBlocks.map { block -> block.instList.map { it.replicate() as Instruction } }
-    val exitingBlock = loop.exitingBlocks.first()
-    val name2Name = hashMapOf<String, String>() // instruction's name to iv's name
-    val name2IV = hashMapOf<String, Value>() // iv's name to iv's value
-    name2IV[ivs.first().name!!] = ivs.first()
-    ivs.forEach { name2Name[it.name!!] = ivs.first().name!! }
+    val headerIndex = allBlocks.indexOf(headerBlock)
+    val exitingIndex = allBlocks.indexOf(loop.exitingBlocks.first())
+    var lastExitingBlock: BasicBlock? = null
+    lateinit var newSlice: Slice
+    repeat(times) {
+      newSlice = Slice(loop.allBlocks.map { it.replicate() as BasicBlock }.toMutableList())
+      newSlice.rename { rename(it) }
 
-    // initialization again
-    var isInitial = true
-    var nextBlock = BasicBlock(currFunc.mulTable.rename(allBlocks.first().name!!), exitingBlock.execFreq / 10)
-    val outBlock = exitingBlock.getTerminator().useeList.filterIsInstance<BasicBlock>().find { it !in allBlocks }!!
-    val initBlock = nextBlock
-    val anchorBlock = currFunc.blockList[currFunc.getIndexOfBlock(allBlocks.first()) - 1]
-    val allAdded = mutableListOf<BasicBlock>()
-
-    while (true) {
-      val roundAdded = mutableListOf<BasicBlock>()
-      val phiInstList = mutableListOf<PhiInst>()
-      for ((index, block) in allBlocks.withIndex()) {
-        val currBlock = nextBlock
-        val nextBlockName = if (index == allBlocks.size - 1) allBlocks.first().name!! else allBlocks[index + 1].name!!
-        nextBlock = BasicBlock(currFunc.mulTable.rename(nextBlockName), allBlocks[index].execFreq)
-        currBlock.instList = copyBlocks[index].map { it.replicate() as Instruction }.toMutableList()
-        currBlock.instList.forEach { it.parent = currBlock }
-
-        currBlock.instList.filterIsInstance<PhiInst>().forEach { inst ->
-          if (inst.getPredList().map { it.second }.any { it.name == exitingBlock.name }) {
-            inst.replaceAll {
-              if (it.isDef() && it.type !is FuncType) {
-                valueMap[it.name!!]!!
-              } else {
-                it
-              }
-            }
-          } else if (!ivs.map { it.name!! }.contains(inst.name!!)) {
-            phiInstList.add(inst)
-          }
-        }
-
-        currBlock.instList.filterIsInstance<PhiInst>().forEach { inst ->
-          if (ivs.map { it.name!! }.contains(inst.name!!)) {
-            if (isInitial) {
-              val const = inst.getPredList().map { it.first }.filterIsInstance<ConstantInt>().first()
-              valueMap[inst.name!!] = const
-              currBlock.removeInst(inst, const)
+      // phi inst inside header block should be modified
+      val currExitingBlock = newSlice.blockList[exitingIndex]
+      val phiInstList = newSlice.blockList[headerIndex].instList.filterIsInstance<PhiInst>()
+      if (lastExitingBlock != null) {
+        phiInstList.forEach { inst ->
+          inst.replaceAll {
+            if (it == currExitingBlock) {
+              lastExitingBlock!!
+            } else if (it is Instruction) {
+              allSlice.valueTable[newSlice.nameTable[it]!!]!!
             } else {
-              valueMap[inst.name!!] = name2IV[inst.name]!!
-              currBlock.removeInst(inst, name2IV[inst.name]!!)
-            }
-          } else {
-            val usedName = inst.name!!
-            inst.name = rename(usedName)
-            valueMap[usedName] = inst
-          }
-        }
-
-        currBlock.instList.filter { it !is PhiInst }.forEach { inst ->
-          if (inst.isDef() && ivs.map { it.name!! }.contains(inst.name!!)) {
-            if (inst is BinaryInst) {
-              val usedLhs = inst.getLhs()
-              val usedRhs = inst.getRhs()
-              val lhs = if (usedLhs is ConstantInt) usedLhs else valueMap[usedLhs.name] as ConstantInt
-              val rhs = if (usedRhs is ConstantInt) usedRhs else valueMap[usedRhs.name] as ConstantInt
-              val const = ConstantInt(32, Utils.calculate(inst.op, lhs.value, rhs.value))
-              name2IV[name2Name[inst.name!!]!!] = const
-              valueMap[inst.name!!] = const
-              currBlock.removeInst(inst, const)
-            } else {
-              throw Exception("Unexpected instruction: $inst")
-            }
-          } else if (inst !is BranchInst) {
-            inst.replaceAll {
-              if (it.isDef() && it.type !is FuncType) {
-                valueMap[it.name!!]!!
-              } else {
-                it
-              }
-            }
-            if (inst.isDef()) {
-              val usedName = inst.name!!
-              inst.name = rename(usedName)
-              valueMap[usedName] = inst
+              it
             }
           }
         }
-        roundAdded.add(currBlock)
-        valueMap[allBlocks[index].name!!] = currBlock
+      } else {
+        phiInstList.forEach { it.removePred(currExitingBlock) }
       }
 
-      // deal with br instruction
-      isInitial = false
-      roundAdded.forEach { valueMap[it.name!!] = it }
-      roundAdded.filter { roundAdded.indexOf(it) != allBlocks.indexOf(exitingBlock) }.map { it.getTerminator() }
-        .forEach {
-          it.replaceAll { valueMap[it.name!!]!! }
-        }
-      allAdded.addAll(roundAdded)
+      lastExitingBlock?.let {
+        // the cmp inst used by br inst should be eliminated
+        val cmpInst = (it.getTerminator() as BranchInst).getCond() as CmpInst
 
-      // deal with phi instruction
-      phiInstList.forEach { inst ->
-        inst.replaceAll {
-          if (it.isDef() && it.type !is FuncType) {
-            valueMap[it.name!!]!!
-          } else {
-            it
-          }
-        }
-      }
+        // branch inst should be converted into jump inst
+        it.replaceBrInst(BranchInst(newSlice.blockList[headerIndex], null, null))
 
-//      if (allAdded.size > 400) {
-//        allAdded.flatMap { it.instList }.forEach {
-//          if (it is BranchInst) {
-//            it.parent.removeBrInst(it)
-//          } else {
-//            it.eliminate()
-//          }
-//        }
-//        return false
-//      }
-      if (checkBrInst(valueMap[exitingBlock.name!!] as BasicBlock, nextBlock, outBlock)) {
-        break
+        it.instList.remove(cmpInst)
+        cmpInst.eliminate()
       }
+      lastExitingBlock = currExitingBlock
+
+      allSlice.concat(newSlice)
     }
 
-    // delete original blocks and modify branch instructions
-    currFunc.blockList.removeAll(allBlocks)
-    currFunc.blockList.addAll(currFunc.getIndexOfBlock(anchorBlock) + 1, allAdded)
-    allAdded.forEach { it.parent = currFunc }
-    anchorBlock.replaceBrInst(anchorBlock.getTerminator() as BranchInst, BranchInst(initBlock, null, null))
+    // only after it would the end block be reasonable
+    allSlice.resolve(valueTable)
 
-    // deal with inheritance
+    // don't forget the last block
+    lastExitingBlock?.let {
+      val brInst = it.getTerminator() as BranchInst
+      val cmpInst = brInst.getCond() as CmpInst
+      val trueBlock = brInst.getTrueBlock()
+      val falseBlock = brInst.getFalseBlock()!!
+      if (trueBlock == newSlice.blockList[headerIndex]) {
+        it.replaceBrInst(BranchInst(falseBlock, null, null))
+      } else {
+        it.replaceBrInst(BranchInst(trueBlock, null, null))
+      }
+      it.instList.remove(cmpInst)
+      cmpInst.eliminate()
+    }
+
+    val newHeaderBlock = allSlice.blockList[headerIndex]
+    headerBlock.substitutedByWhen(newHeaderBlock) { it is BranchInst && it.parent !in allBlocks }
+    headerBlock.prevBlockSet.forEach {
+      it.removeNextBlock(headerBlock)
+      it.addNextBlock(newHeaderBlock)
+      newHeaderBlock.addPrevBlock(it)
+    }
+
+    val anchorBlock = currFunc.blockList[currFunc.getIndexOfBlock(allBlocks.first()) - 1]
+    currFunc.blockList.removeAll(allBlocks)
+    currFunc.blockList.addAll(currFunc.getIndexOfBlock(anchorBlock) + 1, allSlice.blockList)
+    allSlice.blockList.forEach { it.parent = currFunc }
+    headerBlock.substitutedByWhen(allSlice.blockList.first()) { it is BranchInst }
+
     allBlocks.forEach { block ->
       block.instList.filter { it.isDef() }.forEach {
-        val sub = valueMap[it.name!!]!!
-        it.substitutedBy(sub)
-        if (sub is Instruction) {
-          valueMap[sub.name!!] = sub
+        val sub = allSlice.valueTable[it.name!!]
+        if (sub != null) {
+          it.substitutedBy(sub)
+          if (sub is Instruction) {
+            valueTable[sub.name!!] = sub
+          }
         }
       }
     }
+
     allBlocks.flatMap { it.instList }.forEach {
       if (it is BranchInst) {
         it.parent.removeBrInst(it)
-      } else {
-        it.eliminate()
       }
+      it.eliminate()
     }
 
-    // deal with phi instructions
-    val phiInstList = currFunc.blockList.flatMap { it.instList.filterIsInstance<PhiInst>() }
+    val phiInstList = allSlice.blockList.flatMap { it.instList.filterIsInstance<PhiInst>() }
     phiInstList.forEach { inst ->
       inst.getPredList().map { it.second }.filter { it !in inst.parent.prevBlockSet }.forEach { inst.removePred(it) }
     }
-    // TODO: sort the phi instructions, because they have dependencies
-    val targets = mutableListOf<MvInst>()
     phiInstList.filter { it.getPredList().size == 1 }.forEach {
-      val mvInst = MvInst(rename(it.name!!), it.useeList.first())
-      it.parent.replaceInst(it, mvInst)
-      targets.add(mvInst)
+      it.parent.replaceInst(it, MvInst(rename(it.name!!), it.useeList.first()))
     }
+//    currFunc.blockList.forEach { println("${it.hashCode()} ${it.prevBlockSet} ${it.nextBlockSet}");IREmit.visit(it) }
   }
 
   private fun calcRepeatTime(phiInst: PhiInst, binaryInst: BinaryInst, cmpInst: CmpInst, endCond: Int): Int {
@@ -282,9 +166,40 @@ object LoopUnfolding : IRVisitor() {
     return cnt
   }
 
+  private fun getCycle(inst: Value): List<Instruction> {
+    return if (inst is PhiInst) {
+      listOf(inst, inst.useeList.filterIsInstance<BinaryInst>().first())
+    } else if (inst is BinaryInst) {
+      listOf(inst.useeList.filterIsInstance<PhiInst>().first(), inst)
+    } else {
+      throw Exception("Unexpected instruction: $inst")
+    }
+  }
+
+  private fun isIV(inst: Value): Boolean {
+    if (inst is PhiInst) {
+      val valueList = inst.getPredList().map { it.first }
+      if (valueList.size == 2 && valueList.any { it is ConstantInt } && valueList.any { it !is ConstantInt }) {
+        val inc = valueList.find { it !is ConstantInt }!!
+        return inc is BinaryInst && inc.useeList.contains(inst) && inc.useeList.any { it is ConstantInt }
+      }
+    } else if (inst is BinaryInst) {
+      if (inst.getLhs() is Constant || inst.getRhs() is Constant) {
+        val phiInst = inst.useeList.filterIsInstance<PhiInst>().firstOrNull()
+        if (phiInst != null) {
+          val valueList = phiInst.getPredList().map { it.first }
+          return valueList.size == 2 && valueList.any { it is ConstantInt } && valueList.contains(inst)
+        }
+      }
+    }
+    return false
+  }
+
   private fun attempt(loop: Loop): Boolean {
     var flag = false
-    loop.succLoops.sortedBy { currFunc.blockList.indexOf(it.headerBlock) }.forEach { flag = flag or attempt(it) }
+    loop.succLoops.sortedBy { currFunc.blockList.indexOf(it.headerBlock) }.forEach {
+      flag = flag or attempt(it)
+    }
     if (flag) {
       return true
     }
@@ -306,7 +221,7 @@ object LoopUnfolding : IRVisitor() {
           val endCond = loop.allBlocks.contains(brInst.getFalseBlock()!!).compareTo(false)
           val times = calcRepeatTime(cycle[0] as PhiInst, cycle[1] as BinaryInst, cmpInst, endCond)
           if (times <= 150 && times * loop.allBlocks.sumOf { it.instList.size } <= 1500) {
-            unfold(loop, cycle)
+            unfold(loop, times)
             return true
           }
         }
@@ -317,19 +232,14 @@ object LoopUnfolding : IRVisitor() {
 
   override fun visit(func: Func) {
     currFunc = func
-    indVar = func.indVar
-    do {
-      var flag = false
-      valueMap.clear()
-      currModule.globalVarMap.values.forEach { valueMap[it.name!!] = it }
-      currModule.constStrMap.values.forEach { valueMap[it.name!!] = it }
-      func.argList.forEach { valueMap[it.name!!] = it }
-      func.blockList.flatMap { it.instList.filter { it.isDef() } }.forEach { valueMap[it.name!!] = it }
-      func.blockList.forEach { valueMap[it.name!!] = it }
-      func.loopNestTree.build()
-      func.loopNestTree.roots.sortedBy { func.blockList.indexOf(it.headerBlock) }
-        .forEach { flag = flag or attempt(it) }
-    } while (flag)
+    valueTable.clear()
+    currModule.globalVarMap.values.forEach { valueTable[it.name!!] = it }
+    currModule.constStrMap.values.forEach { valueTable[it.name!!] = it }
+    func.argList.forEach { valueTable[it.name!!] = it }
+    func.blockList.flatMap { it.instList.filter { it.isDef() } }.forEach { valueTable[it.name!!] = it }
+    func.blockList.forEach { valueTable[it.name!!] = it }
+    func.loopNestTree.build()
+    func.loopNestTree.roots.sortedBy { func.blockList.indexOf(it.headerBlock) }.forEach { attempt(it) }
   }
 
   override fun visit(block: BasicBlock) {

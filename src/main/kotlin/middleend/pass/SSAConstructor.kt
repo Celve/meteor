@@ -89,6 +89,9 @@ object SSAConstructor : IRVisitor() {
     domTree = func.domTree
     domTree.build()
 
+    // rename blocks
+    func.blockList.forEach { renameValue(it) }
+
     // collect global variables
     for (block in func.blockList) {
       val varKillSet = hashSetOf<String>()
