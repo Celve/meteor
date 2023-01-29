@@ -2,6 +2,9 @@ package middleend.struct
 
 import middleend.basic.BasicBlock
 import middleend.basic.Func
+import kotlin.math.pow
+
+const val loopWeight = 10.0
 
 class Loop(val headerBlock: BasicBlock, unorderedBody: Set<BasicBlock>) {
   lateinit var preHeaderBlock: BasicBlock // preHeaderBlock is not inside the loop
@@ -84,11 +87,22 @@ class LoopNestTree(val func: Func) {
     loopsBySize.filter { it.predLoops.isEmpty() }.forEach { roots.add(it) }
   }
 
+  private fun calcExecFreq(loop: Loop, layer: Int) {
+    val execFreq = loopWeight.pow(layer).toInt()
+    loop.allBlocks.forEach { it.execFreq =  execFreq}
+    loop.succLoops.forEach { calcExecFreq(it, layer + 1) }
+  }
+
+  private fun calcExecFreq() {
+    roots.forEach { calcExecFreq(it, 1) }
+  }
+
   fun build() {
     func.domTree.build()
     collectBackEdges()
     collectNaturalLoops()
     combineLoops()
     constructTree()
+    calcExecFreq()
   }
 }
