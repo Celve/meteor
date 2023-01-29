@@ -6,6 +6,8 @@ import middleend.basic.TopModule
 
 object BackEndManager {
   fun visit(topModule: TopModule, testing: Boolean, buildOptions: HashSet<String>) {
+    topModule.funcMap.values.forEach { it.loopNestTree.build() } // optional
+
     val backend = ASMGenerator()
     backend.visit(topModule)
 
