@@ -134,7 +134,7 @@ object Eliminator : IRVisitor() {
         block.nextBlockSet.clear()
         func.blockList.remove(block)
 
-        prevBlock.name = func.mulTable.rename("${prevBlock.name}$${block.name}")
+//        prevBlock.name = func.mulTable.rename("${prevBlock.name}")
 
         prevBlock.instList.removeLast() // remove branch instruction
         prevBlock.instList.addAll(block.instList)
