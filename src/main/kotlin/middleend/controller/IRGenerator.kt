@@ -321,7 +321,7 @@ class IRGenerator : ASTVisitor() {
 
       loopManager.removeLast()
     } else { // use do-while construction
-      val testBlock = BasicBlock(renameLocal("for.test"), execFreq)
+      val testBlock = BasicBlock(renameLocal("for.test"), execFreq / loopWeight.toInt())
       val bodyBlock = BasicBlock(renameLocal("for.body"), execFreq)
       val incBlock = BasicBlock(renameLocal("for.inc"), execFreq)
       val condBlock = BasicBlock(renameLocal("for.cond"), execFreq)
@@ -388,7 +388,7 @@ class IRGenerator : ASTVisitor() {
       IRBuilder.setInsertBlock(endBlock)
       loopManager.removeLast()
     } else { // do-while construction
-      val testBlock = BasicBlock(renameLocal("while.test"), execFreq)
+      val testBlock = BasicBlock(renameLocal("while.test"), execFreq / loopWeight.toInt())
       val bodyBlock = BasicBlock(renameLocal("while.body"), execFreq)
       val condBlock = BasicBlock(renameLocal("while.cond"), execFreq)
       val endBlock = BasicBlock(renameLocal("while.end"), execFreq)
