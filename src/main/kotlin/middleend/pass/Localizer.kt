@@ -114,6 +114,7 @@ object Localizer : IRVisitor() {
   }
 
   override fun visit(func: Func) {
+    func.loopNestTree.build()
     globalVars.filter { it.userList.filterIsInstance<Instruction>().any { it.parent.parent == func } }
       .forEach { globalVar ->
         if (checkWithHeuristic(globalVar, func)) {
