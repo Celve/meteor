@@ -24,26 +24,7 @@ object LoopUnfolding : IRVisitor() {
 
   private fun rename(name: String): String {
     val withoutSSA = Utils.eliminateVersionWithDot(name)
-    return if (withoutSSA.endsWith(".addr")) {
-      val withoutAddr = withoutSSA.removeSuffix(".addr")
-      if (mul2Mul.contains(withoutAddr)) {
-        mul2Mul.getValue(withoutAddr) + ".addr"
-      } else {
-        val withoutMultiply = Utils.eliminateVersionWithoutDot(withoutAddr)
-        val mulName = currFunc.mulTable.rename(withoutMultiply)
-        currFunc.ssaTable.rename("$mulName.addr")
-        mul2Mul[withoutAddr] = mulName
-        "$mulName.addr"
-      }
-    } else if (mul2Mul.contains(withoutSSA)) {
-      currFunc.ssaTable.rename(mul2Mul.getValue(withoutSSA))
-    } else {
-      val withoutMultiply = Utils.eliminateVersionWithoutDot(withoutSSA)
-      val mulName = currFunc.mulTable.rename(withoutMultiply)
-      currFunc.ssaTable.rename(mulName)
-      mul2Mul[name] = mulName
-      mulName
-    }
+    return currFunc.ssaTable.rename(withoutSSA)
   }
 
   /**
@@ -100,25 +81,13 @@ object LoopUnfolding : IRVisitor() {
     }
   }
 
-  private fun unfold(loop: Loop, ivs: List<Instruction>): Boolean {
+  private fun unfold(loop: Loop, ivs: List<Instruction>) {
     // initialization
     val allBlocks = loop.allBlocks
     val copyBlocks = allBlocks.map { block -> block.instList.map { it.replicate() as Instruction } }
     val exitingBlock = loop.exitingBlocks.first()
     val name2Name = hashMapOf<String, String>() // instruction's name to iv's name
     val name2IV = hashMapOf<String, Value>() // iv's name to iv's value
-//    val ivNames = indVar.all2Phi.values.groupingBy { it }.eachCount().filter { it.value == 2 }.keys
-//      .filter {
-//        val valueList = it.getPredList().map { it.first }
-//        valueList.size == 2 && valueList.any { it is Constant } && valueList.any { it !is Constant }
-//      }.map { it.name!! }
-//    val ivNames = indVar.all2Phi.values.filter { isIV(it) }.distinct().map { it.name!! }
-
-    // preparation for induction variable
-//    indVar.all2Phi.forEach { (iv, phi) ->
-//      if (iv == phi) name2IV[phi.name!!] = iv
-//      name2Name[iv.name!!] = phi.name!!
-//    }
     name2IV[ivs.first().name!!] = ivs.first()
     ivs.forEach { name2Name[it.name!!] = ivs.first().name!! }
 
@@ -224,16 +193,16 @@ object LoopUnfolding : IRVisitor() {
         }
       }
 
-      if (allAdded.size > 400) {
-        allAdded.flatMap { it.instList }.forEach {
-          if (it is BranchInst) {
-            it.parent.removeBrInst(it)
-          } else {
-            it.eliminate()
-          }
-        }
-        return false
-      }
+//      if (allAdded.size > 400) {
+//        allAdded.flatMap { it.instList }.forEach {
+//          if (it is BranchInst) {
+//            it.parent.removeBrInst(it)
+//          } else {
+//            it.eliminate()
+//          }
+//        }
+//        return false
+//      }
       if (checkBrInst(valueMap[exitingBlock.name!!] as BasicBlock, nextBlock, outBlock)) {
         break
       }
@@ -275,7 +244,42 @@ object LoopUnfolding : IRVisitor() {
       it.parent.replaceInst(it, mvInst)
       targets.add(mvInst)
     }
-    return true
+  }
+
+  private fun calcRepeatTime(phiInst: PhiInst, binaryInst: BinaryInst, cmpInst: CmpInst, endCond: Int): Int {
+    var phiVal = phiInst.useeList.filterIsInstance<ConstantInt>().first().value
+    val binaryOp = binaryInst.op
+    val (binLeft, binVal) = if (binaryInst.getLhs() is ConstantInt) {
+      true to (binaryInst.getLhs() as ConstantInt).value
+    } else {
+      false to (binaryInst.getRhs() as ConstantInt).value
+    }
+    val cmpOp = cmpInst.cond
+    val (cmpLeft, cmpVal) = if (cmpInst.getLhs() is ConstantInt) {
+      true to (cmpInst.getLhs() as ConstantInt).value
+    } else {
+      false to (cmpInst.getRhs() as ConstantInt).value
+    }
+    var cnt = 0
+    do {
+      ++cnt
+      phiVal = if (binLeft) {
+        Utils.calculate(binaryOp, binVal, phiVal)
+      } else {
+        Utils.calculate(binaryOp, phiVal, binVal)
+      }
+
+      val cond = if (cmpLeft) {
+        Utils.calculate(cmpOp, cmpVal, phiVal)
+      } else {
+        Utils.calculate(cmpOp, phiVal, cmpVal)
+      }
+
+      if (cond == endCond) {
+        break
+      }
+    } while (cnt <= 150)
+    return cnt
   }
 
   private fun attempt(loop: Loop): Boolean {
@@ -284,23 +288,27 @@ object LoopUnfolding : IRVisitor() {
     if (flag) {
       return true
     }
+
     if (loop.exitingBlocks.size == 1) {
       val exitingBlock = loop.exitingBlocks.first()
-      val terminator = exitingBlock.getTerminator() as BranchInst
-      val cond = terminator.getCond()!!
-      if (cond is CmpInst) { // as long as it's a loop, the assertion is true
-        val lhs = cond.getLhs()
-        val rhs = cond.getRhs()
-//        if ((lhs is Constant && isIV(rhs)) || (rhs is Constant && isIV(lhs))) {
-//          return unfold(loop, (if (lhs is Constant) rhs else lhs) as PhiInst)
-//        }
-        val (const, iv) = when {
-          lhs is ConstantInt -> Pair(lhs, rhs)
-          rhs is ConstantInt -> Pair(rhs, lhs)
+      val brInst = exitingBlock.getTerminator() as BranchInst
+      val cmpInst = brInst.getCond()!!
+      if (cmpInst is CmpInst) { // as long as it's a loop, the assertion is true
+        val lhs = cmpInst.getLhs()
+        val rhs = cmpInst.getRhs()
+        val iv = when {
+          lhs is ConstantInt -> rhs
+          rhs is ConstantInt -> lhs
           else -> return false
         }
         if (isIV(iv)) {
-          return unfold(loop, getCycle(iv))
+          val cycle = getCycle(iv)
+          val endCond = loop.allBlocks.contains(brInst.getFalseBlock()!!).compareTo(false)
+          val times = calcRepeatTime(cycle[0] as PhiInst, cycle[1] as BinaryInst, cmpInst, endCond)
+          if (times <= 150 && times * loop.allBlocks.sumOf { it.instList.size } <= 1500) {
+            unfold(loop, cycle)
+            return true
+          }
         }
       }
     }
