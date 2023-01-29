@@ -167,9 +167,9 @@ object StrengthReduction : IRVisitor() {
   private fun process(opSet: HashSet<Value>) {
     if (opSet.size == 1) { // it has only one member
       val op = opSet.first()
-      val result = getIvAndRc(op)
-      if (result != null) {
-        replace(op as Instruction, result.first, result.second)
+      if (op is BinaryInst && op.op == "mul") {
+        val result = getIvAndRc(op)
+        result?.let { replace(op, result.first, result.second) }
       }
     } else {
       classifyIV(opSet)
