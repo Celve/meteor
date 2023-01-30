@@ -74,7 +74,7 @@ def test_single_file(filename, tag, build_options, result_dir):
             "java -jar build/libs/meteor-all.jar {} < {} > debug/{}code/{}.s".format(' '.join(build_options), filename,
                                                                                      result_dir, tag))
         os.system(
-            "ravel --input-file=debug/input.txt --output-file=debug/answer.txt debug/{}code/{}.s src/main/resources/builtin/builtin.s > debug/{}benchmark/{}.log 2> debug/ravel-error.log".format(
+            "ravel --enable-cache --input-file=debug/input.txt --output-file=debug/answer.txt debug/{}code/{}.s src/main/resources/builtin/builtin.s > debug/{}benchmark/{}.log 2> debug/ravel-error.log".format(
                 result_dir,
                 tag,
                 result_dir,
