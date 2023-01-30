@@ -61,14 +61,15 @@ object MiddleEndManager {
       Checker.visit(module)
     }
     if (buildOptions.contains("--sr")) {
-      repeat(2) {
+      do {
+        val initSize = module.funcMap.values.sumOf { it.blockList.size }
         LoopUnfolding.visit(module)
         Checker.visit(module)
         Eliminator.visit(module) // a lot of useless basic block might occur
         Checker.visit(module)
         ConstPropagator.visit(module)
         Checker.visit(module)
-      }
+      } while (initSize != module.funcMap.values.sumOf { it.blockList.size })
     }
 
     if (testing) {
