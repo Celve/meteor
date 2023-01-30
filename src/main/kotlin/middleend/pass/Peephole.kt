@@ -119,7 +119,16 @@ object Peephole : IRVisitor() {
 
   override fun visit(inst: TruncInst) {}
 
-  override fun visit(inst: StoreInst) {}
+  override fun visit(inst: StoreInst) {
+    val addr = inst.getAddr()
+    val loadInst = inst.getValue()
+    if (loadInst is LoadInst && loadInst.getAddr() == addr) {
+      inst.parent.removeInst(inst)
+      if (loadInst.userList.size == 0) {
+        inst.parent.removeInst(loadInst)
+      }
+    }
+  }
 
   override fun visit(inst: CmpInst) {}
 
@@ -128,8 +137,8 @@ object Peephole : IRVisitor() {
   override fun visit(inst: PCopyInst) {}
 
   override fun visit(inst: MvInst) {
-//    if (inst.userList.size == 1) {
-//      inst.parent.removeInst(inst, inst.getSrc())
-//    }
+    if (inst.userList.size == 1) {
+      inst.parent.removeInst(inst, inst.getSrc())
+    }
   }
 }
