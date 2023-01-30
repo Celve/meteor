@@ -5,6 +5,7 @@ import middleend.basic.*
 import middleend.struct.DirectedGraph
 
 object StrengthReduction : IRVisitor() {
+  private val distinguished = hashSetOf<Instruction>()
   private val lookupTable = hashMapOf<Triple<String, Value, Value>, Instruction>()
   private lateinit var header: HashMap<Instruction, PhiInst> // header contains the base phi instruction of induction variables
   private lateinit var currFunc: Func
@@ -167,12 +168,28 @@ object StrengthReduction : IRVisitor() {
   private fun process(opSet: HashSet<Value>) {
     if (opSet.size == 1) { // it has only one member
       val op = opSet.first()
-      if (op is BinaryInst && op.op == "mul") {
-        val result = getIvAndRc(op)
-        result?.let { replace(op, result.first, result.second) }
+      if (op is Instruction) {
+        if ((op is BinaryInst && op.op == "mul") || op in distinguished) {
+          val result = getIvAndRc(op)
+          result?.let { replace(op, result.first, result.second) }
+        }
       }
     } else {
       classifyIV(opSet)
+    }
+  }
+
+  private fun collectDistinguished() {
+    distinguished.clear()
+    val workList = currFunc.blockList.flatMap { it.instList }.filterIsInstance<BranchInst>().filter { !it.isJump() }
+      .map { it.getCond()!! }.filterIsInstance<Instruction>().toMutableList()
+    distinguished.addAll(workList)
+    while (workList.isNotEmpty()) {
+      val inst = workList.removeFirst()
+      inst.useeList.filterIsInstance<Instruction>().filter { it !in distinguished }.forEach {
+        distinguished.add(it)
+        workList.add(it)
+      }
     }
   }
 
@@ -182,6 +199,8 @@ object StrengthReduction : IRVisitor() {
     lookupTable.clear()
     header = func.indVar.all2Phi
     header.clear()
+
+    collectDistinguished()
 
     val instList = func.blockList.flatMap { block -> block.instList.filter { it.isDef() } }
     val graph = DirectedGraph<Value>()
