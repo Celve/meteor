@@ -122,11 +122,11 @@ class DomTree(val func: Func, val reversed: Boolean) {
     for (block in removingBlocks) {
       for (prevBlock in getPrevBlockSet(block)) {
         prevBlock.removeNextBlock(block)
-        block.removePrevBlock(block)
+        block.removePrevBlock(prevBlock)
       }
       for (nextBlock in getNextBlockSet(block)) {
         nextBlock.removePrevBlock(block)
-        block.removeNextBlock(block)
+        block.removeNextBlock(nextBlock)
       }
     }
 
