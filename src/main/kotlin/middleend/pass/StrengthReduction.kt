@@ -181,12 +181,13 @@ object StrengthReduction : IRVisitor() {
 
   private fun collectDistinguished() {
     distinguished.clear()
-    val workList = currFunc.blockList.flatMap { it.instList }.filterIsInstance<BranchInst>().filter { !it.isJump() }
-      .map { it.getCond()!! }.filterIsInstance<Instruction>().toMutableList()
+    val workList = currFunc.blockList.flatMap { it.instList }.asSequence()
+      .filterIsInstance<BranchInst>().filter { !it.isJump() }.map { it.getCond()!! }.filterIsInstance<Instruction>()
+      .toMutableList()
     distinguished.addAll(workList)
     while (workList.isNotEmpty()) {
       val inst = workList.removeFirst()
-      inst.useeList.filterIsInstance<Instruction>().filter { it !in distinguished }.forEach {
+      inst.userList.filterIsInstance<Instruction>().filter { it !in distinguished }.forEach {
         distinguished.add(it)
         workList.add(it)
       }
