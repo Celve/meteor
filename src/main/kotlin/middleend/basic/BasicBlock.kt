@@ -86,6 +86,18 @@ class BasicBlock(name: String, var execFreq: Int) : Value(TypeFactory.getLabelTy
     return instList.last()
   }
 
+  fun getIndexOfInst(inst: Instruction): Int {
+    return instList.indexOf(inst)
+  }
+
+  fun addInst(inst: Instruction) {
+    if (hasTerminator()) {
+      throw Exception("basicblock has been terminated")
+    }
+    inst.parent = this
+    instList.add(inst)
+  }
+
   fun addInst(index: Int, inst: Instruction) {
     if (hasTerminator() && index >= instList.size) {
       throw Exception("basicblock has been terminated")

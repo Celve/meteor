@@ -75,7 +75,7 @@ object LoopInvarCodeMotion : IRVisitor() {
       header.instList.filterIsInstance<PhiInst>().forEach {
         val (value, _) = it.getPred(preLoop)!!
         it.removePred(preLoop)
-        it.addAssignment(value, preHeader)
+        it.addPred(value, preHeader)
       }
 
       currFunc.blockList.add(currFunc.blockList.indexOf(loop.headerBlock), preHeader)

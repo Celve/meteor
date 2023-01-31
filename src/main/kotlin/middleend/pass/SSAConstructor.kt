@@ -66,7 +66,7 @@ object SSAConstructor : IRVisitor() {
     block.nextBlockSet.forEach { nextBlock ->
       nextBlock.instList.filterIsInstance<PhiInst>()
         .filter { !it.name!!.startsWith(".phi") } // ignore manually generated phi
-        .forEach { it.addAssignment(stack.getValue(getValuesOriginalName(it)).last(), block) }
+        .forEach { it.addPred(stack.getValue(getValuesOriginalName(it)).last(), block) }
     }
 
     domTree.successors.getValue(block).forEach { renameBlock(it) }

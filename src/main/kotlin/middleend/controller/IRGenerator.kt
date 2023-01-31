@@ -601,7 +601,7 @@ class IRGenerator : ASTVisitor() {
       ConstantInt(32, -1),
       null
     )
-    phiInst.addAssignment(nextElement, IRBuilder.getInsertBlock())
+    phiInst.addPred(nextElement, IRBuilder.getInsertBlock())
     IRBuilder.createBr(condBlock)
 
     IRBuilder.setInsertBlock(endBlock)

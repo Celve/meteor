@@ -61,14 +61,17 @@ object MiddleEndManager {
       Checker.visit(module)
     }
     if (buildOptions.contains("--sr")) {
+      LoopUnrolling.isUnrollNonConst = true
       do {
         val initSize = module.funcMap.values.sumOf { it.blockList.size }
-        LoopUnfolding.visit(module)
+        LoopUnrolling.visit(module)
+        LoopUnrolling.isUnrollNonConst = false
         Checker.visit(module)
         Eliminator.visit(module) // a lot of useless basic block might occur
         Checker.visit(module)
         ConstPropagator.visit(module)
         Checker.visit(module)
+        DomValueNumbering.visit(module) // some redundant mv instructions
       } while (initSize != module.funcMap.values.sumOf { it.blockList.size })
     }
 

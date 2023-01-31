@@ -88,7 +88,7 @@ object Eliminator : IRVisitor() {
         block.userList.filterIsInstance<PhiInst>().forEach { inst ->
           val value = inst.getPred(block)!!.first
           inst.removePred(block)
-          block.prevBlockSet.forEach { inst.addAssignment(value, it) }
+          block.prevBlockSet.forEach { inst.addPred(value, it) }
 
           // eliminate useless phi instruction
           val firstValue = inst.getPred(0).first
@@ -162,11 +162,11 @@ object Eliminator : IRVisitor() {
 
         trueBlock.instList.filterIsInstance<PhiInst>().forEach {
           val value = it.getPred(jumpBlock)!!.first
-          it.addAssignment(value, block)
+          it.addPred(value, block)
         }
         falseBlock.instList.filterIsInstance<PhiInst>().forEach {
           val value = it.getPred(jumpBlock)!!.first
-          it.addAssignment(value, block)
+          it.addPred(value, block)
         }
 
         return true

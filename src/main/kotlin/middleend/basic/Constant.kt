@@ -20,6 +20,14 @@ data class ConstantInt(val numOfBits: Int, val value: Int) : ConstantData(TypeFa
   override fun toString(): String {
     return value.toString()
   }
+
+  operator fun times(other: Int): ConstantInt {
+    return ConstantInt(numOfBits, value * other)
+  }
+
+  operator fun times(other: ConstantInt): ConstantInt {
+    return ConstantInt(numOfBits, value * other.value)
+  }
 }
 
 class ConstantNull : ConstantData(TypeFactory.getNullType()) {

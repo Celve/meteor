@@ -415,7 +415,7 @@ class PhiInst(name: String, type: Type, predList: MutableList<Pair<Value, BasicB
     }
   }
 
-  fun addAssignment(value: Value, block: BasicBlock) {
+  fun addPred(value: Value, block: BasicBlock) {
     link(this, value)
     link(this, block)
   }
@@ -460,8 +460,10 @@ class PhiInst(name: String, type: Type, predList: MutableList<Pair<Value, BasicB
 
   fun removePred(block: BasicBlock) {
     val index = useeList.indexOf(block)
-    cut(this, index)
-    cut(this, index - 1)
+    if (index != -1) {
+      cut(this, index)
+      cut(this, index - 1)
+    }
   }
 
   override fun replicate(): Instruction {
