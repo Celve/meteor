@@ -3,7 +3,6 @@ package middleend.pass
 import middleend.basic.*
 import middleend.helper.Utils
 import middleend.struct.Loop
-import kotlin.math.max
 import kotlin.math.min
 
 // a clear and easy to understand version of loop unrolling
@@ -482,7 +481,10 @@ object LoopUnrolling : IRVisitor() {
             else -> return false
           }
           if (const !is Instruction || const.parent !in loop.allBlocks) {
-            unroll(loop, getCycle(iv), max(2, min(10, maxLoopInstSize / loop.allBlocks.sumOf { it.instList.size })))
+            val times = min(10, maxLoopInstSize / loop.allBlocks.sumOf { it.instList.size })
+            if (times > 1) {
+              unroll(loop, getCycle(iv), times)
+            }
             return true
           }
         }
