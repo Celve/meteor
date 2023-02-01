@@ -9,6 +9,13 @@ class EqSet(val func: Func) {
   private val graph = DirectedGraph<String>()
   private var changed = false
 
+  private fun init() {
+    eqSets.clear()
+    num2Set.clear()
+    changed = false
+    graph.clear()
+  }
+
   fun get(value: Value): Set<String> {
     return when (value) {
       is BasicBlock -> setOf("b${value.name}")
@@ -22,7 +29,7 @@ class EqSet(val func: Func) {
 
   private fun fixInvariants() {
     with(func) {
-      func.argList.union(func.blockList.flatMap { it.instList.filter { it.isDef() } }).forEach {
+      argList.union(blockList.flatMap { it.instList.filter { it.isDef() } }).forEach {
         val num = valNum.get(it)
         val set = hashSetOf(valNum.get(it))
         eqSets.add(set)
@@ -147,6 +154,7 @@ class EqSet(val func: Func) {
 
   fun build() {
     valNum.build()
+    init()
     fixInvariants()
     do {
       changed = false

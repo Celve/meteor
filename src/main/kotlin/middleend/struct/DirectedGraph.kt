@@ -13,6 +13,20 @@ class DirectedGraph<T> {
   val sccEdges = mutableMapOf<Int, HashSet<Int>>().withDefault { hashSetOf() }
   val topOrder = mutableListOf<Int>()
 
+  fun clear() {
+    edges.clear()
+    dfn.clear()
+    low.clear()
+    sccId.clear()
+    sccSet.clear()
+    stack.clear()
+    inStack.clear()
+    dfnCnt = 0
+    sccCnt = 0
+    sccEdges.clear()
+    topOrder.clear()
+  }
+
   fun addEdge(from: T, to: T) {
     edges.getOrPut(from) { hashSetOf() }.add(to)
   }

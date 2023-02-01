@@ -60,6 +60,8 @@ class ValNum(val func: Func) {
 
   fun build() {
     table.clear()
+    cnt = 0
+    totalPatternTable.clear()
     val workList = func.blockList.toMutableList() // duplicate it
     func.argList.forEach { new(it) }
     func.blockList.flatMap { it.instList.filter { it.isDef() } }.forEach { new(it) }
