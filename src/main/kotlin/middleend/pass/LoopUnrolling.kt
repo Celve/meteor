@@ -3,14 +3,17 @@ package middleend.pass
 import middleend.basic.*
 import middleend.helper.Utils
 import middleend.struct.Loop
+import kotlin.math.max
+import kotlin.math.min
 
 // a clear and easy to understand version of loop unrolling
 object LoopUnrolling : IRVisitor() {
-  var isUnrollNonConst = false
+  private val disabled = hashSetOf<BasicBlock>()
   private lateinit var currModule: TopModule
   private lateinit var currFunc: Func
   private var valueTable = hashMapOf<String, Value>()
   private const val maxRepeatedTimes = 150
+  private const val maxLoopInstSize = 1500
 
   override fun visit(topModule: TopModule) {
     currModule = topModule
@@ -148,11 +151,11 @@ object LoopUnrolling : IRVisitor() {
 //    }
   }
 
-  private fun twice(op: String, iv: Value, const: ConstantInt): BinaryInst {
+  private fun pow(op: String, iv: Value, const: ConstantInt, times: Int): BinaryInst {
     return BinaryInst(
       currFunc.mulTable.rename(".$op"), op, iv, when (op) {
-        "add", "sub" -> const * 2
-        "mul", "sdiv" -> const * const
+        "add", "sub" -> const * times
+        "mul", "sdiv" -> const.pow(times)
         "srem" -> const
         else -> throw Exception("unsupported op: $op")
       }
@@ -167,14 +170,15 @@ object LoopUnrolling : IRVisitor() {
     brInst: BranchInst,
     loop: Loop,
     bodyBlock: BasicBlock,
-    endBlock: BasicBlock
+    endBlock: BasicBlock,
+    times: Int
   ): BasicBlock {
     val preHeaderBlock =
       BasicBlock(currFunc.mulTable.rename("preheader"), loop.headerBlock.execFreq / 10) // freq doesn't matter
     val newPhiInsts = phiInsts.map { it.replicate() as PhiInst }
     val newPhiInst = newPhiInsts.find { it.name == phiInst.name }!!
 //    val newBinInst = binInst.replicate() as BinaryInst
-    val newBinInst = twice(binInst.op, newPhiInst, binInst.useeList.filterIsInstance<ConstantInt>().first())
+    val newBinInst = pow(binInst.op, newPhiInst, binInst.useeList.filterIsInstance<ConstantInt>().first(), times)
     val newCmpInst = cmpInst.replicate() as CmpInst
     val newBrInst = brInst.replicate() as BranchInst
     val undefined = mutableListOf<Value>()
@@ -217,8 +221,8 @@ object LoopUnrolling : IRVisitor() {
     return preHeaderBlock
   }
 
-  private fun unroll(loop: Loop, cycle: Pair<PhiInst, BinaryInst>) {
-    val (allSlice, lastSlice, lastExitingBlock) = createSlice(loop, 2)
+  private fun unroll(loop: Loop, cycle: Pair<PhiInst, BinaryInst>, times: Int) {
+    val (allSlice, lastSlice, lastExitingBlock) = createSlice(loop, times)
     val (addSlice, _, addExitingBlock) = createSlice(loop, 1)
     val allBlocks = loop.allBlocks
     val headerBlock = loop.headerBlock
@@ -250,7 +254,7 @@ object LoopUnrolling : IRVisitor() {
       val cmpInst = brInst.getCond() as CmpInst
       val binaryInst = (if (isLeft) cmpInst.getLhs() else cmpInst.getRhs()) as BinaryInst
       val const = binaryInst.useeList.filterIsInstance<ConstantInt>().first()
-      val newBinaryInst = twice(binaryInst.op, binaryInst, const)
+      val newBinaryInst = pow(binaryInst.op, binaryInst, const, times)
       block.addInst(block.instList.indexOf(cmpInst), newBinaryInst)
       cmpInst.replaceAll { if (it == binaryInst) newBinaryInst else it }
     }
@@ -267,7 +271,7 @@ object LoopUnrolling : IRVisitor() {
     val allHeaderBlock = allSlice.blockList[headerIndex]
     val addHeaderBlock = addSlice.blockList[headerIndex]
     val preHeaderBlock = createPreHeader(
-      initPhiInst, allPhiInsts, initBinInst, initCmpInst, initBrInst, loop, allHeaderBlock, addHeaderBlock
+      initPhiInst, allPhiInsts, initBinInst, initCmpInst, initBrInst, loop, allHeaderBlock, addHeaderBlock, times
     )
 
     // modify br insts that precedes the loop
@@ -363,6 +367,8 @@ object LoopUnrolling : IRVisitor() {
     phiInstList.filter { it.getPredList().size == 1 }.forEach {
       it.parent.replaceInst(it, MvInst(rename(it.name!!), it.useeList.first()))
     }
+
+    disabled.addAll(allSlice.blockList)
 
 //    currFunc.blockList.forEach {
 //      println("${it.prevBlockSet} ${it.nextBlockSet}")
@@ -464,19 +470,19 @@ object LoopUnrolling : IRVisitor() {
             val cycle = getCycle(iv)
             val endCond = loop.allBlocks.contains(brInst.getFalseBlock()!!).compareTo(false)
             val times = calcRepeatTime(cycle.first, cycle.second, cmpInst, endCond)
-            if (times <= maxRepeatedTimes && times * loop.allBlocks.sumOf { it.instList.size } <= 1500) {
+            if (times <= maxRepeatedTimes && times * loop.allBlocks.sumOf { it.instList.size } <= maxLoopInstSize) {
               unroll(loop, times)
               return true
             }
           }
-        } else if (isUnrollNonConst) {
+        } else if (exitingBlock !in disabled) {
           val (iv, const) = when {
             isEnhancedIV(lhs) -> lhs to rhs
             isEnhancedIV(rhs) -> rhs to lhs
             else -> return false
           }
           if (const !is Instruction || const.parent !in loop.allBlocks) {
-            unroll(loop, getCycle(iv))
+            unroll(loop, getCycle(iv), max(2, min(10, maxLoopInstSize / loop.allBlocks.sumOf { it.instList.size })))
             return true
           }
         }
