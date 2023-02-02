@@ -140,8 +140,7 @@ object ASMRegisterAllocator : ASMVisitor() {
 
   private fun eliminateUselessMv() {
     for (block in asmFunc.blockList) {
-      val removed = block.instList.filter { it is ASMMvInst && it.getRd() == it.getRs() }
-      block.instList.removeAll(removed)
+      block.instList.removeAll { it is ASMMvInst && it.getRd() == it.getRs() }
     }
   }
 
@@ -176,7 +175,7 @@ object ASMRegisterAllocator : ASMVisitor() {
     moveList.clear()
     alias.clear()
     color.clear()
-    rewrittenNodes.clear()
+//    rewrittenNodes.clear()
     crossCallNodes.clear()
     executionFrequency.clear()
   }
@@ -298,7 +297,7 @@ object ASMRegisterAllocator : ASMVisitor() {
         adjList.getOrPut(rhs) { hashSetOf() }.add(lhs)
         degree[rhs] = degree.getValue(rhs) + 1
       }
-      true
+      lhs !is PhyReg
     } else {
       false
     }
@@ -338,10 +337,9 @@ object ASMRegisterAllocator : ASMVisitor() {
    * The pre-colored nodes should never be simplified. Because it's meaningless.
    */
   private fun simplify() {
-    val simplified = simplifyWorklist.firstOrNull() ?: return
-    simplifyWorklist.remove(simplified)
+    val simplified = simplifyWorklist.removeFirstOrNull() ?: return
     selectedStack.add(simplified)
-    adjacent(simplified).forEach { decrementDegree(it) }
+    adjacent(simplified).filter { it !is PhyReg }.forEach { decrementDegree(it) }
   }
 
   private fun decrementDegree(reg: Register) {
@@ -370,8 +368,7 @@ object ASMRegisterAllocator : ASMVisitor() {
   }
 
   private fun coalesce() {
-    val mv = worklistMoves.first()
-    worklistMoves.remove(mv)
+    val mv = worklistMoves.removeFirst()
     var u = getAlias(mv.getRs())
     var v = getAlias(mv.getRd()!!)
 
@@ -425,11 +422,16 @@ object ASMRegisterAllocator : ASMVisitor() {
   }
 
   private fun getAlias(reg: Register): Register {
-    if (alias.contains(reg)) {
-      alias[reg] = getAlias(alias[reg]!!)
-      return alias[reg]!!
+//    if (alias.contains(reg)) {
+//      alias[reg] = getAlias(alias[reg]!!)
+//      return alias[reg]!!
+//    } else {
+//      return reg
+//    }
+    return if (reg in coalescedNodes) {
+      getAlias(alias[reg]!!)
     } else {
-      return reg
+      reg
     }
   }
 
@@ -448,7 +450,7 @@ object ASMRegisterAllocator : ASMVisitor() {
         decrementDegree(neighbor)
       }
     }
-    if (degree.getValue(u) >= k && freezeWorklist.contains(u)) {
+    if (degree.getValue(u) >= k && u in freezeWorklist) {
       freezeWorklist.remove(u)
       spillWorklist.add(u)
     }
@@ -480,7 +482,7 @@ object ASMRegisterAllocator : ASMVisitor() {
   private fun selectSpilledWithHeuristic(candidates: MutableList<Register>): Register? {
     // this heuristic is bad, because it doesn't consider context of the register
 //    candidates.sortBy { executionFrequency.getValue(it) / degree.getValue(it) }
-    return candidates.filter { it is VirReg && !rewrittenNodes.contains(it) }
+    return candidates.filter { it is VirReg && it !in rewrittenNodes }
       .minByOrNull { executionFrequency.getValue(it) / degree.getValue(it) }
   }
 
@@ -529,10 +531,9 @@ object ASMRegisterAllocator : ASMVisitor() {
 
   private fun assignColors() {
     while (selectedStack.isNotEmpty()) {
-      val top = selectedStack.last()
-      selectedStack.removeLast()
+      val top = selectedStack.removeLast()
       val okColors = RegInfo.assignableRegList.toHashSet()
-      adjList.getValue(top).map { getAlias(it) }.distinct().filter { it is PhyReg || coloredNodes.contains(it) }
+      adjList.getValue(top).map { getAlias(it) }.distinct().filter { it is PhyReg || it in coloredNodes }
         .forEach { okColors.remove(color.getValue(it)) } // remove adjacent existed color
       if (okColors.isEmpty()) {
         spilledNodes.add(top)

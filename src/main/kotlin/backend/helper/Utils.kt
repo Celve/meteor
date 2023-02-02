@@ -24,16 +24,6 @@ object Utils {
     }
   }
 
-  fun convertArithi(op: String): String {
-    return when (op) {
-      "shl" -> "slli"
-      "ashr" -> "srai"
-      "sdiv" -> "divi"
-      "srem" -> "remi"
-      else -> "${op}i"
-    }
-  }
-
   fun convertBr(op: String): String {
     return when (op) {
       "eq" -> "beq"

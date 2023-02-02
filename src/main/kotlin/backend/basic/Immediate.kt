@@ -41,6 +41,10 @@ data class UndeterminedImmediate(
 }
 
 data class DeterminedImmediate(val value: Int) : Immediate() {
+  operator fun plus(other: DeterminedImmediate): DeterminedImmediate {
+    return DeterminedImmediate(value + other.value)
+  }
+
   override fun toString(): String {
     return value.toString()
   }
