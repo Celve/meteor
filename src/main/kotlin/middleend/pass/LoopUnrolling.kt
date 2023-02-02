@@ -46,12 +46,10 @@ object LoopUnrolling : IRVisitor() {
       if (lastExitingBlock != null) {
         phiInstList.forEach { inst ->
           inst.replaceAll {
-            if (it == currExitingBlock) {
-              lastExitingBlock!!
-            } else if (it is Instruction) {
-              allSlice.valueTable[newSlice.nameTable[it]!!]!!
-            } else {
-              it
+            when (it) {
+              currExitingBlock -> lastExitingBlock!!
+              is Instruction -> allSlice.valueTable[newSlice.nameTable[it]!!]!!
+              else -> it
             }
           }
         }
@@ -64,8 +62,9 @@ object LoopUnrolling : IRVisitor() {
         // branch inst should be converted into jump inst
         it.replaceBrInst(BranchInst(newSlice.blockList[headerIndex], null, null))
 
-        it.instList.remove(cmpInst)
-        cmpInst.eliminate()
+        if (cmpInst.userList.isEmpty()) {
+          cmpInst.parent.removeInst(cmpInst)
+        }
       }
       lastExitingBlock = currExitingBlock
 
@@ -197,7 +196,9 @@ object LoopUnrolling : IRVisitor() {
       if (it.isDef() && it.name == binInst.name) {
         newBinInst
       } else {
-        undefined.add(it)
+        if (it.isDef()) {
+          undefined.add(it)
+        }
         it
       }
     }
@@ -238,6 +239,10 @@ object LoopUnrolling : IRVisitor() {
     val initCmpInst = initBrInst.getCond() as CmpInst
     val isLeft = initCmpInst.getLhs() == initBinInst
 
+//    allBlocks.forEach { it.accept(IREmit) }
+//    println()
+//    allSlice.blockList.forEach { it.accept(IREmit) }
+
     // don't forget the last block
     lastExitingBlock!!.let { block ->
       val brInst = block.getTerminator() as BranchInst
@@ -254,7 +259,7 @@ object LoopUnrolling : IRVisitor() {
       val binaryInst = (if (isLeft) cmpInst.getLhs() else cmpInst.getRhs()) as BinaryInst
       val const = binaryInst.useeList.filterIsInstance<ConstantInt>().first()
       val newBinaryInst = pow(binaryInst.op, binaryInst, const, times)
-      block.addInst(block.instList.indexOf(cmpInst), newBinaryInst)
+      cmpInst.parent.addInst(cmpInst.parent.getIndexOfInst(cmpInst), newBinaryInst)
       cmpInst.replaceAll { if (it == binaryInst) newBinaryInst else it }
     }
 
@@ -474,7 +479,8 @@ object LoopUnrolling : IRVisitor() {
               return true
             }
           }
-        } else if (exitingBlock !in disabled) {
+        }
+        if (exitingBlock !in disabled) {
           val (iv, const) = when {
             isEnhancedIV(lhs) -> lhs to rhs
             isEnhancedIV(rhs) -> rhs to lhs
