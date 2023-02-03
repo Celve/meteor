@@ -486,6 +486,14 @@ object ASMRegisterAllocator : ASMVisitor() {
       .minByOrNull { executionFrequency.getValue(it) / degree.getValue(it) }
   }
 
+  private fun updateCost(reg: Register, reg2Cost: HashMap<Int, Int>, execFreq: Int) {
+    if (reg is PhyReg && reg2Cost.contains(reg.id)) {
+      reg2Cost[reg.id] = reg2Cost[reg.id]!! - execFreq
+    } else if (color[reg] != null && color[reg]!! in reg2Cost) {
+      reg2Cost[color[reg]!!] = reg2Cost[color[reg]!!]!! - execFreq
+    }
+  }
+
   private fun selectColorWithHeuristic(reg: Register, candidates: HashSet<Int>): Int {
     val crossCallTimes = crossCallNodes.getValue(reg)
     val relativeMoveList = moveList.getValue(reg)
@@ -503,6 +511,13 @@ object ASMRegisterAllocator : ASMVisitor() {
         reg2Cost[rd.id] = reg2Cost[rd.id]!! - it.parent.execFreq
       }
     }
+
+//    relativeMoveList.forEach {
+//      val rs = it.getRs()
+//      val rd = it.getRd()!!
+//      updateCost(getAlias(rs), reg2Cost, it.parent.execFreq)
+//      updateCost(getAlias(rd), reg2Cost, it.parent.execFreq)
+//    }
 
     val ranking = reg2Cost.toList()
       .map { (reg, cost) ->
