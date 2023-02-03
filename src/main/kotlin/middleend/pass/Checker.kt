@@ -33,6 +33,8 @@ object Checker : IRVisitor() {
     block.instList.forEach { inst ->
       assert(inst.parent == block)
       inst.useeList.forEach { assert(it.userList.contains(inst)) }
+      assert(inst.userList.filterIsInstance<Instruction>().all { it.parent in inst.parent.parent.blockList })
+      assert(inst.userList.filterIsInstance<Instruction>().all { it in it.parent.instList })
       inst.userList.forEach { assert(it.useeList.contains(inst)) }
     }
 
@@ -69,7 +71,9 @@ object Checker : IRVisitor() {
     predList.forEach { assert(block.prevBlockSet.contains(it.second)) }
   }
 
-  override fun visit(inst: BinaryInst) {}
+  override fun visit(inst: BinaryInst) {
+    assert(inst.useeList.isNotEmpty())
+  }
 
   override fun visit(inst: BranchInst) {
     val trueBlock = inst.getTrueBlock()
