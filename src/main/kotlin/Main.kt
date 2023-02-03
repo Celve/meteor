@@ -19,7 +19,8 @@ fun main(args: Array<String>) {
       "--peephole",
       "--gcp",
       "--dmnt",
-      "--sr"
+      "--sr",
+      "--reorder"
     )
   } else {
     args.toHashSet()

@@ -36,6 +36,10 @@ object MiddleEndManager {
       DomValueNumbering.visit(module)
       Checker.visit(module)
     }
+    if (buildOptions.contains("--reorder")) {
+      OperandReordering.visit(module)
+      Checker.visit(module)
+    }
     if (buildOptions.contains("--licm") && buildOptions.contains("--dvnt")) {
       LoopInvarCodeMotion.visit(module) // must be placed after dvnt
       Checker.visit(module)
@@ -58,6 +62,14 @@ object MiddleEndManager {
     }
     if (buildOptions.contains("--peephole")) {
       Peephole.visit(module)
+      Checker.visit(module)
+    }
+    if (buildOptions.contains("--reorder")) {
+      OperandReordering.visit(module)
+      Checker.visit(module)
+    }
+    if (buildOptions.contains("--licm") && buildOptions.contains("--dvnt")) {
+      LoopInvarCodeMotion.visit(module) // must be placed after dvnt
       Checker.visit(module)
     }
     if (buildOptions.contains("--sr")) {

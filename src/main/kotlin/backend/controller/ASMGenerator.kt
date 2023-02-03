@@ -273,11 +273,14 @@ class ASMGenerator : IRVisitor() {
       ASMBuilder.createLiInst(virReg, DeterminedImmediate(Utils.calculate(inst.op, lhs.value, rhs.value)))
     } else if (rhs is ConstantInt) {
       ASMBuilder.createArithiInst(
-        Utils.convertArith(inst.op),
-        virReg,
-        getRegOfValue(lhs)!!,
-        DeterminedImmediate(rhs.value)
+        Utils.convertArith(inst.op), virReg, getRegOfValue(lhs)!!, DeterminedImmediate(rhs.value)
       )
+    } else if (lhs is ConstantInt && (inst.op == "add" || inst.op == "mul")) {
+      when (inst.op) {
+        "add", "mul" -> ASMBuilder.createArithiInst(
+          Utils.convertArith(inst.op), virReg, getRegOfValue(rhs)!!, DeterminedImmediate(lhs.value)
+        )
+      }
     } else {
       ASMBuilder.createArithInst(
         Utils.convertArith(inst.op),
