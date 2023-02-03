@@ -63,7 +63,8 @@ object LoopUnrolling : IRVisitor() {
         it.replaceBrInst(BranchInst(newSlice.blockList[headerIndex], null, null))
 
         if (cmpInst.userList.isEmpty()) {
-          cmpInst.parent.removeInst(cmpInst)
+          cmpInst.parent.instList.remove(cmpInst)
+          cmpInst.eliminate()
         }
       }
       lastExitingBlock = currExitingBlock
