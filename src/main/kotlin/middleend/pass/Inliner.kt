@@ -205,12 +205,15 @@ object Inliner : IRVisitor() {
 
     // connect callee return block
     val calleeReturnBlock = old2Value.getValue(callee.blockList.last().name!!) as BasicBlock
-    val returnValue = calleeReturnBlock.instList.removeLast() as ReturnInst
+    val returnValue = calleeReturnBlock.instList.last() as ReturnInst
     if (returnValue.getRetVal() != null) {
       val newCall = MvInst(callInst.name!!, returnValue.getRetVal()!!)
       newCall.parent = calleeReturnBlock
       callInst.substitutedBy(newCall)
+      calleeReturnBlock.removeInst(returnValue)
       calleeReturnBlock.instList.add(newCall)
+    } else {
+      calleeReturnBlock.removeInst(returnValue)
     }
     val callee2Caller = BranchInst(newCallerBlock, null, null)
     callee2Caller.parent = calleeReturnBlock
