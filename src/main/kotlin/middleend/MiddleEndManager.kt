@@ -68,11 +68,11 @@ object MiddleEndManager {
       OperandReordering.visit(module)
       Checker.visit(module)
     }
-    if (buildOptions.contains("--licm") && buildOptions.contains("--dvnt")) {
+    if (buildOptions.contains("--licm")) {
       LoopInvarCodeMotion.visit(module) // must be placed after dvnt
       Checker.visit(module)
     }
-    if (buildOptions.contains("--sr")) {
+    if (buildOptions.contains("--unroll")) {
       do {
         val initSize = module.funcMap.values.sumOf { it.blockList.size }
         LoopUnrolling.visit(module)

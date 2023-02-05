@@ -176,6 +176,8 @@ if __name__ == "__main__":
             build_options.add("--sr")
         elif argv.startswith("--reorder"):
             build_options.add("--reorder")
+        elif argv.startswith("--unroll"):
+            build_options.add("--unroll")
         elif argv.startswith("--O2"):
             build_options.add("--svn")
             build_options.add("--inline")
@@ -190,6 +192,7 @@ if __name__ == "__main__":
             build_options.add("--dmnt")
             build_options.add("--sr")
             build_options.add("--reorder")
+            build_options.add("--unroll")
         elif argv.startswith("--result"):
             _, result_dir = argv.split("=")
             if not result_dir.endswith("/"):

@@ -38,6 +38,7 @@ The following segments are valid build options:
 --dmnt # enable dominator based memory numbering optimization
 --sr # enable strength reduction optimization
 --reorder # enable operand reordering optimization
+--unroll # enable loop unrolling optimization
 ```
 
 ### Demo
