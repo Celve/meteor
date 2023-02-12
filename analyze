@@ -40,12 +40,12 @@ if __name__ == "__main__":
 
         with open(standard_filepath) as standard_fd:
             for i, line in enumerate(standard_fd):
-                if i == 6:
+                if i == 3:
                     standard_time = int(line.split(": ").pop())
 
         with open(experiment_filepath) as experiment_fd:
             for i, line in enumerate(experiment_fd):
-                if i == 6:
+                if i == 3:
                     experiment_time = int(line.split(": ").pop())
 
         if standard_time >= experiment_time:
