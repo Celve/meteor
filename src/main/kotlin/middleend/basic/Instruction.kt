@@ -329,6 +329,12 @@ class CallInst(name: String?, func: Func, argList: List<Value>) :
     argList.forEach { link(this, it) }
   }
 
+  fun setCallee(func: Func) {
+    useeList[0].userList.remove(this)
+    useeList[0] = func
+    func.userList.add(this)
+  }
+
   fun getCallee(): Func {
     return useeList[0] as Func
   }

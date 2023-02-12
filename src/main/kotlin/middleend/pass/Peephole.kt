@@ -3,7 +3,9 @@ package middleend.pass
 import middleend.basic.*
 
 object Peephole : IRVisitor() {
+  private lateinit var currModule: TopModule
   override fun visit(topModule: TopModule) {
+    currModule = topModule
     topModule.funcMap.forEach { it.value.accept(this) }
   }
 
@@ -25,7 +27,16 @@ object Peephole : IRVisitor() {
 
   override fun visit(inst: AllocaInst) {}
 
-  override fun visit(inst: CallInst) {}
+  override fun visit(inst: CallInst) {
+    if (inst.getCallee().name!! == "toString") {
+      if (inst.userList.all { it is CallInst && (it.getCallee().name == "print" || it.getCallee().name == "println") }) {
+        inst.userList.filterIsInstance<CallInst>()
+          .forEach { it.setCallee(currModule.getBuiltinFunc(it.getCallee().name!! + "Int")!!) }
+        inst.substitutedBy(inst.getArgList().first()) // it should have only one argument
+        inst.parent.removeInst(inst, inst.getArgList().first())
+      }
+    }
+  }
 
   override fun visit(inst: LoadInst) {}
 
@@ -34,13 +45,13 @@ object Peephole : IRVisitor() {
   override fun visit(inst: PhiInst) {}
 
   private fun isPowerOf2(value: Int): Pair<Boolean, Int> {
-    var value = value
+    var mutableVal = value
     var cnt = 0
-    while (value > 0) {
-      if (value and 1 == 1) {
-        return Pair(value == 1, cnt)
+    while (mutableVal > 0) {
+      if (mutableVal and 1 == 1) {
+        return Pair(mutableVal == 1, cnt)
       }
-      value = value shr 1
+      mutableVal = mutableVal shr 1
       cnt++
     }
     return Pair(false, 0)
