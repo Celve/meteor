@@ -14,10 +14,17 @@ object Eliminator : IRVisitor() {
 
   override fun visit(constStr: ConstantStr) {}
 
+  /**
+   * The function judges whether the instruction is critical.
+   * Only call instruction, store instruction and return instruction are regarded as critical.
+   */
   private fun isCritical(inst: Instruction): Boolean {
     return inst is CallInst || inst is StoreInst || inst is ReturnInst
   }
 
+  /**
+   * @param value the value to be marked, if it's a basic block, mark its terminator, if it's an instruction, mark itself
+   */
   private fun take(value: Value) {
     val target = if (value is BasicBlock) {
       value.getTerminator() // especially for phi instruction, the branch it's also important
@@ -39,9 +46,10 @@ object Eliminator : IRVisitor() {
       val inst = workList.first()
       workList.removeFirst()
       when (inst) {
-        is BranchInst -> inst.getCond()?.let { take(it) }
+        is BranchInst -> inst.getCond()?.let { take(it) } // for branch instructions, next blocks should not be marked
         else -> inst.useeList.forEach { take(it) }
       }
+      // only the reverse dominance frontiers are critical to the block
       func.revDomTree.domFrontiers.getValue(inst.parent).map { it.getTerminator() }.filterIsInstance<BranchInst>()
         .forEach { take(it) }
     }
@@ -62,7 +70,10 @@ object Eliminator : IRVisitor() {
     }
   }
 
-  private fun checkPhiInst(origin: BasicBlock): Boolean { // avoid phi inst with two different values from the same block
+  /**
+   * Avoid occurring a phi instruction containing two different values from the same block.
+   */
+  private fun checkPhiInst(origin: BasicBlock): Boolean {
     val phiInstList = origin.userList.filterIsInstance<PhiInst>()
     return phiInstList.all { inst ->
       val originsValue = inst.getPred(inst.getIndex(origin)).first
@@ -136,8 +147,6 @@ object Eliminator : IRVisitor() {
         block.prevBlockSet.clear()
         block.nextBlockSet.clear()
         func.blockList.remove(block)
-
-//        prevBlock.name = func.mulTable.rename("${prevBlock.name}")
 
         prevBlock.instList.removeLast() // remove branch instruction
         prevBlock.instList.addAll(block.instList)
