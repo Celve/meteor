@@ -38,7 +38,10 @@ object Eliminator : IRVisitor() {
     while (workList.isNotEmpty()) {
       val inst = workList.first()
       workList.removeFirst()
-      inst.useeList.forEach { take(it) }
+      when (inst) {
+        is BranchInst -> inst.getCond()?.let { take(it) }
+        else -> inst.useeList.forEach { take(it) }
+      }
       func.revDomTree.domFrontiers.getValue(inst.parent).map { it.getTerminator() }.filterIsInstance<BranchInst>()
         .forEach { take(it) }
     }
