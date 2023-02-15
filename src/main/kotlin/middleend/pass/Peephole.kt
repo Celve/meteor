@@ -1,9 +1,13 @@
 package middleend.pass
 
 import middleend.basic.*
+import middleend.struct.EqSet
 
 object Peephole : IRVisitor() {
   private lateinit var currModule: TopModule
+  private lateinit var currFunc: Func
+  private lateinit var eqSet: EqSet
+
   override fun visit(topModule: TopModule) {
     currModule = topModule
     topModule.funcMap.forEach { it.value.accept(this) }
@@ -18,6 +22,9 @@ object Peephole : IRVisitor() {
   }
 
   override fun visit(func: Func) {
+    currFunc = func
+    eqSet = func.eqSet
+    eqSet.build()
     func.blockList.forEach { it.accept(this) }
   }
 
@@ -38,7 +45,31 @@ object Peephole : IRVisitor() {
     }
   }
 
-  override fun visit(inst: LoadInst) {}
+  private fun isViolateLAS(instList: List<Instruction>, addr: Value): Boolean {
+    return instList.any { (it is StoreInst && eqSet.get(it.getAddr()) == eqSet.get(addr)) || it is CallInst }
+  }
+
+  private fun isViolateSAS(instList: List<Instruction>, addr: Value): Boolean {
+    return instList.any { (it is LoadInst && eqSet.get(it.getAddr()) == eqSet.get(addr)) || it is CallInst }
+  }
+
+  override fun visit(inst: LoadInst) {
+    // load after store, generalized
+    val addr = inst.getAddr()
+    val block = inst.parent
+    val storeInst = addr.userList.asSequence()
+      .filterIsInstance<StoreInst>()
+      .filter { it.parent == block }
+      .filter { block.getIndexOfInst(it) < block.getIndexOfInst(inst) }
+      .lastOrNull()
+    storeInst?.let {
+      val from = block.getIndexOfInst(it)
+      val to = block.getIndexOfInst(inst)
+      if (!isViolateLAS(block.instList.subList(from + 1, to), addr)) {
+        block.removeInst(inst, it.getValue())
+      }
+    }
+  }
 
   override fun visit(inst: BitCastInst) {}
 
@@ -131,12 +162,31 @@ object Peephole : IRVisitor() {
   override fun visit(inst: TruncInst) {}
 
   override fun visit(inst: StoreInst) {
+    // store after load, generalized
     val addr = inst.getAddr()
     val loadInst = inst.getValue()
     if (loadInst is LoadInst && loadInst.getAddr() == addr) {
       inst.parent.removeInst(inst)
       if (loadInst.userList.size == 0) {
         inst.parent.removeInst(loadInst)
+      }
+    }
+
+    // store after store, generalized
+    return
+    val block = inst.parent
+    val targetStoreInst =
+      addr.userList.asSequence()
+        .filterIsInstance<StoreInst>()
+        .minus(inst)
+        .filter { it.parent == block }
+        .filter { block.getIndexOfInst(it) < block.getIndexOfInst(inst) }
+        .maxByOrNull { it.parent.getIndexOfInst(it) }
+    targetStoreInst?.let {
+      val from = inst.parent.getIndexOfInst(targetStoreInst)
+      val to = inst.parent.getIndexOfInst(inst)
+      if (!isViolateSAS(block.instList.subList(from + 1, to), addr)) {
+        inst.parent.removeInst(targetStoreInst)
       }
     }
   }

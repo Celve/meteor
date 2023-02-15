@@ -63,6 +63,8 @@ object MiddleEndManager {
     if (buildOptions.contains("--peephole")) {
       Peephole.visit(module)
       Checker.visit(module)
+      ConstPropagator.visit(module)
+      Checker.visit(module)
     }
     if (buildOptions.contains("--reorder")) {
       OperandReordering.visit(module)
