@@ -36,29 +36,27 @@ object OperandReordering : IRVisitor() {
 
       is Instruction -> {
         when {
-          curr !is BinaryInst -> {
-//            rank[curr] = if (curr.parent == currBlock) 2 else 1
+          curr !is BinaryInst -> { // leaf nodes in operand tree
             rank[curr] = 1
             base.add(curr)
           }
 
-          curr in isRoot -> { // including op not equal
+          curr in isRoot -> { // another operand tree's node, including op not equal
             balance(curr)
             base.add(curr)
           }
 
-          curr.parent != currBlock -> {
+          curr.parent != currBlock -> { // leaf nodes in operand tree
             rank[curr] = 1
             base.add(curr)
           }
 
-          !isTarget(curr) -> {
-//            rank[curr] = 2
+          !isTarget(curr) -> { // leaf nodes in operand tree
             rank[curr] = 1
             base.add(curr)
           }
 
-          else -> {
+          else -> { // internal nodes in operand tree
             removed.add(curr)
             flatten(curr.getLhs(), base, removed)
             flatten(curr.getRhs(), base, removed)
@@ -67,7 +65,7 @@ object OperandReordering : IRVisitor() {
         }
       }
 
-      in currFunc.argList -> {
+      in currFunc.argList -> { // leaf nodes in operand tree
         rank[curr] = 1
         base.add(curr)
       }
