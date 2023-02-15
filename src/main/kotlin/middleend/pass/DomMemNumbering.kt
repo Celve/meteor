@@ -43,18 +43,20 @@ object DomMemNumbering : IRVisitor() {
 
       val visited = hashSetOf<BasicBlock>()
       val workList = mutableListOf(succ)
+      var isInitial = true
       while (workList.isNotEmpty()) {
         val curr = workList.removeFirst()
         if (curr !in visited && curr != block) {
           visited.add(curr)
           workList.addAll(curr.prevBlockSet)
-          if (curr != succ) {
+          if (isInitial || curr != succ) { // avoid succ's store instructions affect itself when it's not in the loop
             block2Invalid[succ]!!.addAll(
               curr.instList.filterIsInstance<StoreInst>().flatMap { eqSet.get(it.getAddr()) })
           }
           val hasCall = curr.instList.any { it is CallInst && !module.builtinFuncMap.contains(it.getCallee().name) }
           block2Callable[succ] = block2Callable[succ]!! or hasCall
         }
+        isInitial = false
       }
     }
   }
