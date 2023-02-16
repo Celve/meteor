@@ -76,8 +76,10 @@ object ConstPropagator : IRVisitor() {
   }
 
   private fun addVar2WorkList(value: Value, newState: VarState) {
-    if (value !is Constant && newState.stage > varStateMap.getValue(value).stage) {
-      varWorkList.add(value)
+    if (value !is Constant) {
+      if (newState.stage > varStateMap.getValue(value).stage) {
+        varWorkList.add(value)
+      }
       varStateMap[value] = newState
     }
   }
