@@ -37,6 +37,14 @@ abstract class Instruction(type: Type, name: String? = null) : User(type, name) 
     throw Exception("cannot find instruction in its parent basic block")
   }
 
+  fun getNextInst(): Instruction? {
+    val index = getIndexAtBlock()
+    if (index == parent.instList.size - 1) {
+      return null
+    }
+    return parent.instList[index + 1]
+  }
+
   abstract fun clone(name: String?): Instruction
 
   abstract fun accept(irVisitor: IRVisitor)
@@ -462,6 +470,14 @@ class PhiInst(name: String, type: Type, predList: MutableList<Pair<Value, BasicB
   fun getIndex(block: BasicBlock): Int {
     val index = useeList.indexOf(block)
     return index / 2
+  }
+
+  fun removeValue(value: Value) {
+    val index = useeList.indexOf(value)
+    if (index != -1) {
+      cut(this, index + 1)
+      cut(this, index)
+    }
   }
 
   fun removePred(block: BasicBlock) {

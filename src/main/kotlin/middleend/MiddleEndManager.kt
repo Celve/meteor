@@ -20,6 +20,11 @@ object MiddleEndManager {
     }
     SSAConstructor.visit(module)
     Checker.visit(module)
+    if (buildOptions.contains("--tail-recursion")) {
+      MvEliminator.visit(module) // necessary for tail recursion optimization
+      TailRecursionOpt.visit(module)
+      Checker.visit(module)
+    }
     if (buildOptions.contains("--inline")) {
       Inliner.visit(module)
       Checker.visit(module)

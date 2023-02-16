@@ -98,6 +98,14 @@ class BasicBlock(name: String, var execFreq: Int) : Value(TypeFactory.getLabelTy
     instList.add(inst)
   }
 
+  fun addBrInst(inst: BranchInst) {
+    addInst(inst)
+    link(this, inst.getTrueBlock())
+    inst.getFalseBlock()?.let {
+      link(this, it)
+    }
+  }
+
   fun addInst(index: Int, inst: Instruction) {
     if (hasTerminator() && index >= instList.size) {
       throw Exception("basicblock has been terminated")
@@ -201,6 +209,15 @@ class BasicBlock(name: String, var execFreq: Int) : Value(TypeFactory.getLabelTy
 
   fun removeNextBlock(nextBlock: BasicBlock) {
     nextBlockSet.remove(nextBlock)
+  }
+
+  fun split(index: Int): BasicBlock {
+    val newBlock = BasicBlock(parent.ssaTable.rename(name!!), execFreq)
+    newBlock.instList.addAll(instList.subList(index, instList.size))
+    newBlock.instList.forEach { it.parent = newBlock }
+    instList.removeAll(newBlock.instList)
+    addInst(BranchInst(newBlock, null, null))
+    return newBlock
   }
 
   fun accept(visitor: IRVisitor) {
