@@ -233,16 +233,12 @@ object LoopUnrolling : IRVisitor() {
     val firstExitingBlock = allSlice.blockList[exitingIndex]
 
     val initPhiInst = cycle.first
-    val allPhiInsts =
+    val initPhiInsts =
       headerBlock.instList.filterIsInstance<PhiInst>().filter { it.getBlockList().contains(exitingBlock) }
     val initBinInst = cycle.second
     val initBrInst = exitingBlock.getTerminator() as BranchInst
     val initCmpInst = initBrInst.getCond() as CmpInst
     val isLeft = initCmpInst.getLhs() == initBinInst
-
-//    allBlocks.forEach { it.accept(IREmit) }
-//    println()
-//    allSlice.blockList.forEach { it.accept(IREmit) }
 
     // don't forget the last block
     lastExitingBlock!!.let { block ->
@@ -276,7 +272,7 @@ object LoopUnrolling : IRVisitor() {
     val allHeaderBlock = allSlice.blockList[headerIndex]
     val addHeaderBlock = addSlice.blockList[headerIndex]
     val preHeaderBlock = createPreHeader(
-      initPhiInst, allPhiInsts, initBinInst, initCmpInst, initBrInst, loop, allHeaderBlock, addHeaderBlock, times
+      initPhiInst, initPhiInsts, initBinInst, initCmpInst, initBrInst, loop, allHeaderBlock, addHeaderBlock, times
     )
 
     // modify br insts that precedes the loop
@@ -296,9 +292,6 @@ object LoopUnrolling : IRVisitor() {
         val originName = allSlice.nameTable[it.getPred(firstExitingBlock)!!.first as Instruction]!!
         ivTable[it.parent to it.parent.getIndexOfInst(it)] = allSlice.valueTable[originName] as Instruction
       }
-
-//    allSlice.blockList.forEach { IREmit.visit(it) }
-//    println(allSlice.nameTable)
 
     // modify parts of the phi instructions
     allHeaderBlock.instList.filterIsInstance<PhiInst>().forEach { inst ->
@@ -374,11 +367,6 @@ object LoopUnrolling : IRVisitor() {
     }
 
     disabled.addAll(allSlice.blockList)
-
-//    currFunc.blockList.forEach {
-//      println("${it.prevBlockSet} ${it.nextBlockSet}")
-//      IREmit.visit(it)
-//    }
   }
 
   private fun calcRepeatTime(phiInst: PhiInst, binaryInst: BinaryInst, cmpInst: CmpInst, endCond: Int): Int {
