@@ -1,11 +1,13 @@
 package middleend.basic
 
 class Slice(val blockList: MutableList<BasicBlock>) { // for jvm
-  val undefinedTable = hashMapOf<String, HashSet<Value>>()
+  private var isInserted = false
+  private val undefinedTable = hashMapOf<String, HashSet<Value>>()
   val valueTable = hashMapOf<String, Value>()
   val nameTable = hashMapOf<Value, String>()
 
   init {
+    // use its defs to replace uses
     blockList.forEach {
       valueTable[it.name!!] = it
       nameTable[it] = it.name!!
@@ -99,10 +101,40 @@ class Slice(val blockList: MutableList<BasicBlock>) { // for jvm
   }
 
   fun getExitingBlocks(): List<BasicBlock> {
-    return blockList.filter { it.nextBlockSet.any { it !in blockList } }
+    return blockList.filter { block -> block.nextBlockSet.any { it !in blockList } }
   }
 
   fun isUndefined(value: Value): Boolean {
     return undefinedTable.contains(value.name!!)
+  }
+
+  fun insert(fromBlock: BasicBlock, toBlock: BasicBlock) {
+    if (isInserted) {
+      throw Exception("Slice containing ${blockList} has been inserted.")
+    }
+    isInserted = true
+
+    // 1. modify the control flow graph and the branch instruction
+    val fromBrInst = fromBlock.getTerminator() as BranchInst
+    fromBrInst.replace(toBlock, blockList.first()) // CAVEAT: this might be wrong
+
+    val exitingBlocks = getExitingBlocks()
+    if (exitingBlocks.size != 1) {
+      throw Exception("Slice has more than one exiting block.")
+    }
+    val exitingBlock = exitingBlocks.first()
+
+    val exitingBrInst = exitingBlock.getTerminator() as BranchInst
+    val outsideBlocks = exitingBrInst.useeList.filterIsInstance<BasicBlock>().filter { isUndefined(it) }
+    if (outsideBlocks.size != 1) {
+      throw Exception("Exiting block has more than one outside block.")
+    }
+    exitingBrInst.replace(outsideBlocks.first(), toBlock)
+
+    // 2. update phi instructions
+    toBlock.updatePhiInsts(fromBlock, exitingBlock)
+
+    // 3. update blocks' parent
+    blockList.forEach { it.parent = fromBlock.parent }
   }
 }
