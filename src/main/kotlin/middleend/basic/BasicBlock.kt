@@ -115,21 +115,11 @@ class BasicBlock(name: String, var execFreq: Int) : Value(TypeFactory.getLabelTy
     instList.remove(inst)
   }
 
-  private fun cutEdge(from: BasicBlock, to: BasicBlock) {
-    from.nextBlockSet.remove(to)
-    to.prevBlockSet.remove(from)
-  }
-
-  private fun linkEdge(from: BasicBlock, to: BasicBlock) {
-    from.nextBlockSet.add(to)
-    to.prevBlockSet.add(from)
-  }
-
   fun removeBrInst(inst: BranchInst, sub: Value? = null) {
-    cutEdge(this, inst.getTrueBlock())
+    cut(this, inst.getTrueBlock())
     val falseBlock = inst.getFalseBlock()
     if (falseBlock != null) {
-      cutEdge(this, falseBlock)
+      cut(this, falseBlock)
     }
     removeInst(inst, sub)
   }
@@ -147,17 +137,21 @@ class BasicBlock(name: String, var execFreq: Int) : Value(TypeFactory.getLabelTy
 
   fun replaceBrInst(newInst: BranchInst) {
     val oldInst = getTerminator() as BranchInst
-    cutEdge(this, oldInst.getTrueBlock())
+    cut(this, oldInst.getTrueBlock())
     val oldFalseBlock = oldInst.getFalseBlock()
     if (oldFalseBlock != null) {
-      cutEdge(this, oldFalseBlock)
+      cut(this, oldFalseBlock)
     }
-    linkEdge(this, newInst.getTrueBlock())
+    link(this, newInst.getTrueBlock())
     val newFalseBlock = newInst.getFalseBlock()
     if (newFalseBlock != null) {
-      linkEdge(this, newFalseBlock)
+      link(this, newFalseBlock)
     }
     replaceInst(oldInst, newInst)
+  }
+
+  fun updatePhiInsts(from: BasicBlock, to: BasicBlock) {
+    instList.filterIsInstance<PhiInst>().forEach { it.replace(from, to) }
   }
 
   fun getIndexInFunc(): Int {
