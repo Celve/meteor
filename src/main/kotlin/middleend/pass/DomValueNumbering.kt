@@ -20,13 +20,26 @@ object DomValueNumbering : IRVisitor() {
     return value is ConstantInt && value.value == integer
   }
 
-  private fun isInvariant(inst: BinaryInst): Boolean {
+  private fun checkPair(checked: Value, int: Int, ret: Value): Value? {
+    return if (equal(checked, int)) {
+      ret
+    } else {
+      null
+    }
+  }
+
+  private fun isInvariant(inst: Instruction): Value? {
+    if (inst !is BinaryInst) {
+      return null
+    }
+    val lhs = inst.getLhs()
+    val rhs = inst.getRhs()
     return when (inst.op) {
-      "add" -> equal(inst.getLhs(), 0) || equal(inst.getRhs(), 0)
-      "sub" -> equal(inst.getRhs(), 0)
-      "mul" -> equal(inst.getLhs(), 1) || equal(inst.getRhs(), 1)
-      "sdiv" -> equal(inst.getRhs(), 1)
-      else -> false
+      "add" -> checkPair(lhs, 0, rhs) ?: checkPair(rhs, 0, lhs)
+      "sub" -> checkPair(rhs, 0, lhs)
+      "mul" -> checkPair(lhs, 1, rhs) ?: checkPair(rhs, 1, lhs)
+      "sdiv" -> checkPair(rhs, 1, lhs)
+      else -> null
     }
   }
 
@@ -49,8 +62,9 @@ object DomValueNumbering : IRVisitor() {
     block.instList.filterIsInstance<MvInst>().forEach { block.removeInst(it, it.getSrc()) }
 
     for (inst in block.instList.filter { it is BinaryInst || it is CmpInst || it is GetElementPtrInst }) {
-      if (inst is BinaryInst && isInvariant(inst)) {
-        block.removeInst(inst, if (inst.getLhs() !is ConstantInt) inst.getLhs() else inst.getRhs())
+      val sub = isInvariant(inst) // check binary and invariant inside
+      if (sub != null) {
+        block.removeInst(inst, sub)
       } else {
         val result = numTable.get(valNum.get(inst))
         if (result != null) { // redundant
