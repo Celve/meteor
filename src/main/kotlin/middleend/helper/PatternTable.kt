@@ -1,6 +1,5 @@
 package middleend.helper
 
-import middleend.basic.LoadInst
 import middleend.basic.Value
 
 class PatternTable(val parent: PatternTable?) {
@@ -40,14 +39,15 @@ class NumTable(val parent: NumTable?) {
 }
 
 class MemTable(var parent: MemTable?, val invalid: HashSet<String>) {
-  private val table = hashMapOf<String, LoadInst>()
+  private val table = hashMapOf<String, Value>()
 
-  fun add(addr: String, inst: LoadInst) {
+  fun add(addr: String, value: Value) {
+//    println("add $addr with $value")
     invalid.remove(addr)
-    table[addr] = inst
+    table[addr] = value
   }
 
-  fun get(addr: String): LoadInst? {
+  fun get(addr: String): Value? {
     return if (invalid.contains(addr)) {
       null
     } else {

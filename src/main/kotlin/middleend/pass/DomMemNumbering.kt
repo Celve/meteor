@@ -78,7 +78,9 @@ object DomMemNumbering : IRVisitor() {
         }
 
         is StoreInst -> {
-          eqSet.get(inst.getAddr()).forEach { memTable.remove(it) }
+          val addr = inst.getAddr()
+          eqSet.get(addr).forEach { memTable.remove(it) }
+          memTable.add(valNum.get(addr), inst.getValue())
         }
 
         is LoadInst -> {
