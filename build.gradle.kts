@@ -40,6 +40,10 @@ tasks.named("run", JavaExec::class) {
   enableAssertions = true
 }
 
+tasks.compileKotlin {
+  dependsOn(tasks.generateGrammarSource)
+}
+
 application {
   // Define the main class for the application.
   mainClass.set("MainKt")
