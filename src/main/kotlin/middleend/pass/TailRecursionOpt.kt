@@ -28,7 +28,9 @@ object TailRecursionOpt : IRVisitor() {
     currFunc = func
     valNum.build()
     val callInsts = currFunc.blockList.flatMap { it.instList }.filterIsInstance<CallInst>().filter { isTailCall(it) }
-    if (callInsts.isNotEmpty()) {
+
+    // we need to make sure that there are always multiple ways out
+    if (callInsts.isNotEmpty() && currFunc.blockList.flatMap { it.instList }.count { it is ReturnInst } != 1) {
       val originEntryBlock = currFunc.getEntryBlock()
       val anchor = BasicBlock(currFunc.mulTable.rename("anchor"), 1)
       currFunc.addBasicBlockAtIndex(0, anchor)
@@ -38,32 +40,28 @@ object TailRecursionOpt : IRVisitor() {
       // complementary basic block for phi instructions
       anchor.addBrInst(BranchInst(preHeader, null, null))
 
-      if (callInsts.size == 1 && callInsts.first().getNextInst() is ReturnInst) { // it's directly before return inst
-        throw Exception("Function $func will never end.") // there is only one return instruction in the program
-      } else {
-        // add phi instructions for function's arguments
-        callInsts.fold(func.argList.map { listOf(it to anchor) }) { acc, callInst ->
-          acc.zip(callInst.getArgList()) { list, arg -> list + (arg to callInst.parent) }
-        }.forEach { preds ->
-          val arg = preds.first().first
-          val phiInst = PhiInst(currFunc.ssaTable.rename(arg.name!!), arg.type, preds.toMutableList())
-          preHeader.addInst(phiInst)
-          arg.substitutedByWhen(phiInst) { it != phiInst }
-        }
+      // add phi instructions for function's arguments
+      callInsts.fold(func.argList.map { listOf(it to anchor) }) { acc, callInst ->
+        acc.zip(callInst.getArgList()) { list, arg -> list + (arg to callInst.parent) }
+      }.forEach { preds ->
+        val arg = preds.first().first
+        val phiInst = PhiInst(currFunc.ssaTable.rename(arg.name!!), arg.type, preds.toMutableList())
+        preHeader.addInst(phiInst)
+        arg.substitutedByWhen(phiInst) { it != phiInst }
+      }
 
-        // modify those call instructions to branch instructions
-        callInsts.forEach { callInst ->
-          val callBlock = callInst.parent
-          callInst.userList.filterIsInstance<PhiInst>().forEach {
-            it.removeValue(callInst)
-            if (it.getSize() == 1) {
-              it.parent.replaceInst(it, MvInst(currFunc.ssaTable.rename(it.name!!), it.getValueList().first()))
-            }
+      // modify those call instructions to branch instructions
+      callInsts.forEach { callInst ->
+        val callBlock = callInst.parent
+        callInst.userList.filterIsInstance<PhiInst>().forEach {
+          it.removeValue(callInst)
+          if (it.getSize() == 1) {
+            it.parent.replaceInst(it, MvInst(currFunc.ssaTable.rename(it.name!!), it.getValueList().first()))
           }
-          callInst.eliminate()
-          callBlock.instList.remove(callInst)
-          callBlock.replaceBrInst(BranchInst(preHeader, null, null))
         }
+        callInst.eliminate()
+        callBlock.instList.remove(callInst)
+        callBlock.replaceBrInst(BranchInst(preHeader, null, null))
       }
 
       // don't forget to add terminator to pre-header
